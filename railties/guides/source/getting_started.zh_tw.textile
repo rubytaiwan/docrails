@@ -494,7 +494,7 @@ TIP: 不像在 development 模式，console 不會自動載入剛修改的程式
 
 h4. 列出所有文章
 
-The easiest place to start looking at functionality is with the code that lists all posts. Open the file +app/controllers/posts_controller.rb + and look at the +index+ action:
+最容易開始了解的地方就是列出文章的程式碼。打開 +app/controllers/posts_controller.rb 這個檔案然後看 +index+ 這個 action:
 
 <ruby>
 def index
@@ -507,11 +507,11 @@ def index
 end
 </ruby>
 
-+Post.all+ calls the +Post+ model to return all of the posts currently in the database. The result of this call is an array containing the posts which has been saved in an instance variable called +@posts+.
++Post.all+ 會呼叫 +Post+ model 回傳資料庫裡面目前所有的文章。結果會是一個包含文章的 @posts 陣列。
 
-TIP: For more information on finding records with Active Record, see "Active Record Query Interface":active_record_querying.html.
+TIP: 關於更多 Active Reocrd 資料查詢的功能，請查閱 "Active Record Query Interface":active_record_querying.html.
 
-The +respond_to+ block handles both HTML and XML calls to this action. If you browse to "http://localhost:3000/posts.xml":http://localhost:3000/posts.xml, you'll see all of the posts in XML format. The HTML format looks for a view in +app/views/posts/+ with a name that corresponds to the action name. Rails makes all of the instance variables from the action available to the view. Here's +app/views/posts/index.html.erb+:
+這個 +respond_to+ 的區塊同時處理了 HTML 和 XML 的請求。如果瀏覽器瀏覽 "http://localhost:3000/posts.xml":http://localhost:3000/posts.xml 你就會看到 XML 格式。HTML 格式會去找 +app/views/posts/+ 下符合 action 名稱的檔案。Rails 會讓所有 action 裡的實例變數(instance variables)(譯註: 也就是有 @ 開頭的變數) 通通傳到 View 裡面也可以使用。以下是 +app/views/posts/index.html.erb+:
 
 <erb>
 <h1>Listing posts</h1>
@@ -543,14 +543,14 @@ The +respond_to+ block handles both HTML and XML calls to this action. If you br
 <%= link_to 'New post', new_post_path %>
 </erb>
 
-This view iterates over the contents of the +@posts+ array to display content and links. A few things to note in the view:
+這個 view 迭代了 +@posts+ 陣列並顯示內容跟連結，有幾件值得注意的事情：
 
-* +link_to+ builds a hyperlink to a particular destination
-* +edit_post_path+ and +new_post_path+ are helpers that Rails provides as part of RESTful routing. You'll see a variety of these helpers for the different actions that the controller includes.
+* +link_to+ 建立超連結到一個特定的位置
+* +edit_post_path+ 和 +new_post_path+ 都是 Rails RESTful 路徑的 helpers。你也會在 controller 的不同 actions 中看到這些 helpers。
 
-NOTE. In previous versions of Rails, you had to use +&lt;%=h post.name %&gt;+ so that any HTML would be escaped before being inserted into the page.  In Rails 3.0, this is now the default.  To get unescaped HTML, you now use +&lt;%= raw post.name %&gt;+.
+NOTE. 在之前的 Rails 版本，你必須使用 +&lt;%=h post.name %&gt;+ 如此 HTML 才會被逸出(譯註：可以防止 "XSS":http://zh.wikipedia.org/zh/%E8%B7%A8%E7%B6%B2%E7%AB%99%E6%8C%87%E4%BB%A4%E7%A2%BC 網路攻擊)。在 Raisl 3.0 中預設就會逸出。如果不要逸出，請使用 +&lt;%= raw post.name %&gt;+ 。
 
-TIP: For more details on the rendering process, see "Layouts and Rendering in Rails":layouts_and_rendering.html.
+TIP: 關於更多 rendering 的處理，請參閱 "Layouts and Rendering in Rails":layouts_and_rendering.html.
 
 h4. 客製化 Layout 版型
 
@@ -1540,3 +1540,7 @@ h3. 翻譯詞彙
 | callback (回呼) | 保留原名詞 |
 | console (主控台) | 保留原名詞 |
 | form | 表單 |
+| array | 陣列 |
+| block | 區塊 |
+| iterate | 迭代 |
+| escaped | 逸出 |
