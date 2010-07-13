@@ -431,15 +431,15 @@ module ActiveRecord
       def result_as_array(res) #:nodoc:
         # check if we have any binary column and if they need escaping
         unescape_col = []
-        for j in 0...res.nfields do
+        res.nfields.times do |j|
           # unescape string passed BYTEA field (OID == 17)
           unescape_col << ( res.ftype(j)==17 )
         end
 
         ary = []
-        for i in 0...res.ntuples do
+        res.ntuples.times do |i|
           ary << []
-          for j in 0...res.nfields do
+          res.nfields.times do |j|
             data = res.getvalue(i,j)
             data = unescape_bytea(data) if unescape_col[j] and data.is_a?(String)
             ary[i] << data
@@ -941,51 +941,37 @@ module ActiveRecord
         # conversions that are required to be performed here instead of in PostgreSQLColumn.
         def select(sql, name = nil)
           fields, rows = select_raw(sql, name)
-          result = []
-          for row in rows
-            row_hash = {}
-            fields.each_with_index do |f, i|
-              row_hash[f] = row[i]
-            end
-            result << row_hash
+          rows.map do |row|
+            Hash[*fields.zip(row).flatten]
           end
-          result
         end
 
         def select_raw(sql, name = nil)
           res = execute(sql, name)
           results = result_as_array(res)
-          fields = []
-          rows = []
-          if res.ntuples > 0
-            fields = res.fields
-            results.each do |row|
-              hashed_row = {}
-              row.each_index do |cell_index|
-                # If this is a money type column and there are any currency symbols,
-                # then strip them off. Indeed it would be prettier to do this in
-                # PostgreSQLColumn.string_to_decimal but would break form input
-                # fields that call value_before_type_cast.
-                if res.ftype(cell_index) == MONEY_COLUMN_TYPE_OID
-                  # Because money output is formatted according to the locale, there are two
-                  # cases to consider (note the decimal separators):
-                  #  (1) $12,345,678.12
-                  #  (2) $12.345.678,12
-                  case column = row[cell_index]
-                    when /^-?\D+[\d,]+\.\d{2}$/  # (1)
-                      row[cell_index] = column.gsub(/[^-\d\.]/, '')
-                    when /^-?\D+[\d\.]+,\d{2}$/  # (2)
-                      row[cell_index] = column.gsub(/[^-\d,]/, '').sub(/,/, '.')
-                  end
+          fields = res.fields
+          results.each do |row|
+            row.each_with_index do |cell, cell_index|
+              # If this is a money type column and there are any currency symbols,
+              # then strip them off. Indeed it would be prettier to do this in
+              # PostgreSQLColumn.string_to_decimal but would break form input
+              # fields that call value_before_type_cast.
+              if res.ftype(cell_index) == MONEY_COLUMN_TYPE_OID
+                # Because money output is formatted according to the locale, there are two
+                # cases to consider (note the decimal separators):
+                #  (1) $12,345,678.12
+                #  (2) $12.345.678,12
+                case cell
+                when /^-?\D+[\d,]+\.\d{2}$/  # (1)
+                  cell.gsub!(/[^-\d\.]/, '')
+                when /^-?\D+[\d\.]+,\d{2}$/  # (2)
+                  cell.gsub!(/[^-\d,]/, '').sub!(/,/, '.')
                 end
-
-                hashed_row[fields[cell_index]] = column
               end
-              rows << row
             end
           end
           res.clear
-          return fields, rows
+          return fields, results
         end
 
         # Returns the list of a table's column names, data types, and default values.
