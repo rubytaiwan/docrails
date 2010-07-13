@@ -34,7 +34,7 @@ module RailsGuides
             return level_hash
           elsif level == current_level
             index = counters.join(".")
-            idx ||= '#' + title_to_idx(title)
+            idx ||= '#' + index_to_idx(index) #title_to_idx(title)
 
             raise "Parsing Fail" unless @result.sub!(matched, "h#{level}(#{idx}). #{index} #{title}")
 
@@ -57,6 +57,14 @@ module RailsGuides
       level_hash
     end
 
+    def index_to_idx(index)
+      idx = index.gsub(/\./, '-')
+      if warnings && idx.blank?
+        puts "BLANK ID: please put an explicit ID for section #{title}, as in h5(#my-id)"
+      end
+      idx
+    end
+    
     def title_to_idx(title)
       idx = title.strip.downcase.gsub(/\s+|_/, '-').delete('^a-z0-9-').sub(/^[^a-z]*/, '')
       if warnings && idx.blank?
