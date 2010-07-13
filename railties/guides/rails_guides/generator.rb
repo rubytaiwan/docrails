@@ -60,8 +60,15 @@ module RailsGuides
   class Generator
     attr_reader :guides_dir, :source_dir, :output_dir, :edge, :warnings, :all
 
-    GUIDES_RE = /\.(?:textile|html\.erb)$/
-
+    def guides_re
+      if @locale
+         /\.#{@locale}.(?:textile|html\.erb)$/
+      else
+        /\.(?:textile|html\.erb)$/
+      end
+      
+    end
+    
     def initialize(output=nil)
       initialize_dirs(output)
       create_output_dir_if_needed
@@ -88,6 +95,7 @@ module RailsGuides
       @edge     = ENV['EDGE']     == '1'
       @warnings = ENV['WARNINGS'] == '1'
       @all      = ENV['ALL']      == '1'
+      @locale     = ENV['LOCALE'] || nil
     end
 
     def generate_guides
@@ -98,7 +106,7 @@ module RailsGuides
     end
 
     def guides_to_generate
-      guides = Dir.entries(source_dir).grep(GUIDES_RE)
+      guides = Dir.entries(source_dir).grep(guides_re)
       ENV.key?('ONLY') ? select_only(guides) : guides
     end
 
@@ -114,7 +122,7 @@ module RailsGuides
     end
 
     def output_file_for(guide)
-      guide.sub(GUIDES_RE, '.html')
+      guide.sub(guides_re, '.html')
     end
     
     def generate?(source_file, output_file)
@@ -128,16 +136,16 @@ module RailsGuides
       File.open(File.join(output_dir, output_file), 'w') do |f|
         view = ActionView::Base.new(source_dir, :edge => edge)
         view.extend(Helpers)
-
+        layout_file = (@locale)? "layout.#{@locale}" : "layout"
         if guide =~ /\.html\.erb$/
           # Generate the special pages like the home.
-          result = view.render(:layout => 'layout', :file => guide)
+          result = view.render(:layout => layout_file, :file => guide)
         else
           body = File.read(File.join(source_dir, guide))
           body = set_header_section(body, view)
           body = set_index(body, view)
 
-          result = view.render(:layout => 'layout', :text => textile(body))
+          result = view.render(:layout => layout_file, :text => textile(body))
 
           warn_about_broken_links(result) if @warnings
         end

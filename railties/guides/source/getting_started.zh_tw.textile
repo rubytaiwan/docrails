@@ -38,7 +38,7 @@ Rails 的哲學包括以下的指導原則：
 
 * DRY - "不要重複自己(Don't Repeat Yourself)" - 一直撰寫出重複的程式碼是件壞事
 * 慣例勝於設計(Convention Over Configuration) - Rails 會假設什麼是你要做的事情跟如何去做，而不是要求你設定每一個細節到設定檔中。
-* REST 是 Web 應用程式的最佳模式 - 使用 resources 和標準的 HTTP 動詞來組織你的應用程式是最快的方式
+* REST 是 Web 應用程式的最佳模式 - 使用 resources 和標準的 HTTP verbs(動詞)來組織你的應用程式是最快的方式
 
 h4. MVC 架構
 
@@ -376,7 +376,7 @@ NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法�
 
 h4. 執行 Migration
 
-+rails generate scaffold+ 產生出來的程式碼中，有一項是 _資料庫遷移(database migration)_。Migration 是一個 Ruby 的類別用來方便建立和修改資料庫資料表。Rails 使用 rake 指令來執行 migrations，而且它也支援可以逆推剛剛執行的 migration 步驟。Migration 的檔名包含了時間戳章(timestamp)，用來確保它們可以依照建立時間依序執行。
++rails generate scaffold+ 產生出來的程式碼中，有一項是 _資料庫遷移(database migration)_。Migration 是一個 Ruby 的類別用來方便建立和修改資料庫資料表。Rails 使用 rake 指令來執行 migrations，而且它也支援可以逆推剛剛執行的 migration 步驟。Migration 的檔名包含了 timestamp (時間戳章)，用來確保它們可以依照建立時間依序執行。
 
 如果你仔細看看 +db/migrate/20100207214725_create_posts.rb+ 這個檔案(記住，你的檔名開頭會有點不一樣)，你將看到：
 
@@ -1512,10 +1512,6 @@ h3. 翻譯詞彙
 本文翻譯自 "http://guides.rails.info/getting_started.html":http://guides.rails.info/getting_started.html ，以下是英文與繁體中文的對照詞彙：
 
 |_.原文|_.中文|
-| model, controller, view, migration, RESTful | 不譯，保留原名詞 |
-| action | 指 controller 的 action 時，不譯 |
-| view helper (View 輔助函式) | 保留原名詞 |
-| development, test, production mode | 指 Rails 運行環境時，不譯 |
 | class | 類別 |
 | object | 物件 |
 | instance | 實例 |
@@ -1534,13 +1530,28 @@ h3. 翻譯詞彙
 | layout | 版型 |
 | template rendering | 樣板演算顯示 |
 | request | HTTP 請求 |
-| scaffolding, scaffold | 鷹架 |
 | timestamp | 時間戳章 |
-| validation (驗證) | 保留原名詞 |
-| callback (回呼) | 保留原名詞 |
-| console (主控台) | 保留原名詞 |
 | form | 表單 |
 | array | 陣列 |
 | block | 區塊 |
 | iterate | 迭代 |
 | escaped | 逸出 |
+
+以下包留原名詞不譯，必要時加上翻譯註解：
+
+|_.原文|_.說明 |
+| model | 模型 |
+| controller | 控制器 |
+| view | 視圖 |
+| migration | 指資料庫遷移 |
+| RESTful | REST 的形容詞 |
+| action | 指 controller 的 action 時不譯 |
+| view helper | View 輔助函式 |
+| development, test, production mode | 指 Rails 運作的環境 |
+| HTTP verbs | HTTP 協定中的動詞 |
+| template rendering | 樣板演算顯示 |
+| scaffolding, scaffold | 鷹架 |
+| timestamp | 時間戳章 |
+| validation | 驗證 |
+| callback | 回呼 |
+| console | 主控台 |
