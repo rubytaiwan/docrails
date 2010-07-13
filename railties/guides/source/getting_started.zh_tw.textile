@@ -1505,11 +1505,11 @@ h3. 文件修改記錄
 
 h3. 關於譯者
 
-張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/) 於 July, 2010
+張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/) 於 July, 2010，翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ihower/docrails
 
 h3. 翻譯詞彙
 
-本文翻譯自 "http://guides.rails.info/getting_started.html":http://guides.rails.info/getting_started.html ，以下是英文與繁體中文的對照詞彙：
+本文翻譯自 "http://guides.rails.info/getting_started.html":http://guides.rails.info/getting_started.html 。以下是英文與繁體中文的對照詞彙：
 
 |_.原文|_.中文|
 | class | 類別 |
