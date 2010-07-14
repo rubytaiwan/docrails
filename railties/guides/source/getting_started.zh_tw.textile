@@ -1,28 +1,28 @@
 h2. Rails 第一次上手
 
-這份文件涵蓋如何上手開始使用 Ruby on Rails。閱讀之後您應該可以熟悉：
+這份文件涵蓋了如何上手使用 Ruby on Rails。閱讀之後您應該可以熟悉：
 
-* 安裝 Rails，建立一個新的 Rails 應用程式，並連結到資料庫。
+* 安裝 Rails，建立一個新的 Rails 應用程式，並連結到資料庫
 * Rails 的架構
-* MVC (Model, View Controller) 的基本原理以及 RESTful 設計
+* MVC (Model, View Controller) 基本原理以及 RESTful 設計
 * 如何快速產生可以運作的 Rails 應用程式
 
 endprologue.
 
 WARNING. 這份文件基於 Rails 3.0。某些程式碼將無法運行於舊版 Rails。
 
-h3. 前提
+h3. 前提條件
 
-這份指南的目標是幫助初學者從零開始學習 Rails 應用程式，不需要有任何 Rails 經驗。不過要能夠讀的懂這份文件，還是需要一些前提條件：
+這份指南的目標是為了幫助初學者從頭開始學習 Rails 應用程式，而不需要有任何 Rails 經驗。不過要能夠讀的懂，還是需要一些前提：
 
 * "Ruby 程式語言":http://www.ruby-lang.org/en/downloads 版本 1.8.7 或 1.9.2 之後
 
-TIP: Ruby 1.8.7 p248 和 p249 已知有 marshaling 臭虫會搞爛 Rails 3.0。而 Ruby Enterprise Edition 從 1.8.7-2010.02 之後已經修正。1.9.1 也不適用會造成 segfaults，所以如果你要用 1.9.x 請從 1.9.2 開始。
+TIP: Ruby 1.8.7 p248 和 p249 已知有 marshaling 臭虫會搞爛 Rails 3.0。而 "Ruby Enterprise Edition":http://www.rubyenterpriseedition.com 需要 1.8.7-2010.02 之後的版本。1.9.1 也不適用有 segfaults，所以如果你要用 1.9 系列請從 1.9.2 開始。
 
 * "RubyGems":http://rubyforge.org/frs/?group_id=126 Ruby 的套件管理系統
-* 安裝好的 "SQLite3 資料庫":http://www.sqlite.org
+* "SQLite3 資料庫":http://www.sqlite.org
 
-Rails 是一套跑在 Ruby 上的 Web 框架。如果您對 Ruby 一無所知就一頭栽進 Rails，您的學習曲線會非常陡峭。以下是一些網路上的免費 Ruby 學習資源：
+Rails 是一套使用 Ruby 的 Web 框架。如果您對 Ruby 一無所知就一頭栽進 Rails，您的學習曲線會非常陡峭。以下是一些網路上的免費 Ruby 學習資源：
 
 * "Mr. Neighborly's Humble Little Ruby Book":http://www.humblelittlerubybook.com
 * "Programming Ruby":http://www.ruby-doc.org/docs/ProgrammingRuby/
@@ -31,15 +31,15 @@ Rails 是一套跑在 Ruby 上的 Web 框架。如果您對 Ruby 一無所知就
 
 h3. 什麼是 Rails?
 
-Rails 是一個使用 Ruby 程式語言開發的網站開發架構。它被設計成只要開發者了解它的慣例，它就可以讓網站開發變成更容易。相對其他語言和框架，Rails 讓你用更少的程式碼達成更多的功能。有經驗的 Rails 開發者也表示它讓網站開發更有趣。
+Rails 是一個使用 Ruby 程式語言開發的網站開發架構。它的是設計目標是只要開發者熟悉它的慣例，它就可以讓網站開發變的非常容易。而相對於其他程式語言和框架，Rails 可以讓你用更少的程式碼達成更多的功能。經驗豐富的 Rails 開發者也表示它讓網站開發更有趣了。
 
-Rails 是個有主見的軟體。意思是說它假定事情有"最佳解"，而且它也被設計成鼓勵那麼做 - 以及不鼓勵其他作法。如果你學會所謂的 "The Rails Way" 的話，你的生產力非常可能將獲得極大的增長。但如果你用其他語言的習慣或模式來使用 Rails，你可能會有不快樂的經驗。
+Rails 也是個很有主見(opinionated)的軟體。意思是說它假定事情有"最佳解"，而且它也被設計成鼓勵那麼做 - 而不鼓勵其他作法。如果你學會所謂的 "The Rails Way" 的話，你的生產力非常可能將獲得極大的增長。但如果你硬套用其他語言的習慣或模式來使用 Rails，你可能會有不愉快的使用經驗。
 
-Rails 的哲學包括以下的指導原則：
+Rails 的哲學包括以下指導原則：
 
-* DRY - "不要重複自己(Don't Repeat Yourself)" - 一直撰寫出重複的程式碼是件壞事
+* DRY - "不要重複自己(Don't Repeat Yourself)" - 撰寫出重複的程式碼是件壞事
 * 慣例勝於設計(Convention Over Configuration) - Rails 會假設什麼是你要做的事情跟如何去做，而不是要求你設定每一個細節到設定檔中。
-* REST 是 Web 應用程式的最佳模式 - 使用 resources 和標準的 HTTP verbs(動詞)來組織你的應用程式是最快的方式
+* REST 是 Web 應用程式的最佳模式 - 使用 Resources 和標準的 HTTP verbs(動詞)來組織你的應用程式是最快的方式
 
 h4. MVC 架構
 
@@ -51,19 +51,19 @@ Rails 的核心是 Model, View 和 Controller 的架構，通常稱作 MVC。MVC
 
 h5. Models
 
-Model 代表了應用程式的資訊(資料)和如何操作資料的邏輯。在 Rails 中，Models 主要的功能是負責操作資料庫資料表的邏輯。在大多數的情況，一個資料表就對應了一個 Model。你的應用程式商業邏輯也將放在 Models 中。
+Model 代表了應用程式的資料和操作資料的邏輯。在 Rails 中，Models 主要的功能是負責操作資料庫資料表。在大多數的情況，一個資料表就對應了一個 Model。你的應用程式商業邏輯也將放在 Models 中。
 
 h5. Views
 
-Views 代表了你的應用程式的使用者介面。在 Rails 中，Views 通常就是有個內嵌 Ruby 程式(可以操作如何顯示資料)的 HTML 檔案。Views 負責提供資料給瀏覽器或其他發 HTTP 請求的軟體。
+Views 代表了應用程式的使用者介面。在 Rails 中，Views 通常就是有內嵌 Ruby 程式(可以操縱如何顯示資料)的 HTML 檔案。Views 負責提供資料給瀏覽器或其他發 HTTP 請求的軟體。
 
 h5. Controllers
 
-Controllers 是 Models 和 Views 之間的黏著膠水。在 Rails 中，Controllers 負責處理從瀏覽器進來的 HTTP 請求，對 Models 詢問資料，然後將資料傳進 Views 中顯示出來。
+Controllers 是 Models 和 Views 之間的黏著劑。在 Rails 中，Controllers 負責處理從瀏覽器進來的 HTTP 請求，並對 Models 詢問資料，然後將資料傳進 Views 中顯示出來。
 
-h4. Rails 的元件
+h4. Rails 元件
 
-Rails 包括許多個別的元件。
+Rails 包含許多個別的元件：
 
 * Action Pack
   ** Action Controller
@@ -78,39 +78,39 @@ Rails 包括許多個別的元件。
 
 h5. Action Pack
 
-Action Pack 是一個 Gem 包括 Action Controller、Action View 和 Action Dispatch。也就是 "MVC" 中的 "VC" 部分。
+Action Pack 是一個 Gem 包含了 Action Controller、Action View 和 Action Dispatch。也就是 "MVC" 中的 "VC" 部分。
 
 h5. Action Controller
 
-Action Controller 是 Rails 應用程式中，管理 Controllers 的元件。Action Controller 框架處理給 Rails 的 HTTP 請求，萃取出參數，然後分派給預期的 Action。Action Controller 還提供了 session 管理、樣板演算顯示(template rendering) 和 redirect。
+Action Controller 是 Rails 應用程式中，管理 Controllers 的元件。Action Controller 框架處理傳給 Rails 的 HTTP 請求，萃取出參數，然後分派給所屬的 Action。Action Controller 還提供了 session 管理、樣板演算顯示(template rendering) 和 redirect 功能。
 
 h5. Action View
 
-Action View 負責 Rails 應用程式中的 Views。它預設可以產生 HTML 或 XML 的輸出。Action View 負責樣板的演算顯示(template rendering)，包括嵌套(nesting)或局部(partial)的樣板，甚至也內建支援一些 Ajax。
+Action View 負責 Rails 應用程式中的 Views。它預設可以產生 HTML 或 XML 輸出。Action View 負責樣板的演算顯示(template rendering)，包括嵌套(nesting)或局部(partial)樣板，甚至也內建支援一些 Ajax。
 
 h5. Action Dispatch
 
-Action Dispatch 處理 HTTP 請求的路由，它將 HTTP 請求發派(dispatch)到它該去的地方，也許是你的應用程式或其他 Rack 應用程式。
+Action Dispatch 處理 HTTP 請求的路由(routing)，它將 HTTP 請求發派(dispatch)到它該去的地方，也許是你的應用程式或其他 Rack 程式。
 
 h5. Action Mailer
 
-Action Mailer 是一個建構 e-mail 功能的框架。你可以使用 Action Mailer 來接收處理來信，或是彈性地使用樣板來寄出純文字或複雜的 multipart 信件。
+Action Mailer 是一個建構 E-mail 功能的框架。你可以使用 Action Mailer 來接收來信，或是使用樣板來寄出純文字或複雜的 multipart 信件。
 
 h5. Active Model
 
-Active Model 在 Action Pack gem 和 ORM(Object Relationship Mapping) gem (例如 Active Record) 之間，定義了一組介面。 Active Model 允許 Rails 依你的需求可以置換 Active Record 成其他 ORM 框架。
+Active Model 在 Action Pack gem 和 ORM(Object Relationship Mapping) gem (例如 Active Record) 之間定義了一組介面。Active Model 允許 Rails 可以依你的需求把 Active Record 換成其他 ORM 框架。
 
 h5. Active Record
 
-Active Record 是 Rails 應用程式中的 Models 基礎。它不依存特定的資料庫系統，提供了基本的 CRUD 功能、先進的查詢能力，以及與其他 Models 關連的本事。
+Active Record 是 Rails 應用程式中的 Models 基礎。它不依存特定的資料庫系統，提供了 CRUD 功能、先進的查詢能力以及可以跟其他 Models 關聯的本事。
 
 h5. Active Resource
 
-Active Resource 提供了與其他商業物件和 RESTful 網路服務的連結框架。它實作了一種可以對應以 Web 為基礎的 Resources 成為本地端可以 CRUD 的物件。
+Active Resource 提供了與其他商業物件和 RESTful 網路服務的連結框架。它實作了一種可以對應以 Web 為基礎的 Resources 成為本地端支援 CRUD 的物件。
 
 h5. Active Support
 
-Active Support 是一套用在 Rails 裡的工具函式庫，它也擴充了一些 Ruby 標準函式庫。除了被用在 Rails 核心程式中，你也可以在你的應用程式裡使用。
+Active Support 是 Rails 裡的工具函式庫，它也擴充了一些 Ruby 標準函式庫。除了被用在 Rails 核心程式中，你也可以在你的程式中使用。
 
 h5. Railties
 
@@ -118,7 +118,7 @@ Railties 是 Rails 的核心程式碼，用來將以上各種的框架函式庫�
 
 h4. REST
 
-Rest 代表了 "Representational State Transfer" (表象化狀態轉變)，它也是 RESTful 架構的基礎概念。它被認為出自於 Roy Fielding 的博士論文 "Architectural Styles and the Design of Network-based Software Architectures":http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm 。當你閱讀這篇論文的時候，REST 被 Rails 濃縮成兩個主要定理：
+REST 代表了 "Representational State Transfer" (表象化狀態轉變)，它也是 RESTful 架構的基礎概念。它被認為出自於 Roy Fielding 的博士論文 "Architectural Styles and the Design of Network-based Software Architectures":http://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm 。當你閱讀這篇論文的時候，REST 被 Rails 濃縮成兩個主要定理：
 
 * 使用 Resource 來當做識別資源，也就是使用 URLs 來代表 Resources
 * Transferring representations of the state of that resource between system components (譯註：????)
@@ -127,7 +127,7 @@ Rest 代表了 "Representational State Transfer" (表象化狀態轉變)，它�
 
 <tt>DELETE /photos/17</tt>
 
-將被解讀為指向一個 photo resource 的 ID 17，而且帶著一個動作 - 刪除這個 resource。REST 對 Web 應用程式來說是一個自然的設計風格，而 Rails 幫你將這個概念包裝實作出來，必且免於眾多繁雜 RESTful 理論及瀏覽器怪癖之苦。
+被解讀為指向一個 photo resource 的 ID 17，並帶著一個動作 - 刪除這個 resource。REST 對 Web 應用程式來說是一種天生的設計風格，而 Rails 幫你將這個概念包裝實作出來，並且免於眾多繁雜 RESTful 理論及瀏覽器怪癖之苦。
 
 如果你想知道更多關於 REST 架構風格，以下資源比起 Fielding 的論文更容易親近：
 
@@ -139,26 +139,26 @@ Rest 代表了 "Representational State Transfer" (表象化狀態轉變)，它�
 
 h3. 建立一個新的 Rails 專案
 
-接下來的範例，你將建立一個叫做 <tt>blog</tt> 的 Rails 專案，非常簡單的部落格系統。在你開始建構這個應用程式之前，你需要確認你的 Rails 已經安裝妥當。
+接下來的範例，你將建立一個叫做 <tt>blog</tt> 的 Rails 專案，一個非常簡單的部落格系統。在你開始建構這個應用之前，需要確認你的 Rails 已經安裝妥當。
 
 h4. 安裝 Rails
 
-大多數的情況，最簡單的安裝方式就是透過 Rubygems：
+大多數的情況，最簡單的安裝方式是透過 Rubygems：
 
 <shell>
 通常會用 root user 來執行：
 $ gem install rails
 </shell>
 
-WARNING. 目前還是 Rails 3.0.0-beta 尚未正式發行 Rails 3.0，你必須執行 <tt>gem install rails --pre</tt>
+WARNING. 目前還是 Rails 3.0.0-beta 尚未正式發行 Rails 3.0，所以你必須執行 <tt>gem install rails --pre</tt>
 
 TIP: 如果你使用 Windows，你可以安裝看看 "Instant Rails":http://instantrails.rubyforge.org/wiki/wiki.pl ，不過要注意它的 Rails 版本比較舊不相容。另外你也會發現 Rails 跑在 Windows 很慢。所以可能的話，我們建議你裝在 Linux 虛擬機器上跑 Rails，而不是 Windows。(譯註：建議使用 "RubyInstall":http://rubyinstaller.org/ 安裝 Ruby 1.8.7 或是用 "VirtualBox":http://www.virtualbox.org/ 跑 "Ubuntu Desktop Edition":http://www.ubuntu.com/desktop )
 
 h4. 建立部落格應用程式
 
-本指南的最佳學習方式就是跟著接下來的每個步驟。沒有任何程式或步驟會被省略掉，所以你可以一步步跟著。如果你需要下載完整的程式，可以從這裡下載 "Getting Started Code":http://github.com/mikel/getting-started-code 。
+本指南的最佳學習方式就是緊跟著接下來的每個步驟。沒有任何步驟或程式會被省略，所以你可以一步步跟著。如果你需要下載完整的程式，可以從這裡下載 "Getting Started Code":http://github.com/mikel/getting-started-code 。
 
-要開始了，首先打開一個指令列視窗(terminal)，然後看看去哪一個目錄適合放程式，接著輸入：
+要開始了，首先打開一個指令列視窗(terminal)，然後找個目錄適合放你的程式，接著輸入：
 
 <shell>
 $ rails new blog
@@ -174,24 +174,24 @@ TIP: 你可以透過 <tt>rails -h</tt> 的指令看到所有可用的指令
 $ cd blog
 </shell>
 
-無論如何，Rails 都會建立一個工作目錄叫做 <tt>blog</tt>。打開這個目錄看看它的內容。本教學的大部分工作都會發生在 <tt>app</tt> 目錄下，這裡我們簡單走訪一下各個目錄的預設功能：
+總之，Rails 會建立一個工作目錄叫做 <tt>blog</tt>。請打開這個目錄看看它的內容。本指南的大部分工作都會發生在 <tt>app</tt> 目錄下，這裡來簡單走訪一下各個目錄的功能吧：
 
 |_.檔案/目錄|_.目錄|
 |Gemfile| 設定你的 Rails 應用程式會使用哪些 Gems |
-|README.rdoc| 你的應用程式的使用手冊。你可以用來告訴其他人你的應用程式是做什麼用的，如何使用等等。 |
-|Rakefile| 載入可以被 termial 執行的任務 |
-|app/| 包含了 Controllers、Models 和 Views，在接下來的教學你可以專注在這個目錄。|
-|config/| 應用程式設定檔、路徑規則、資料庫設定等等 |
+|README.rdoc| 你的應用程式使用手冊。你可以用來告訴其他人你的應用程式是做什麼用的，如何使用等等。 |
+|Rakefile| 用來載入可以被命令列執行的一些任務 |
+|app/| 包含了 Controllers、Models 和 Views，接下來的指南內容主要都在這個目錄。|
+|config/| 應用程式設定檔、路由規則、資料庫設定等等 |
 |config.ru| 用來啟動應用程式的 Rack 設定檔 |
-|db/| 目前資料庫的 Schema 和資料庫 Migrations，我們很快就會學到什麼是 Migrations |
-|doc/| 用來放你的完整文件 |
-|lib/| 擴充的 Modules 檔案 (不再本指南範圍) |
+|db/| 目前資料庫的 Schema(綱要) 和資料庫 Migrations，我們很快就會學到什麼是 Migrations |
+|doc/| 用來放你的文件 |
+|lib/| 擴充用的 Modules 檔案 (不在本指南範圍) |
 |log/| 應用程式的 log 檔案 |
 |public/| 唯一可以在網路上看到的目錄，這是你的圖檔、javascript、stylesheets (CSS) 和其他靜態檔案擺放的地方 |
 |script/| 包括了讓你開始 Rails 專案的 script 以及其他 script |
 |test/| 單元測試、fixtures 及其他測試程式，我們在 "Testing Rails Applications":testing.html 一文中會介紹 |
 |tmp/| 暫時性的檔案|
-|vendor/| 用來放第三方程式碼的地方。在一個傳統的 Rails 應用程式，包括了 Ruby Gems、Rails 原始碼 (如果你要裝在你的專案裡面) 和有額外功能的 |
+|vendor/| 用來放第三方程式碼的地方。例如 Ruby Gems、Rails 原始碼 (如果你要裝在你的專案裡面) 和可以增加功能的 Plugin(外掛) |
 
 h4. 安裝必要的 Gems
 
@@ -203,12 +203,12 @@ $ gem install bundler
 $ bundle install
 </shell>
 
-這將檢查所有你開發 Rails 應用程式所需要的 gem 。
+這將檢查你開發 Rails 應用程式所需要的 gem 。
 
 h4. 設定資料庫
 
 
-幾乎每一個 Rails 應用程式都會跟資料庫互動。資料庫需要特定的設定檔在 +config/database.yml+。如果你打開這個檔案，你會發現預設的設定是 SQLite3。這個檔案包含三個不同的部分，對應到三個 Rails 預設環境：
+幾乎每一個 Rails 應用程式都會與資料庫互動。資料庫需要一個設定檔是 +config/database.yml+。如果你打開這個檔案，你會發現預設設定是 SQLite3。這個檔案包含三個不同的部分，對應到三個 Rails 預設環境：
 
 * +development+ environment 開發模式，用在你的開發的時候
 * +test+ environment 測試模式，用在自動測試時
@@ -216,9 +216,9 @@ h4. 設定資料庫
 
 h5. 設定 SQLite3 資料庫
 
-Rails 預設內建支援 "SQLite3":http://www.sqlite.org 這是一套非常輕量的非伺服器型資料庫程式。雖然繁重的上線環境可能超過 SQLite 的負擔，但是它卻非常適合開發和測試時使用。Rails 預設使用 SQLite 資料庫來建立新的專案，當然你是可以換的。
+Rails 預設內建支援 "SQLite3":http://www.sqlite.org 這是一套非常輕量的非伺服器型資料庫程式。雖然繁重的上線環境可能超過 SQLite 的負擔，但是它卻非常適合開發和測試時使用。Rails 預設使用 SQLite 資料庫來建立新的專案，當然你也可以換別套。
 
-這裡是一段有連線資訊的開發用預設設定檔(<tt>config/database.yml</tt>)：
+這裡是一段有連線資料的開發用預設設定檔(<tt>config/database.yml</tt>)：
 
 <yaml>
 development:
@@ -228,7 +228,7 @@ development:
   timeout: 5000
 </yaml>
 
-NOTE: 本指南使用 SQLite3 資料庫，因為它完全不需要什麼設定就可以用了。Rails 當然也支援 MySQL 跟 PostgreSQL 可以使用，也有其他資料庫系統的 plugins。如果是正式的上線環境就會需要了。
+NOTE: 本指南使用 SQLite3 資料庫，因為它完全不需要什麼設定就可以用了。Rails 當然也支援 MySQL 跟 PostgreSQL，也有其他資料庫系統的 plugins。如果是正式的上線環境就會需要了。
 
 h5. 設定 MySQL 資料庫
 
@@ -245,7 +245,7 @@ development:
   socket: /tmp/mysql.sock
 </yaml>
 
-如果你的開發用電腦的 MySQL 有 root user 和空白密碼，那這個設定就可以用了。不然，請修改 username 和 password。
+如果在你的開發用電腦 MySQL 有使用者 root 和空白密碼，那這個設定就可以直接用了。不然，請修改 username 和 password。
 
 h5. 設定 PostgreSQL 資料庫
 
@@ -261,11 +261,11 @@ development:
   password:
 </yaml>
 
-變更 username 和 password 符合你所需。
+變更 username 和 password 以符合你所需。
 
 h4. 建立資料庫
 
-現在你的資料庫設定妥當，是時候讓 Rails 建立空的資料庫了。你可以輸入以下的 rake 指令：
+現在你的資料庫設定妥當，是時候讓 Rails 建立空的資料庫了。輸入以下的 rake 指令：
 
 <shell>
 $ rake db:create
@@ -273,7 +273,7 @@ $ rake db:create
 
 這將在 <tt>db/</tt> 目錄下建立 development 和 test 的 SQLite3 資料庫。
 
-TIP: Rake 是一種通用型的 command 工具，被廣泛運用在 Rails 中。你可以輸入 +rake -T+ 列出所有可用的指令。
+TIP: Rake 是個在 Rails 中廣泛運用的通用型 command 命令列工具，你可以輸入 +rake -T+ 列出所有可用的指令。
 
 h3. 哈囉，Rails!
 
@@ -281,23 +281,23 @@ h3. 哈囉，Rails!
 
 h4. 啟動 Web 伺服器
 
-其實你已經有了一個可以運作的 Rails 應用程式了。要在你的開發機上啟動 Web 伺服器，請輸入：
+其實你已經有了一個可以運作的 Rails 應用程式了。要在你的開發機器上啟動 Web 伺服器，請輸入：
 
 <shell>
 $ rails server
 </shell>
 
-這將啟動一個 Mongrel (譯註：或是 WEBrick) 伺服器(Rails 也可以用其他的伺服器)。要看到結果，請打開瀏覽器前往 "http://localhost:3000":http://localhost:3000 。你應該會看到 Rails 的預設首頁。
+這將啟動一個 Mongrel (譯註：或是 WEBrick) 伺服器(Rails 也可以用其他的伺服器)。要看到結果，請打開瀏覽器前往 "http://localhost:3000":http://localhost:3000 。你應該就會看到 Rails 的預設首頁。
 
 !images/rails_welcome.png(Welcome Aboard screenshot)!
 
 TIP: 要關閉伺服器的話，請輸入 Ctrl+C。在 development mode 開發模式的話，Rails 通常是不需要重新啟動的，修改的檔案會自動載入。(譯註：如果是 production mode 的話，修改任何檔案都必須重新啟動伺服器才會有效果)
 
-這個 "Welcome Aboard" 的畫面是一個 Rails 應用程式的 _煙霧測試(smoke test)_： 它確認了你的軟體設定正確。關於應用程式的摘要環境資訊，你也可以點擊  _About your application’s environment_ 的超連結。
+這個 "Welcome Aboard" 的畫面是一個 Rails 應用程式的 _煙霧測試(smoke test)_： 它確認了你的軟體設定正確。你可以點擊  _About your application’s environment_ 的超連結看到應用程式的環境資訊摘要。
 
 h4. 說 "Hello"，Rails
 
-要讓 Rails 說 "Hello"，你至少必須建立一個 Controller 跟 View。而我們用一個指令就可以辦到了。在命令列視窗輸入：
+要讓 Rails 說 "Hello"，你必須至少建立一個 Controller 跟 View。而我們用一個指令就可以辦到了。在命令列視窗輸入：
 
 <shell>
 $ rails generate controller home index
@@ -305,7 +305,7 @@ $ rails generate controller home index
 
 TIP: 如果你在 Windows 上，或你的 Ruby 不像常見的設定，你可能需要改成輸入 +ruby \path\to\rails controller home index+。
 
-Rails 將會新增幾個檔案，包括 +app/views/home/index.html.erb+。這個樣板(template)會被用來顯示 +home+ controller 裡的 +index+ action (method) 的結果。用編輯器打開這個檔案，加入以下程式碼：
+Rails 將新增幾個檔案，包括 +app/views/home/index.html.erb+。這個樣板(template)會被 +home+ controller 裡的 +index+ action (即 +index+ method 函式) 拿來顯示給瀏覽器。用編輯器打開這個檔案，加入以下程式碼：
 
 <code class="html">
 <h1>Hello, Rails!</h1>
@@ -323,7 +323,7 @@ $ rm public/index.html
 
 這是因為 Rails 會優先回傳任何 +public+ 下有的靜態檔案，而不是 Controllers 裡面建立的動態內容。
 
-接著，你必須要告訴 Rails 你真正的首頁在哪裡。用編輯器打開 +config/routes.rb+ 這個檔案。這是你的應用程式的 _路徑檔案 (routing file)_，它是一個特殊的 DSL (domain-specific language 專屬領域語言) 告訴 Rails 如何將進來的 HTTP 請求連結配對到 Controllers 跟 Actions。這個檔案包含許多註解起來的範例，其中一行開頭是 +:root to+ 請把註解移掉如下：
+接著，你必須要告訴 Rails 你真正的首頁在哪裡。用編輯器打開 +config/routes.rb+ 這個檔案。這是你的應用程式的 _路由檔案 (routing file)_，它是一個特殊的 DSL (domain-specific language 專屬領域語言) 告訴 Rails 如何將進來的 HTTP 請求派送到 Controllers 跟 Actions。這個檔案包含許多註解起來的範例，其中一行開頭是 +:root to+ 請把註解移掉如下：
 
 <ruby>
 Blog::Application.routes.draw do
@@ -335,15 +335,15 @@ Blog::Application.routes.draw do
   
 </ruby>
 
-+root :to => "home#index"+ 這一行告訴 Rails 將 root 網址配對到 home controller 的 index action。
++root :to => "home#index"+ 這一行告訴 Rails 將 root 網址對應到 home controller 的 index action。
 
 接下來用瀏覽器打開 "http://localhost:3000":http://localhost:3000 ，你就會看到 +Hello, Rails!+ 了。
 
-NOTE. 關於更多路徑的資訊，請參考 "Rails Routing from the Outside In":routing.html.
+NOTE. 關於更多路由的資訊，請參考 "Rails Routing from the Outside In":routing.html.
 
 h3. 使用鷹架 (scaffolding) 快速上手
 
-Rails 的 _鷹架 (scaffolding)_ 功能可以用一行指令就快速為一個 Resource 建立一組 Model, Views 跟 Controller 的程式碼。
+Rails 的 _鷹架 (scaffolding)_ 功能可以用一行指令就快速為 Resource 建立一組 Model, Views 跟 Controller 程式碼。
 
 h3. 建立一個 Resource
 
@@ -353,12 +353,12 @@ h3. 建立一個 Resource
 $ rails generate scaffold Post name:string title:string content:text
 </shell>
 
-NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法產生出完美符合需求的程式碼。因此許多有經驗的 Rails 開發者會根本不用鷹架(scaffolding)功能，而偏好從頭打造起 Models, Controllers 和 Views。
+NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法產生出完美符合需求的程式碼。因此許多有經驗的 Rails 開發者根本不用鷹架(scaffolding)功能，而偏好從頭打造起 Models, Controllers 和 Views。
 
 鷹架(scaffold)產生器(generator)會建立出 15 個檔案在不同目錄，以下是一個簡單的說明：
 
 |_.檔案                                       |_.目的|
-|db/migrate/20100207214725_create_posts.rb.rb    |用來建立 posts 資料庫資料表的 Migration (你的檔案名稱會有不同的 timestamp)|
+|db/migrate/20100207214725_create_posts.rb.rb    |用來建立 posts 資料庫資料表的 Migration (你的檔案開頭名稱會有不同的 timestamp)|
 |app/models/post.rb                           |Post model|
 |test/fixtures/posts.yml                      |用來測試的假文章資料|
 |app/controllers/posts_controller.rb          |Posts controller|
@@ -371,12 +371,12 @@ NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法�
 |test/unit/post_test.rb                       |posts model 的單元測試|
 |test/functional/posts_controller_test.rb     |posts controller 的功能測試|
 |test/unit/helpers/posts_helper_test.rb       |posts helper 的單元測試|
-|config/routes.rb                             |設定 URL 路徑規則的檔案|
+|config/routes.rb                             |設定 URL 路由規則的檔案|
 |public/stylesheets/scaffold.css              |CSS 樣式檔案|
 
 h4. 執行 Migration
 
-+rails generate scaffold+ 產生出來的程式碼中，有一項是 _資料庫遷移(database migration)_。Migration 是一個 Ruby 的類別用來方便建立和修改資料庫資料表。Rails 使用 rake 指令來執行 migrations，而且它也支援可以逆推剛剛執行的 migration 步驟。Migration 的檔名包含了 timestamp (時間戳章)，用來確保它們可以依照建立時間依序執行。
++rails generate scaffold+ 產生出來的程式中，有一項是 _資料庫遷移(database migration)_。Migration 是一個 Ruby 類別用來方便建立和修改資料庫資料表。Rails 使用 rake 指令來執行 migrations，而且它也支援可以逆推 migration 步驟。Migration 的檔名包含了 timestamp (時間戳章)，用來確保它們可以依照建立時間依序執行。
 
 如果你仔細看看 +db/migrate/20100207214725_create_posts.rb+ 這個檔案(記住，你的檔名開頭會有點不一樣)，你將看到：
 
@@ -406,7 +406,7 @@ end
 $ rake db:migrate
 </shell>
 
-Rails 就會執行這個 migration 命令然後告訴你它建立了 Posts 資料表。
+Rails 就會執行這個 migration 命令，然後告訴你它建立了 Posts 資料表。
 
 <shell>
 ==  CreatePosts: migrating ====================================================
@@ -415,11 +415,11 @@ Rails 就會執行這個 migration 命令然後告訴你它建立了 Posts 資�
 ==  CreatePosts: migrated (0.0020s) ===========================================
 </shell>
 
-NOTE. 因為預設是跑在 development 模式，這個指令會套用在 +config/database.yml+ 設定中 +development+ 那段所指定的資料庫。
+NOTE. 因為預設是跑在 development 模式，這個指令會用 +config/database.yml+ 設定裡的 +development+ 那段所指定的資料庫。
 
 h4. 增加超連結
 
-為了能把文章列表加到我們已經建好的首頁，你可以增加一個超連結在首頁上。打開 +app/views/home/index.html.erb+ 然後修改成：
+為了能把文章列表加到我們已經建好的首頁，你可以增加一個超連結在首頁上。打開 +app/views/home/index.html.erb+ 修改成：
 
 <code lang="ruby">
 <h1>Hello, Rails!</h1>
@@ -430,11 +430,11 @@ h4. 增加超連結
 
 h4. 在瀏覽器中操作文章
 
-好，你已經準備可以進入文章列表了，請瀏覽 "http://localhost:3000":http://localhost:3000/ 然後點擊 "My Blog" 連結：
+好，你已經準備好可以進入文章列表了，請瀏覽 "http://localhost:3000":http://localhost:3000/ 然後點擊 "My Blog" 連結：
 
 !images/posts_index.png(Posts Index screenshot)!
 
-這就是 Rails 執行 +index+ view 文章頁面的結果。目前資料庫裡面還沒有任何文章，如果你點選 +New Post+ 連結，就可以新增一篇。有了文章之後，你就可以編輯、詳細瀏覽或刪除。所有的邏輯和 HTML 都被內建的 +rails generate scaffold+ 指令搞定了。
+這就是 Rails 執行 +index+ view 文章頁面的結果。目前資料庫裡面還沒有任何文章，如果你點選 +New Post+ 超連結，就可以新增一篇文章。有了文章之後，你就可以編輯、詳細瀏覽或刪除。所有的邏輯和 HTML 都被內建的 +rails generate scaffold+ 指令搞定了。
 
 TIP: 在 development 模式中(也就是目前的預設環境)，Rails 每次瀏覽器來 HTTP 請求都會重新載入程式，所以不需要重新啟動伺服器。
 
@@ -449,7 +449,7 @@ class Post < ActiveRecord::Base
 end
 </ruby>
 
-程式碼不多，但是注意 +Post+ 類別繼承了 +ActiveRecord::Base+。Active Record 讓你的 Model 有非常多的功能，包括基本的資料庫 CRUD 操作(Create, Read, Update, Destroy，新增、瀏覽、更新、刪除)、資料驗證(data validation)、厲害的搜尋以及可以跟其他 Models 關連在一起。
+程式碼不多，但是注意 +Post+ 類別繼承了 +ActiveRecord::Base+。Active Record 讓你的 Model 有非常多功能，包括基本的資料庫 CRUD 操作(Create, Read, Update, Destroy，新增、瀏覽、更新、刪除)、資料驗證(data validation)、厲害的搜尋以及可以和其他 Models 關聯在一起。
 
 h4. 新增一些 Validation (驗證)
 
@@ -463,7 +463,7 @@ class Post < ActiveRecord::Base
 end
 </ruby>
 
-這幾行程式會確保所有儲存的文章一定會有 name 和 title 的資料，而且 title 至少有五個字元長度。Rails 提供各種驗證的方法，包括必填、唯一性、格式或是需要有關連物件。
+這幾行程式會確保所有儲存的文章一定會有 name 和 title 的資料，而且 title 至少有五個字元長度。Rails 提供各種驗證的方法，包括必填、唯一性、格式或是需要有關聯物件。
 
 h4. 使用 Console 主控台
 
@@ -488,13 +488,13 @@ $ rails console
                    :name=>["can't be blank"] }>
 </shell>
 
-這段程式先建立一個 +Post+ 實例，試圖要儲存進資料庫，但是卻回傳一個 +false+ (表示儲存失敗)，然後觀察文章的 +errors+。
+這段程式先建立了一個 +Post+ 實例，試圖要儲存進資料庫，但是卻回傳一個 +false+ (表示儲存失敗)，然後觀察文章的 +errors+。
 
 TIP: 不像在 development 模式，console 不會自動載入剛修改的程式。如果你在 console 開啟之後才修改程式，請輸入 +reload!+ 重新載入。
 
 h4. 列出所有文章
 
-最容易開始了解的地方就是列出文章的程式碼。打開 +app/controllers/posts_controller.rb 這個檔案然後看 +index+ 這個 action:
+最容易開始上手的地方就是列出文章的程式碼了。請打開 +app/controllers/posts_controller.rb 這個檔案，然後看看 +index+ 這個 action:
 
 <ruby>
 def index
@@ -507,11 +507,11 @@ def index
 end
 </ruby>
 
-+Post.all+ 會呼叫 +Post+ model 回傳資料庫裡面目前所有的文章。結果會是一個包含文章的 @posts 陣列。
++Post.all+ 會呼叫 +Post+ model 回傳資料庫裡所有的文章，結果會是一個包含文章的 @posts 陣列。
 
 TIP: 關於更多 Active Reocrd 資料查詢的功能，請查閱 "Active Record Query Interface":active_record_querying.html.
 
-這個 +respond_to+ 的區塊同時處理了 HTML 和 XML 的請求。如果瀏覽器瀏覽 "http://localhost:3000/posts.xml":http://localhost:3000/posts.xml 你就會看到 XML 格式。HTML 格式會去找 +app/views/posts/+ 下符合 action 名稱的檔案。Rails 會讓所有 action 裡的實例變數(instance variables)(譯註: 也就是有 @ 開頭的變數) 通通傳到 View 裡面也可以使用。以下是 +app/views/posts/index.html.erb+:
+這個 +respond_to+ block (程式碼區塊)同時處理了 HTML 和 XML 請求。如果瀏覽器瀏覽 "http://localhost:3000/posts.xml":http://localhost:3000/posts.xml 你就會看到 XML 格式。HTML 格式則會去找 +app/views/posts/+ 下符合 action 名稱的檔案。Rails 會讓所有 action 裡的實例變數(instance variables)(譯註: 也就是有 @ 開頭的變數) 通通傳到 View 裡面可以使用。以下是 +app/views/posts/index.html.erb+:
 
 <erb>
 <h1>Listing posts</h1>
@@ -543,10 +543,10 @@ TIP: 關於更多 Active Reocrd 資料查詢的功能，請查閱 "Active Record
 <%= link_to 'New post', new_post_path %>
 </erb>
 
-這個 view 迭代了 +@posts+ 陣列並顯示內容跟連結，有幾件值得注意的事情：
+這個 view 迭代了 +@posts+ 陣列並顯示內容跟超連結，有幾件值得注意的事情：
 
 * +link_to+ 建立超連結到一個特定的位置
-* +edit_post_path+ 和 +new_post_path+ 都是 Rails RESTful 路徑的 helpers。你也會在 controller 的不同 actions 中看到這些 helpers。
+* +edit_post_path+ 和 +new_post_path+ 都是 Rails RESTful 路由提供的 helpers。你也會在 controller 的不同 actions 中看到這些 helpers。
 
 NOTE. 在之前的 Rails 版本，你必須使用 +&lt;%=h post.name %&gt;+ 如此 HTML 才會被逸出(譯註：可以防止 "XSS":http://zh.wikipedia.org/zh/%E8%B7%A8%E7%B6%B2%E7%AB%99%E6%8C%87%E4%BB%A4%E7%A2%BC 網路攻擊)。在 Raisl 3.0 中預設就會逸出。如果不要逸出，請使用 +&lt;%= raw post.name %&gt;+ 。
 
@@ -554,7 +554,7 @@ TIP: 關於更多 rendering 的處理，請參閱 "Layouts and Rendering in Rail
 
 h4. 客製化 Layout 版型
 
-View 只是 Rails 處理 HTML 的一個環節，還有一個概念叫做 +layouts+，可以用來包裹 views。當 Rails 要顯示一個 view 給瀏覽器時，它會將 view 的 HTML 放到 layout 的 HTML 裡去。在之前的 Rails 版本，+rails generate scaffold+ 指令會自動為每個 controller 建立一個 layout，例如 +app/views/layouts/posts.html.erb+ 就是給 posts controller 的。但是這一點在 Rails 3.0 的 scaffold 改了，所有的 controllers 只會有一個 +layout+ 檔案叫做 +app/views/layouts/application.html.erb+ 。打開這個檔案然後修改 +body+ 標籤：
+View 只是 Rails 處理 HTML 的一個環節，還有一個概念叫做 +layouts+，可以用來包裹 views。當 Rails 要顯示一個 view 給瀏覽器時，它會將 view 的 HTML 放到 layout 的 HTML 裡面去。在之前的 Rails 版本，+rails generate scaffold+ 指令會自動為每個 controller 建立一個 layout，例如 +app/views/layouts/posts.html.erb+ 就是給 posts controller 的。但是在 Rails 3.0 的 scaffold 改了，所有的 controllers 共用一個 +layout+ 檔案叫做 +app/views/layouts/application.html.erb+ 。打開這個檔案然後修改 它的 +body+ 標籤：
 
 <erb>
 <!DOCTYPE html>
@@ -573,11 +573,11 @@ View 只是 Rails 處理 HTML 的一個環節，還有一個概念叫做 +layout
 </html>
 </erb>
 
-瀏覽器重新整理 +/posts+ 頁面，你會發現灰色的背景。同樣的背景會出現在所有的 posts views。
+瀏覽器重新整理 +/posts+ 頁面，你會看到灰色的背景。同樣的背景也會出現在所有的文章 views。
 
 h4. 建立新文章
 
-建立一篇新文章關係到兩個 actions。第一個是 +new+ action，它用來實例化一個空的 +Post+ 物件：
+建立一篇新的文章需要兩個 actions。第一個是 +new+ action，它用來實例化一個空的 +Post+ 物件：
 
 <ruby>
 def new
@@ -600,7 +600,7 @@ end
 <%= link_to 'Back', posts_path %>
 </erb>
 
-其中 +&lt;%= render 'form' %&gt;+ 這一行是你第一次看到 _partials_ 。partial 是一個包含 HTML 和 Ruby 程式的片段，可以被其他地方重複使用。在這個例子，表單被用在新增文章，基本上也等同於編輯文章的表單，兩者都有相同的 name 跟 title 文字欄位跟 content 文字區塊欄位，以及送出按鈕。
+其中 +&lt;%= render 'form' %&gt;+ 是你第一次遇到 _partials_ 。partial 是一個包含 HTML 和 Ruby 程式的片段，可以在其他地方重複使用。在這個例子中，表單被用在新增文章，基本上跟編輯文章的表單相同，兩者都有相同的 name 跟 title 文字欄位跟 content 文字區塊欄位，以及送出按鈕。
 
 如果看清楚 +views/posts/_form.html.erb+ 這個檔案，內容如下：
 
@@ -635,17 +635,17 @@ end
 <% end %>
 </erb>
 
-這個 partial 接收了來自 view 的所有的實例變數，而在這個例子，controller 中設定了 @post 是一個新的 Post 物件，所以在 view 跟這個 partial 中也都有這個 @post 物件。
+這個 partial 接收了來自 view 的所有的實例變數(instance variables)。在這個例子中，controller 中設定了 @post 是一個新的 Post 物件，所以在 view 跟這個 partial 中也都有這個 @post 物件。
 
 想知道更多 partials 的資訊，請參閱 "Layouts and Rendering in Rails":layouts_and_rendering.html#using-partials 。
 
-這個 +form_for+ 區塊被用來建立 HTML 表單。在 block 區塊之中，你可以使用各種函式來建構表單。例如 +f.text_field :name+ 可以建立出一個文字輸入框，並填入 @post 的 +name+ 屬性資料。但這個表單只能基於這個 model 有的屬性(在這個例子是 +name+、+title+跟+content+)。Rails 偏好使用 +form_for+ 而不是讓你寫表單 HTML，這是因為程式碼可以更加簡潔，而且可以明確地綁在一個 model 實例上。
+這個 +form_for+ block (程式碼區塊)被用來建立 HTML 表單。在 block 之中，你可以使用各種函式來建構表單。例如 +f.text_field :name+ 建立出一個文字輸入框，並填入 @post 的 +name+ 屬性資料。但這個表單只能基於這個 model 有的屬性(在這個例子是 +name+、+title+跟+content+)。Rails 偏好使用 +form_for+ 而不是讓你手寫表單 HTML，這是因為程式碼可以更加簡潔，而且可以明確地綁在一個 model 實例上。
 
-+form_for+ 區塊也非常聰明，不同 _New Post_ 跟 _Edit Post_ 的表單 +action+ 屬性跟送出按鈕的文字也會跟著不同 (譯註: 根據 @post 的不同)。
++form_for+ block 也非常聰明，不同的 _New Post_ 跟 _Edit Post_ 表單 +action+ 屬性跟送出按鈕的文字也會跟著不同 (譯註: 根據 @post 的不同，前者是全新的，後者是已經建立過的)。
 
 TIP: 如果你需要建立任意欄位的 HTML 表單，而不綁在某一個 model 上，你可以使用 +form_tag+ 函式。它也提供了建構表單的函式而不需要綁在 model 實例上。
 
-當一個使用者點擊表單的 +Create Post+ 按鈕時，瀏覽器就會送出資料到 controller 的 +create+ 函式(Rails 知道要呼叫 +create+ 函式是因為表單是用 HTTP POST 請求的，這是一個稍早提過的 RESTful 慣例):
+當一個使用者點擊表單的 +Create Post+ 按鈕時，瀏覽器就會送出資料到 controller 的 +create+ 函式(Rails 會知道要呼叫 +create+ 函式，這是因為表單是用 HTTP POST 請求的，這是一個稍早提過的 RESTful 慣例):
 
 <ruby>
 def create
@@ -666,9 +666,9 @@ def create
 end
 </ruby>
 
-+create+ action 會透過從表單傳來的資料，也就是 Rails 提供的 +params+ hash 雜湊，來實例化一個新的 Post 物件。成功儲存之後， +create+ 會根據使用者的請求回傳一個適當的格式(在這個例子是 HTML)。這裡它是把使用者導向(redirect) +show+ action 來顯示文章內容，並設定 notice 提醒使用者 Post 已經成功被建立。
++create+ action 會透過從表單傳進來的資料，也就是 Rails 提供的 +params+ hash 雜湊，來實例化一個新的 Post 物件。成功儲存之後， +create+ 會根據使用者的請求回傳一個適當的格式(在這個例子是 HTML)。這裡它是把使用者導向(redirect)到 +show+ action 顯示文章內容，並設定 notice 提醒使用者 Post 已經成功被建立。
 
-如果文章因為 validation 錯誤而儲存失敗，這裡會回傳給使用者帶有錯誤訊息的 +new+ action，好讓使用者可以修正問題再試一次。(譯註：+render :action => "new"+ 會回傳 +new+ action 使用的樣板，而不是執行 +new+ action 這個函式。如果改成使用 +redirect_to new_post_path+ 則會讓瀏覽器重新發送一個請求到 +new+ action，但是如此一來 @post 就被重新建立而不帶有錯誤訊息了)
+如果文章因為 validation 錯誤而儲存失敗，這裡會回傳給使用者帶有錯誤訊息的 +new+ action，好讓使用者可以修正問題再試一次。(譯註：+render :action => "new"+ 會回傳 +new+ action 使用的樣板，而不是執行 +new+ action 這個函式。如果改成使用 +redirect_to new_post_path+ 則會讓瀏覽器重新發送一個請求到 +new+ action，但是如此一來 @post 就被重新建立而失去使用者剛輸入的資料)
 
 "Post was successfully created" 的訊息會被儲存在 Rails 的 +flash+ hash 裡 (通常就稱作 Flash) 好讓訊息可以被帶到另一個 action，它可以提供使用者一些有用的資訊。在這個 +create+ 的 action 中，使用者並沒有真的看到任何頁面，因為它馬上就被導向到新的文章頁面。而這個 Flash 就帶著訊息到下一個 action，好讓使用者在 +show+ action 頁面看到 "Post was successfully created." 這個訊息。
 
@@ -687,7 +687,7 @@ def show
 end
 </ruby>
 
-這個 +show+ action 使用 +Post.find+ 根據 id 的值去搜尋資料庫找出一篇文章。在找到資料之後，Rails 用 +show.html.erb+ 顯示出來：
+這個 +show+ action 根據 id 值使用 +Post.find+ 從資料庫中找出該篇文章。找到資料之後，Rails 用 +show.html.erb+ 顯示出來：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -714,7 +714,7 @@ end
 
 h4. 編輯文章
 
-就像建立新文章，編輯文章也有兩個步驟。第一個是請求特定一篇文章的 +edit_post_path(@post) 頁面。這會呼叫 controller 的 +edit+ action：
+如同建立新文章，編輯文章也有兩個步驟。第一個是請求特定一篇文章的 +edit_post_path(@post) 頁面。這會呼叫 controller 的 +edit+ action：
 
 <ruby>
 def edit
@@ -722,7 +722,7 @@ def edit
 end
 </ruby>
 
-在找到要編輯的文章之後，Rails 顯示 +edit.html.erb+ 頁面：
+找到要編輯的文章之後，Rails 顯示 +edit.html.erb+ 頁面：
 
 <erb>
 <h1>Editing post</h1>
@@ -734,7 +734,7 @@ end
 <% end %>
 </erb>
 
-這裡又像 +new+ action，+edit+ action 也使用 +form+ partial，只是這一次表單會用 HTTP PUT 動作給 PostsController，而且送出按鈕的字樣變成 "Update Post"。
+這裡也像 +new+ action，+edit+ action 使用 +form+ partial，只是這一次表單會用 HTTP PUT 動作給 PostsController，而且送出按鈕的字樣變成 "Update Post"。
 
 送出表單後，會呼叫 controller 的 +update+ action：
 
@@ -756,7 +756,7 @@ def update
 end
 </ruby>
 
-在 +update+ action，Rails 首先用 +:id+ 參數找到要編輯的資料。接著 +update_attributes+ 會根據表單傳進來的參數修改到資料上。如果一切正常，使用者會被導向到文章的 +show+ 頁面。如果驗證有任何問題，它會顯示 +edit+ 頁面好讓使用者可以修正資料。correct them.
+在 +update+ action 裡，Rails 透過 +:id+ 參數找到要編輯的資料。接著 +update_attributes+ 會根據表單傳進來的參數修改到資料上。如果一切正常，使用者會被導向到文章的 +show+ 頁面。如果驗證有任何問題，它會顯示 +edit+ 頁面好讓使用者可以修正資料。
 
 h4. 刪除文章
 
@@ -774,15 +774,15 @@ def destroy
 end
 </ruby>
 
-Active Record model 的 +destroy+ 函式會刪除對應的資料庫資料。完成之後，就沒辦法顯示了，所以 Rails 將使用者導向這個 model 的 index 頁面。
+Active Record model 的 +destroy+ 函式會刪除對應的資料庫資料。完成之後，就沒辦法顯示囉，所以 Rails 將使用者導向這個 model 的 index 頁面。
 
 h3. 新增第二個 Model
 
-你已經看過如果用建立的 scaffolding 功能建立一個 model 了，接下來讓我們再新增第二個 model 到這個應用程式。第二個 model 是部落格文章的留言。
+你已經完成用 scaffolding 功能建立一個 model 了，接下來讓我們再新增第二個 model。第二個 model 是部落格文章的留言。
 
 h4. 產生 Model
 
-Rails 的 Models 名稱都是單數名詞，而它們對應的資料庫資料表是複數名詞，這個慣例也套用在新的 model 名字 Comment。即使你完全不用 scaffolding，大部分的 Rails 開發者也都會用產生器(generators)產生 models 及 controllers。要建立一個新的 model，請在命令列視窗輸入：
+Rails 的 Models 名稱都是單數名詞，而它們對應的資料庫資料表是複數名詞，這個慣例也適用在新的 model 名字：Comment。即使你完全不用 scaffolding，大部分的 Rails 開發者也都會用產生器(generators)來產生 models 及 controllers 檔案。要建立一個新的 model，請在命令列視窗中輸入：
 
 <shell>
 $ rails generate model Comment commenter:string body:text post:references
@@ -802,7 +802,7 @@ class Comment < ActiveRecord::Base
 end
 </ruby>
 
-這看起來跟先前的 +post.rb+ model 非常像。差別是多了一行 +belongs_to :post+ ，這將設定 Active Record 的 _association(關連)_ 。你將會在下一節學到更多關於 associations 的知識。
+這看起來跟先前的 +post.rb+ model 非常像。差別是多了一行 +belongs_to :post+ ，這將設定 Active Record 的 _association(關聯)_ 。你將會在下一節學到更多 associations 的知識。
 
 除了 model，Rails 也會建立對應的資料庫資料表 migration：
 
@@ -824,13 +824,13 @@ class CreateComments < ActiveRecord::Migration
 end
 </ruby>
 
-注意到 +t.references+ 這一行會為關連的 models 建立一個 foreign key (外部鍵) 欄位。接著讓我們執行 Migration：
+注意到 +t.references+ 這一行會幫關聯的 models 建立一個 foreign key (外部鍵) 欄位(譯註：等同於 +t.integer :post_id+ )。接著讓我們執行 Migration：
 
 <shell>
 $ rake db:migrate
 </shell>
 
-Rails 很聰明只會執行還沒有執行過的 Migrations，所以在這個例子我們只會看到：
+Rails 很聰明只會執行還沒有執行過的 Migrations，所以在這個例子中，我們只會看到：
 
 <shell>
 ==  CreateComments: migrating =================================================
@@ -839,14 +839,14 @@ Rails 很聰明只會執行還沒有執行過的 Migrations，所以在這個例
 ==  CreateComments: migrated (0.0018s) ========================================
 </shell>
 
-h4. 把 Models 關連起來
+h4. 把 Models 關聯起來
 
-Active Record associations 讓你可以輕易宣告兩個 Models 之間的關係。在這個文章跟留言的例子，你可以寫下以下的關係：
+Active Record associations 讓你可以輕易宣告兩個 Models 之間的關係。在這個文章跟留言的例子，你可以寫出以下的關係：
 
-* 每篇留言 comment 屬於一篇文章 post
-* 一篇文章 post 有許多留言 comments
+* 每篇留言(comment)屬於一篇文章(post)
+* 一篇文章(post)有許多留言(comments)
 
-事實上，這就非常接近 Rails 用來宣告關係的語法。你已經見到 Comment model 裡面的程式碼宣告每篇留言屬於一篇文章：
+事實上，這就非常接近 Rails 用來宣告關係的語法了。你已經見到 Comment model 裡面的程式碼，宣告了每篇留言屬於一篇文章：
 
 <ruby>
 class Comment < ActiveRecord::Base
@@ -854,7 +854,7 @@ class Comment < ActiveRecord::Base
 end
 </ruby>
 
-你會需要編輯 +post.rb+ 檔案加上另一頭的關連：
+你會需要編輯 +post.rb+ 檔案加上另一頭的關聯宣告：
 
 <ruby>
 class Post < ActiveRecord::Base
@@ -870,9 +870,9 @@ end
 
 TIP: 關於更多 Active Record associations 的資訊，請參閱 "Active Record Associations":association_basics.html.
 
-h4. 為留言新增一個 URL 路徑
+h4. 為留言新增一個 URL 路由
 
-如同 +home+ controller，我們也需要新增一個路徑告訴 Rails 如何瀏覽 +comments+。再次打開 +config/routes.rb+ ，你會看到一段之前由 scaffold 產生器為 +posts+ 產生的 +resources :posts+ 程式碼，請修改成：
+如同 +home+ controller，我們也需要新增一個路由告訴 Rails 如何瀏覽 +comments+。再次打開 +config/routes.rb+ ，你會看到一段之前由 scaffold 產生器為 +posts+ 產生的 +resources :posts+ 程式碼，請修改成：
 
 <ruby>
 resources :posts do
@@ -880,13 +880,13 @@ resources :posts do
 end
 </ruby>
 
-這會在 +posts+ 裡建立一個 +comments+ 的 _nested resource (嵌套的資源)_ 。這也描述了文章和留言有著階層關係。
+這會在 +posts+ 裡建立一個 +comments+ 的 _nested resource (嵌套 resource)_ 。這也描述了文章和留言有著階層關係。
 
-TIP: 關於路徑的更多資訊，請參閱 "Rails Routing from the Outside In":routing.html
+TIP: 關於路由的更多資訊，請參閱 "Rails Routing from the Outside In":routing.html
 
 h4.產生一個 Controller
 
-有個 Model，我們來將注意力移往如何建立對應的 controller。再一次讓我們使用產生器：
+有了 Model，我們來將注意力放到如何建立對應的 controller。再一次使用產生器：
 
 <shell>
 $ rails generate controller Comments
@@ -895,10 +895,10 @@ $ rails generate controller Comments
 這會建立四個檔案和一個空目錄：
 
 * +app/controllers/comments_controller.rb+ - Controller 檔案
-* +app/helpers/comments_helper.rb+ - 一個 view helper 檔案
-* +test/functional/comments_controller_test.rb+ - controller 的功能測試
-* +test/unit/helpers/comments_helper_test.rb+ - helper 的單元測試
-* +app/views/comments/+ - controller 的 Views 檔案所在目錄
+* +app/helpers/comments_helper.rb+ - View helper 檔案
+* +test/functional/comments_controller_test.rb+ - Controller 的功能測試
+* +test/unit/helpers/comments_helper_test.rb+ - Helper 的單元測試
+* +app/views/comments/+ - Controller 的 Views 檔案所在目錄
 
 就像任何部落格，我們的讀者可以在看完文章之後留言，然後回到文章頁面看到剛剛的留言。所以，我們的 +CommentsController+ 將提供函式可以建立留言跟刪除垃圾留言。
 
@@ -943,7 +943,7 @@ $ rails generate controller Comments
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-我們在 Post show 頁面新增了一個表單可以建立新留言，這個表單送出後會呼叫 +CommentsController+ 的 +create+ action，讓我們繼續：
+我們在 Post show 頁面新增了一個表單可以建立新留言，這個表單送出後會呼叫 +CommentsController+ 的 +create+ action。讓我們繼續：
 
 <ruby>
 class CommentsController < ApplicationController
@@ -957,9 +957,9 @@ end
 
 看起來比之前的 posts controller 複雜一點。這是因為有了階層關係。每一篇留言必須追蹤它是屬於哪一篇文章，因此需要一開始就得用 find 找到所屬的 Post model。
 
-此外，這裡也用到一些 association 所提供的函式。我們在 +@post.comments+ 上使用 +create+ 函式來新增並儲存。這會自動連結起該留言屬於該特定文章。
+此外，這裡也用到一些 association 所提供的函式。我們在 +@post.comments+ 上使用 +create+ 函式來新增並儲存。這會自動關聯起該留言屬於該特定文章。
 
-一旦我們完成新增留言，我們使用 +post_path(@post)+ helper 來將使用者重新導向到本來的文章頁面。我們之前看過了，這會呼叫 +PostsController+ 的 +show+ action，也就是顯示 +show.html.erb+ 樣板。這個頁面也將顯示留言，讓我們在 +app/views/posts/show.html.erb+ 新增以下程式碼：
+一旦我們完成新增留言，我們使用 +post_path(@post)+ helper 來將使用者重新導向到本來的文章頁面。這我們之前看過了，會呼叫 +PostsController+ 的 +show+ action 顯示 +show.html.erb+ 樣板。這個頁面也將用來顯示留言，讓我們在 +app/views/posts/show.html.erb+ 新增以下程式碼：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -1023,7 +1023,7 @@ h3. 重構
 
 h4. 顯示 Partial Collections (集合)
 
-首先，我們建立一個留言的 partial 來顯示一篇文章的所有留言。新增 +app/views/comments/_comment.html.erb+ 檔案加入以下程式：
+首先，我們建立一個留言的 partial 來顯示文章的所有留言。新增 +app/views/comments/_comment.html.erb+ 檔案加入以下程式：
 
 <erb>
 <p>
@@ -1084,11 +1084,11 @@ h4. 顯示 Partial Collections (集合)
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-這將為 ++@post.comments+ 中的每篇留言都套用 app/views/comments/_comment.html.erb 這個 partial。每次 render 函式迭代 @post.comments 集合中，它會把每一篇留言設定到一個與 partial 同名的區域變數(local variable)，在這個例子中，就可以在 partial 裡面使用。
+這將為 ++@post.comments+ 中的每篇留言都套用 +app/views/comments/_comment.html.erb+ 這個 partial。每次 render 函式迭代 +@post.comments+ ，它會把每一篇留言指定到一個與 partial 同名的區域變數(local variable)，在這個例子中，就可以在 partial 裡面使用。(譯註：也就是在 +_comment.html.erb+ 這個 partial 裡面的 comment 變數就是一篇篇的留言)
 
 h4. 顯示 Partial 表單
 
-讓我們也把新增留言的部分移到 partial 去。同樣地，我們新增 +app/views/comments/_form.html.erb+ 內容是：
+讓我們也把新增留言的部分移到 partial 去吧。同樣地，我們新增 +app/views/comments/_form.html.erb+ 內容是：
 
 <erb>
 <%= form_for([@post, @post.comments.build]) do |f| %>
@@ -1141,15 +1141,15 @@ h4. 顯示 Partial 表單
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-第二個 render 就是定義要顯示 <tt>comments/form</tt> 這個樣板，Rails 會根據其中的斜線是去找 <tt>app/views/comments</tt> 目錄下的 <tt>_form.html.erb</tt> 檔案。
+其中第二個 render 定義了要顯示 <tt>comments/form</tt> 這個樣板，Rails 會根據其中的斜線去找 <tt>app/views/comments</tt> 目錄下的 <tt>_form.html.erb</tt> 檔案。
 
 因為 +@posts+ 被定義成實例變數(instance variable)，所以可以在所有的 partials 中讀取到。
 
 h3. 刪除留言
 
-另一個部落格的重要功能是可以刪除垃圾留言。要辦到這件事，我們需要在 view 有某個超連結和在 controller 中實作 +DELETE+ 動作。
+另一個部落格的重要功能是可以刪除垃圾留言。要辦到這件事，我們需要在 view 中有個超連結，以及在 controller 中實作 +DELETE+ 動作。
 
-首先，讓我們在 +app/views/comments/_comment.html.erb+ partial 加上一個刪除的連結：
+首先，讓我們在 +app/views/comments/_comment.html.erb+ partial 加上一個刪除的超連結：
 
 <erb>
 <p>
@@ -1169,7 +1169,7 @@ h3. 刪除留言
 </p>
 </erb>
 
-點擊 "Destroy Comment" 連結將會送出一個 <tt>DELETE /posts/:id/comments/:id</tt> 到 +CommentsController+，我們接下要可以找到要刪除的留言，讓我們在 controller 裡加入一個 destroy action：
+點擊 "Destroy Comment" 連結將會送出一個 <tt>DELETE /posts/:id/comments/:id</tt> 到 +CommentsController+，我們接下來要找到要刪除的留言，讓我們在 controller 裡加入一個 destroy action：
 
 <ruby>
 class CommentsController < ApplicationController
@@ -1192,9 +1192,9 @@ end
 
 這個 +destroy+ action 會先找到所屬的文章，然後透過這篇文章的 <tt>@post.comments</tt> 集合找到該留言，接著從資料庫中移除，最後將使用者導向 show action。
 
-h4. 刪除關連的物件
+h4. 刪除關聯的物件
 
-如果你要刪除一個文章，那麼其關連的留言也需要被一起刪除。不然的話這些留言只會平白佔據你的資料庫。Rails 支援在 association 關連上使用 +dependent+ 選項來解決這件事情。修改 Post model，即 +app/models/post.rb+ 如下：
+如果你要刪除一個文章，那麼其關聯的留言也需要被一起刪除。不然的話這些留言只會白白佔據你的資料庫。Rails 支援在 association 關聯上使用 +dependent+ 選項來解決這件事情。修改 Post model，即 +app/models/post.rb+ 如下：
 
 <ruby>
 class Post < ActiveRecord::Base
@@ -1228,9 +1228,9 @@ end
 
 當然你可以修改成你想要的使用者名稱和密碼。我們將這個函式放進 +ApplicationController+ 裡，如此所有 controller 都可以使用 (譯註：因為所有的 controller 都繼承自 +ApplicationController+)。
 
-接著在 +PostsController+ 裡，我們要對需要認證的 actions 加上權限檢查，這裡我們使用 Rails 的 <tt>before_filter</tt> 函式，它可以允許我們在執行特定的 actions 前先執行一個函式，而我們在這個函式中來檢查使用者是否有權限執行。
+接著在 +PostsController+ 裡，我們要對需要認證的 actions 加上權限檢查，這裡我們使用 Rails 的 <tt>before_filter</tt> 函式，它允許我們在執行特定的 actions 前先執行一個函式，而我們在這個函式中檢查使用者是否有權限。
 
-我們在 +PostsController+ 的上方來加入 before filter 的設定，在這個例子，我們希望使用者驗證所有的 action 除了 +index+ 跟 +show+，所以可以這麼寫：
+我們在 +PostsController+ 的上方來加入 before filter。在這個例子中，我們希望使用者驗證除了 +index+ 跟 +show+ 之外的所有 action，請這麼寫：
 
 <ruby>
 class PostsController < ApplicationController
@@ -1262,23 +1262,23 @@ class CommentsController < ApplicationController
 !images/challenge.png(Basic HTTP Authentication Challenge)!
 
 
-h3. 建立一個有多重 Model 的表單
+h3. 建立一個有多個 Model 的表單
 
 另一個部落格常見的功能是可以為文章下標籤(tag)。要實作這個功能，你的應用程式必須在一個表單中操作不只一個 model。Rails 提供了 nested forms (內嵌的表單)。
 
-要示範這項功能，我們將在你建立文章的地方，可以順便下多個標籤。首先，建立一個新的標籤 Model：
+要示範這項功能，我們將在你新增文章的地方，也可以順便下標籤。首先，建立一個新的標籤 Model：
 
 <shell>
 $ rails generate model tag name:string post:references
 </shell>
 
-同樣的，執行 migration 來建立資料庫資料表：
+同樣的，執行 migration 來建立資料表：
 
 <shell>
 $ rake db:migrate
 </shell>
 
-接著，編輯 +post.rb+ 檔案來建立關連，然後告訴 Rails (透過 +accepts_nested_attributes+ marco 巨集) 你希望透過文章來設定標籤：
+接著，編輯 +post.rb+ 檔案來建立關聯。接著告訴 Rails (透過 +accepts_nested_attributes+ marco 巨集) 你希望透過文章來設定標籤：
 
 <ruby>
 class Post < ActiveRecord::Base
@@ -1294,7 +1294,7 @@ class Post < ActiveRecord::Base
 end
 </ruby>
 
-其中的 +:allow_destroy+ 選項告訴 Rails 在等會的 view 中顯示一個 "remove" checkbox。而 +:reject_if+ 選項會阻止儲存空的標籤。
+其中的 +:allow_destroy+ 選項告訴 Rails 在稍後的 view 中會顯示一個 "remove" checkbox。而 +:reject_if+ 選項會阻止儲存空的標籤。
 
 修改 +views/posts/_form.html.erb+ 來顯示一個標籤的 partial：
 
@@ -1335,9 +1335,9 @@ end
 
 注意到為了接下來程式碼的可讀性，我們修改了 +form_for(@post) do |f|+ 的 +f+ 變成 +post_form+。
 
-這個範例也展示了 render helper 可以接受 locals 參數來傳遞區域變數，在這個例子，我們希望 partial 裡面的區域變數 +form+ 指的是 +post_form+ 物件。
+這個範例也展示了 render helper 可以接受 locals 參數來傳遞區域變數。在這個例子中，partial 裡面的區域變數 +form+ 指的就是 +post_form+ 物件。
 
-我們也在表單上方新增一行 <tt>@post.tags.build</tt>，這會確保有空的標籤物件可以被使用者編輯，不然的話標籤的表單就沒辦法顯示。
+我們也在表單上方新增一行 <tt>@post.tags.build</tt>，這會確保有空的標籤物件可以被使用者編輯，不然的話標籤表單沒辦法顯示。
 
 建立 <tt>app/views/tags</tt> 目錄然後建立一個叫做 <tt>_form.html.erb</tt> 的檔案，內容是標籤的表單：
 
@@ -1393,13 +1393,13 @@ end
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-透過這些修改，你就可以在同一個 view 中同時編輯文章跟標籤。
+透過這些修改，你就可以在同一個 view 中同時編輯文章跟標籤了。
 
 不過呢，那個 <tt>@post.tags.map { |t| t.name }.join(", ")</tt> 實在有點醜，我們可以把它變成一個 helper 函式。
 
 h3. View Helpers
 
-View Helpers (輔助函式)放在 <tt>app/helpers</tt> 目錄下，提供一些可以被重複使用的 Views 程式。在這個例子，我們希望有個字串函式可以把一群物件中的 name 屬性用逗號串接在一起。因為這用在 Post show 樣板，我們可以把它放在 PostsHelper。
+View Helpers (輔助函式)放在 <tt>app/helpers</tt> 目錄下，提供一些可以被重複使用的 Views 函式。在這個例子，我們希望有個字串函式可以把一群物件中的 name 屬性用逗號串接在一起。因為這被用在 Post show 樣板，我們將它放在 PostsHelper 裡。
 
 打開 <tt>app/helpers/posts_helper.rb</tt> 加入以下程式：
 
@@ -1450,7 +1450,7 @@ end
 
 h3. 接下來？
 
-到目前為止，你已經建立了你的第一個 Rails 應用，請隨意修改實驗你的程式。不過請不要埋頭苦幹，當你需要協助的時候，請問問看以下的資源：
+到目前為止，你已經建立了你的第一個 Rails 應用，請隨意修改實驗你的程式。不過請不要埋頭苦幹，當你需要協助的時候，請問問看以下資源：
 
 * "Ruby On Rails guides":index.html
 * "Ruby on Rails mailing list":http://groups.google.com/group/rubyonrails-talk
@@ -1461,26 +1461,26 @@ h3. 接下來？
 * 譯註： "ppt.cc":telnet://ptt.cc 的 Ruby 版
 * 譯註： "RailsFun!":http://railsfun.tw/
 
-你也可以透過 Rails 內建的工具產生文件：
+你也可以透過 Rails 內建的工具來產生文件：
 
 * 執行 +rake doc:guides+ 會產生一份完整的 Rails 指南在你的應用程式 +doc/guides+ 目錄下。用瀏覽器打開 +doc/guides/index.html+ 就可以了。
-* 執行 +rake doc:rails+ 會產生一份 API documentation 文件在你的應用程式 +doc/api+ 目錄下。請打開 +doc/api/index.html+。
+* 執行 +rake doc:rails+ 會產生一份 API documentation 文件在 +doc/api+ 目錄下。請打開 +doc/api/index.html+。
 
-h3. 設定上的一些訣竅
+h3. 一些設定上的訣竅
 
 最簡單的方式就是把所有外部資料都當做 UTF-8。如果不是的話，函式庫跟 Rails 會需要轉換你的資料變成 UTF-8，這可能會發生問題。所以最好的方式還是讓所有的外部資料都是 UTF-8。
 
-常見的癥兆是在你的瀏覽器中出現一個有問號的黑鑽石，或是 "ü" 變成 "Ã¼"。Rails 內部可以自動偵測然後修正。但是，如果你有外部資料不是 UTF-8，它還是偶爾無法自動幫你偵測和修正。
+常見的癥兆是在你的瀏覽器中出現了帶有問號的小黑鑽石，或是 "ü" 變成 "Ã¼"。Rails 內部可以自動偵測然後修正。但是，如果你有外部資料不是 UTF-8，它還是可能無法自動幫你偵測和修正。
 
 兩種常見的非 UTF-8 原因：
-* 你的文字編輯器: 大部分的文字編輯器(例如Textmate)，預設會存成 UTF-8。如果你的不是，這會導致你在樣板中輸入的文字(例如é)，在瀏覽器中會變成有問號的黑鑽石。同樣在你的 I18N 翻譯檔案也可能發生。大部分預設不是 UTF-8 的編輯器(例如某些版本的 Dreamweaver) 可以修改預設值，請改成 UTF-8。
-* 你的資料庫。Rails 預設會將從資料庫出來的資料轉成 UTF-8。但是，如果你的資料庫內部不是 UTF-8，那麼可能沒辦法存進所有使用者輸入的字元。例如，如果你的資料庫內部使用 Latin-1，然後你的使用者輸入俄文、希伯來文或是日文字元，那這個資料就會在進資料庫時不見。所以可能的話，讓資料庫也使用 UTF-8。
+* 你的文字編輯器: 大部分的文字編輯器(例如Textmate)預設會存成 UTF-8。如果你的不是，這將導致你在樣板中輸入的文字(例如é)，在瀏覽器中會變成帶有問號的小黑鑽石。同樣地，在你的 I18N 翻譯檔案也可能發生。大部分預設不是 UTF-8 的編輯器(例如某些版本的 Dreamweaver) 可以修改預設值，請改成 UTF-8。
+* 你的資料庫。Rails 預設會將從資料庫出來的資料轉成 UTF-8。但是，如果你的資料庫內部不是 UTF-8，那麼可能沒辦法存進所有使用者輸入的字元。例如，你的使用者輸入俄文、希伯來文或是日文字元，而你的資料庫內部使用 Latin-1，那輸入的資料就會在進資料庫時不見。所以可能的話，讓資料庫也使用 UTF-8。
 
 h3. 文件修改記錄
 
 "Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213-rails-guides/tickets/2
 
-* July 15, 2010: 翻譯初稿完成 by "ihower":http://ihower.tw
+* July 15, 2010: 翻譯完成 by "ihower":http://ihower.tw
 * July 12, 2010: Fixes, editing and updating of code samples by "Jaime Iniesta":http://jaimeiniesta.com
 * May 16, 2010: Added a section on configuration gotchas to address common encoding problems that people might have by "Yehuda Katz":http://www.yehudakatz.com
 * April 30, 2010: Fixes, editing and updating of code samples by "Rohit Arondekar":http://rohitarondekar.com
@@ -1522,7 +1522,7 @@ h3. 翻譯詞彙
 | command-line | 命令列 |
 | terminal | 命令列視窗 |
 | method | 函式 |
-| application | 應用程式 |
+| application | 應用程式, 應用 |
 | framework | 框架 |
 | template | 樣板 |
 | layout | 版型 |
@@ -1531,12 +1531,11 @@ h3. 翻譯詞彙
 | timestamp | 時間戳章 |
 | form | 表單 |
 | array | 陣列 |
-| block | 區塊 |
 | iterate | 迭代 |
 | escaped | 逸出 |
 | tag | 標籤 |
 | attribute | 屬性 |
-| routing | 路徑 |
+| routing | 路由 |
 | collection | 集合 |
 | macro | 巨集 |
 
@@ -1546,7 +1545,9 @@ h3. 翻譯詞彙
 | model | 模型 |
 | controller | 控制器 |
 | view | 視圖 |
+| resource | 資源 |
 | partial | 指片段的 view |
+| schema | 資料庫綱要 |
 | migration | 指資料庫遷移 |
 | RESTful | REST 的形容詞 |
 | action | 指 controller 的 action 時不譯 |
@@ -1561,7 +1562,10 @@ h3. 翻譯詞彙
 | console | 主控台 |
 | hash | 雜湊 |
 | generator | 產生器 |
-| association | 關連 |
+| association | 關聯 |
 | foreign key | 外部鍵 |
 | nested | 嵌套的 |
 | checkbox | 核對盒 |
+| Plugin | 外掛 |
+| block | 程式碼區塊 |
+
