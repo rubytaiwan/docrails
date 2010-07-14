@@ -355,7 +355,7 @@ $ rails generate scaffold Post name:string title:string content:text
 
 NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法產生出完美符合需求的程式碼。因此許多有經驗的 Rails 開發者會根本不用鷹架(scaffolding)功能，而偏好從頭打造起 Models, Controllers 和 Views。
 
-鷹架(scaffold)產生器會建立出 15 個檔案在不同目錄，以下是一個簡單的說明：
+鷹架(scaffold)產生器(generator)會建立出 15 個檔案在不同目錄，以下是一個簡單的說明：
 
 |_.檔案                                       |_.目的|
 |db/migrate/20100207214725_create_posts.rb.rb    |Migration to create the posts table in your database (your name will include a different timestamp)|
@@ -668,7 +668,7 @@ end
 
 +create+ action 會透過從表單傳來的資料，也就是 Rails 提供的 +params+ hash 雜湊，來實例化一個新的 Post 物件。成功儲存之後， +create+ 會根據使用者的請求回傳一個適當的格式(在這個例子是 HTML)。這裡它是把使用者導向(redirect) +show+ action 來顯示文章內容，並設定 notice 提醒使用者 Post 已經成功被建立。
 
-如果文章因為 validation 錯誤而儲存失敗，這裡會回傳給使用者帶有錯誤訊息的 +new+ action，好讓使用者可以修正問題再試一次。
+如果文章因為 validation 錯誤而儲存失敗，這裡會回傳給使用者帶有錯誤訊息的 +new+ action，好讓使用者可以修正問題再試一次。(譯註：+render :action => "new"+ 會回傳 +new+ action 使用的樣板，而不是執行 +new+ action 這個函式。如果改成使用 +redirect_to new_post_path+ 則會讓瀏覽器重新發送一個請求到 +new+ action，但是如此一來 @post 就被重新建立而不帶有錯誤訊息了)
 
 "Post was successfully created" 的訊息會被儲存在 Rails 的 +flash+ hash 裡 (通常就稱作 Flash) 好讓訊息可以被帶到另一個 action，它可以提供使用者一些有用的資訊。在這個 +create+ 的 action 中，使用者並沒有真的看到任何頁面，因為它馬上就被導向到新的文章頁面。而這個 Flash 就帶著訊息到下一個 action，好讓使用者在 +show+ action 頁面看到 "Post was successfully created." 這個訊息。
 
@@ -778,23 +778,23 @@ Active Record model 的 +destroy+ 函式會刪除對應的資料庫資料。完�
 
 h3. 新增第二個 Model
 
-Now that you've seen how a model built with scaffolding looks like, it's time to add a second model to the application. The second model will handle comments on blog posts.
+你已經看過如果用建立的 scaffolding 功能建立一個 model 了，接下來讓我們再新增第二個 model 到這個應用程式。第二個 model 是部落格文章的留言。
 
 h4. 產生 Model
 
-Models in Rails use a singular name, and their corresponding database tables use a plural name. For the model to hold comments, the convention is to use the name Comment. Even if you don't want to use the entire apparatus set up by scaffolding, most Rails developers still use generators to make things like models and controllers. To create the new model, run this command in your terminal:
+Rails 的 Models 名稱都是單數名詞，而它們對應的資料庫資料表是複數名詞，這個慣例也套用在新的 model 名字 Comment。即使你完全不用 scaffolding，大部分的 Rails 開發者也都會用產生器(generators)產生 models 及 controllers。要建立一個新的 model，請在命令列視窗輸入：
 
 <shell>
 $ rails generate model Comment commenter:string body:text post:references
 </shell>
 
-This command will generate four files:
+這個指令會產生以下檔案：
 
-* +app/models/comment.rb+ - The model
-* +db/migrate/20100207235629_create_comments.rb+ - The migration
-* +test/unit/comment_test.rb+ and +test/fixtures/comments.yml+ - The test harness.
+* +app/models/comment.rb+ - Model 檔案
+* +db/migrate/20100207235629_create_comments.rb+ - Migration 檔案
+* +test/unit/comment_test.rb+ and +test/fixtures/comments.yml+ - 測試檔案
 
-First, take a look at +comment.rb+:
+首先，讓我們看一下 +comment.rb+：
 
 <ruby>
 class Comment < ActiveRecord::Base
@@ -802,9 +802,9 @@ class Comment < ActiveRecord::Base
 end
 </ruby>
 
-This is very similar to the +post.rb+ model that you saw earlier. The difference is the line +belongs_to :post+, which sets up an Active Record _association_. You'll learn a little about associations in the next section of this guide.
+這看起來跟先前的 +post.rb+ model 非常像。差別是多了一行 +belongs_to :post+ ，這將設定 Active Record 的 _association(關連)_ 。你將會在下一節學到更多關於 associations 的知識。
 
-In addition to the model, Rails has also made a migration to create the corresponding database table:
+除了 model，Rails 也會建立對應的資料庫資料表 migration：
 
 <ruby>
 class CreateComments < ActiveRecord::Migration
@@ -824,13 +824,13 @@ class CreateComments < ActiveRecord::Migration
 end
 </ruby>
 
-The +t.references+ line sets up a foreign key column for the association between the two models. Go ahead and run the migration:
+注意到 +t.references+ 這一行會為關連的 models 建立一個 foreign key (外部鍵) 欄位。接著讓我們執行 Migration：
 
 <shell>
 $ rake db:migrate
 </shell>
 
-Rails is smart enough to only execute the migrations that have not already been run against the current database, so in this case you will just see:
+Rails 很聰明只會執行還沒有執行過的 Migrations，所以在這個例子我們只會看到：
 
 <shell>
 ==  CreateComments: migrating =================================================
@@ -841,12 +841,12 @@ Rails is smart enough to only execute the migrations that have not already been 
 
 h4. 把 Models 關連起來
 
-Active Record associations let you easily declare the relationship between two models. In the case of comments and posts, you could write out the relationships this way:
+Active Record associations 讓你可以輕易宣告兩個 Models 之間的關係。在這個文章跟留言的例子，你可以寫下以下的關係：
 
-* Each comment belongs to one post
-* One post can have many comments
+* 每篇留言 comment 屬於一篇文章 post
+* 一篇文章 post 有許多留言 comments
 
-In fact, this is very close to the syntax that Rails uses to declare this association. You've already seen the line of code inside the Comment model that makes each comment belong to a Post:
+事實上，這就非常接近 Rails 用來宣告關係的語法。你已經見到 Comment model 裡面的程式碼宣告每篇留言屬於一篇文章：
 
 <ruby>
 class Comment < ActiveRecord::Base
@@ -854,7 +854,7 @@ class Comment < ActiveRecord::Base
 end
 </ruby>
 
-You'll need to edit the +post.rb+ file to add the other side of the association:
+你會需要編輯 +post.rb+ 檔案加上另一頭的關連：
 
 <ruby>
 class Post < ActiveRecord::Base
@@ -866,13 +866,13 @@ class Post < ActiveRecord::Base
 end
 </ruby>
 
-These two declarations enable a good bit of automatic behavior. For example, if you have an instance variable +@post+ containing a post, you can retrieve all the comments belonging to that post as the array +@post.comments+.
+這兩行宣告語法產生了一些神奇的行為。例如，如果你有一篇文章的實例變數 +@post+，你就可以透過 +@post.comments+ 拿到所有的留言陣列了。
 
-TIP: For more information on Active Record associations, see the "Active Record Associations":association_basics.html guide.
+TIP: 關於更多 Active Record associations 的資訊，請參閱 "Active Record Associations":association_basics.html.
 
 h4. 為留言新增一個 URL 路徑
 
-As with the +home+ controller, we will need to add a route so that Rails knows where we would like to navigate to see +comments+.  Open up the +config/routes.rb+ file again, you will see an entry that was added automatically for +posts+ near the top by the scaffold generator, +resources :posts+, edit it as follows:
+如同 +home+ controller，我們也需要新增一個路徑告訴 Rails 如何瀏覽 +comments+。再次打開 +config/routes.rb+ ，你會看到一段之前由 scaffold 產生器為 +posts+ 產生的 +resources :posts+ 程式碼，請修改成：
 
 <ruby>
 resources :posts do
@@ -880,29 +880,29 @@ resources :posts do
 end
 </ruby>
 
-This creates +comments+ as a _nested resource_ within +posts+. This is another part of capturing the hierarchical relationship that exists between posts and comments.
+這會在 +posts+ 裡建立一個 +comments+ 的 _nested resource (嵌套的資源)_ 。這也描述了文章和留言有著階層關係。
 
-TIP: For more information on routing, see the "Rails Routing from the Outside In":routing.html guide.
+TIP: 關於路徑的更多資訊，請參閱 "Rails Routing from the Outside In":routing.html
 
 h4.產生一個 Controller
 
-With the model in hand, you can turn your attention to creating a matching controller. Again, there's a generator for this:
+有個 Model，我們來將注意力移往如何建立對應的 controller。再一次讓我們使用產生器：
 
 <shell>
 $ rails generate controller Comments
 </shell>
 
-This creates four files and one empty directory:
+這會建立四個檔案和一個空目錄：
 
-* +app/controllers/comments_controller.rb+ - The controller
-* +app/helpers/comments_helper.rb+ - A view helper file
-* +test/functional/comments_controller_test.rb+ - The functional tests for the controller
-* +test/unit/helpers/comments_helper_test.rb+ - The unit tests for the helper
-* +app/views/comments/+ - Views of the controller are stored here
+* +app/controllers/comments_controller.rb+ - Controller 檔案
+* +app/helpers/comments_helper.rb+ - 一個 view helper 檔案
+* +test/functional/comments_controller_test.rb+ - controller 的功能測試
+* +test/unit/helpers/comments_helper_test.rb+ - helper 的單元測試
+* +app/views/comments/+ - controller 的 Views 檔案所在目錄
 
-Like with any blog, our readers will create their comments directly after reading the post, and once they have added their comment, will be sent back to the post show page to see their comment now listed.  Due to this, our +CommentsController+ is there to provide a method to create comments and delete SPAM comments when they arrive.
+就像任何部落格，我們的讀者可以在看完文章之後留言，然後回到文章頁面看到剛剛的留言。所以，我們的 +CommentsController+ 將提供函式可以建立留言跟刪除垃圾留言。
 
-So first, we'll wire up the Post show template (+/app/views/posts/show.html.erb+) to let us make a new comment:
+首先，讓我們修改 Post 的 show 樣板 (+/app/views/posts/show.html.erb+) 好讓我們可以新增留言：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -943,7 +943,7 @@ So first, we'll wire up the Post show template (+/app/views/posts/show.html.erb+
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-This adds a form on the Post show page that creates a new comment, which will call the +CommentsController+ +create+ action, so let's wire that up:
+我們在 Post show 頁面新增了一個表單可以建立新留言，這個表單送出後會呼叫 +CommentsController+ 的 +create+ action，讓我們繼續：
 
 <ruby>
 class CommentsController < ApplicationController
@@ -955,11 +955,11 @@ class CommentsController < ApplicationController
 end
 </ruby>
 
-You'll see a bit more complexity here than you did in the controller for posts. That's a side-effect of the nesting that you've set up; each request for a comment has to keep track of the post to which the comment is attached, thus the initial find action to the Post model to get the post in question.
+看起來比之前的 posts controller 複雜一點。這是因為有了階層關係。每一篇留言必須追蹤它是屬於哪一篇文章，因此需要一開始就得用 find 找到所屬的 Post model。
 
-In addition, the code takes advantage of some of the methods available for an association. We use the +create+ method on +@post.comments+ to create and save the comment. This will automatically link the comment so that it belongs to that particular post.
+此外，這裡也用到一些 association 所提供的函式。我們在 +@post.comments+ 上使用 +create+ 函式來新增並儲存。這會自動連結起該留言屬於該特定文章。
 
-Once we have made the new comment, we send the user back to the original post using the +post_path(@post)+ helper. As we have already seen, this calls the +show+ action of the +PostsController+ which in turn renders the +show.html.erb+ template. This is where we want the comment to show, so let's add that to the +app/views/posts/show.html.erb+.
+一旦我們完成新增留言，我們使用 +post_path(@post)+ helper 來將使用者重新導向到本來的文章頁面。我們之前看過了，這會呼叫 +PostsController+ 的 +show+ action，也就是顯示 +show.html.erb+ 樣板。這個頁面也將顯示留言，讓我們在 +app/views/posts/show.html.erb+ 新增以下程式碼：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -1015,7 +1015,7 @@ Once we have made the new comment, we send the user back to the original post us
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-Now you can add posts and comments to your blog and have them show up in the right places.
+現在我們可以在你的部落格上新增文章跟留言了。
 
 h3. 重構
 
@@ -1525,6 +1525,7 @@ h3. 翻譯詞彙
 | (database) table | 資料表 |
 | code | 程式碼 |
 | command-line | 命令列 |
+| terminal | 命令列視窗 |
 | method | 函式 |
 | application | 應用程式 |
 | framework | 框架 |
@@ -1540,6 +1541,7 @@ h3. 翻譯詞彙
 | escaped | 逸出 |
 | tag | 標籤 |
 | attribute | 屬性 |
+| routing | 路徑 |
 
 以下包留原名詞不譯，必要時加上翻譯註解：
 
@@ -1561,3 +1563,7 @@ h3. 翻譯詞彙
 | callback | 回呼 |
 | console | 主控台 |
 | hash | 雜湊 |
+| generator | 產生器 |
+| association | 關連 |
+| foreign key | 外部鍵 |
+| nested | 嵌套的 |
