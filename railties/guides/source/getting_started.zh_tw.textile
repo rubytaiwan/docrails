@@ -27,6 +27,7 @@ Rails 是一套跑在 Ruby 上的 Web 框架。如果您對 Ruby 一無所知就
 * "Mr. Neighborly's Humble Little Ruby Book":http://www.humblelittlerubybook.com
 * "Programming Ruby":http://www.ruby-doc.org/docs/ProgrammingRuby/
 * "Why's (Poignant) Guide to Ruby":http://mislav.uniqpath.com/poignant-guide/
+* 譯註： "Ruby 使用手冊":http://guides.ruby.tw/ruby/
 
 h3. 什麼是 Rails?
 
@@ -134,8 +135,7 @@ Rest 代表了 "Representational State Transfer" (表象化狀態轉變)，它�
 * "An Introduction to REST":http://bitworking.org/news/373/An-Introduction-to-REST (video tutorial) by Joe Gregorio
 * "Representational State Transfer":http://en.wikipedia.org/wiki/Representational_State_Transfer article in Wikipedia
 * "How to GET a Cup of Coffee":http://www.infoq.com/articles/webber-rest-workflow by Jim Webber, Savas Parastatidis & Ian Robinson
-
-(譯註： "什麼是REST跟RESTful?":http://ihower.tw/blog/archives/1542 了解 REST 理論並不是在 Rails 中使用 RESTful 技術的前提，所以大可以跳過不甚理解沒關係。)
+* 譯註： "什麼是REST跟RESTful?":http://ihower.tw/blog/archives/1542 (了解 REST 理論並不是在 Rails 中使用 RESTful 技術的前提，所以大可以跳過不甚理解沒關係。)
 
 h3. 建立一個新的 Rails 專案
 
@@ -554,7 +554,7 @@ TIP: 關於更多 rendering 的處理，請參閱 "Layouts and Rendering in Rail
 
 h4. 客製化 Layout 版型
 
-The view is only part of the story of how HTML is displayed in your web browser. Rails also has the concept of +layouts+, which are containers for views. When Rails renders a view to the browser, it does so by putting the view's HTML into a layout's HTML. In previous versions of Rails, the +rails generate scaffold+ command would automatically create a controller specific layout, like +app/views/layouts/posts.html.erb+, for the posts controller. However this has been changed in Rails 3.0. A application specific +layout+ is used for all the controllers and can be found in +app/views/layouts/application.html.erb+. Open this layout in your editor and modify the +body+ tag:
+View 只是 Rails 處理 HTML 的一個環節，還有一個概念叫做 +layouts+，可以用來包裹 views。當 Rails 要顯示一個 view 給瀏覽器時，它會將 view 的 HTML 放到 layout 的 HTML 裡去。在之前的 Rails 版本，+rails generate scaffold+ 指令會自動為每個 controller 建立一個 layout，例如 +app/views/layouts/posts.html.erb+ 就是給 posts controller 的。但是這一點在 Rails 3.0 的 scaffold 改了，所有的 controllers 只會有一個 +layout+ 檔案叫做 +app/views/layouts/application.html.erb+ 。打開這個檔案然後修改 +body+ 標籤：
 
 <erb>
 <!DOCTYPE html>
@@ -573,11 +573,11 @@ The view is only part of the story of how HTML is displayed in your web browser.
 </html>
 </erb>
 
-Now when you refresh the +/posts+ page, you'll see a gray background to the page. This same gray background will be used throughout all the views for posts.
+瀏覽器重新整理 +/posts+ 頁面，你會發現灰色的背景。同樣的背景會出現在所有的 posts views。
 
 h4. 建立新文章
 
-Creating a new post involves two actions. The first is the +new+ action, which instantiates an empty +Post+ object:
+建立一篇新文章關係到兩個 actions。第一個是 +new+ action，它用來實例化一個空的 +Post+ 物件：
 
 <ruby>
 def new
@@ -590,7 +590,7 @@ def new
 end
 </ruby>
 
-The +new.html.erb+ view displays this empty Post to the user:
+這個 +new.html.erb+ view 會顯示空的 Post 給使用者：
 
 <erb>
 <h1>New post</h1>
@@ -600,9 +600,9 @@ The +new.html.erb+ view displays this empty Post to the user:
 <%= link_to 'Back', posts_path %>
 </erb>
 
-The +&lt;%= render 'form' %&gt;+ line is our first introduction to _partials_ in Rails.  A partial is a snippet of HTML and Ruby code that can be reused in multiple locations.  In this case, the form used to make a new post, is basically identical to a form used to edit a post, both have text fields for the name and title and a text area for the content with a button to make a new post or update the existing post.
+其中 +&lt;%= render 'form' %&gt;+ 這一行是你第一次看到 _partials_ 。partial 是一個包含 HTML 和 Ruby 程式的片段，可以被其他地方重複使用。在這個例子，表單被用在新增文章，基本上也等同於編輯文章的表單，兩者都有相同的 name 跟 title 文字欄位跟 content 文字區塊欄位，以及送出按鈕。
 
-If you take a look at +views/posts/_form.html.erb+ file, you will see the following:
+如果看清楚 +views/posts/_form.html.erb+ 這個檔案，內容如下：
 
 <erb>
 <%= form_for(@post) do |f| %>
@@ -635,17 +635,17 @@ If you take a look at +views/posts/_form.html.erb+ file, you will see the follow
 <% end %>
 </erb>
 
-This partial receives all the instance variables defined in the calling view file, so in this case, the controller assigned the new Post object to +@post+ and so, this is available in both the view and partial as +@post+.
+這個 partial 接收了來自 view 的所有的實例變數，而在這個例子，controller 中設定了 @post 是一個新的 Post 物件，所以在 view 跟這個 partial 中也都有這個 @post 物件。
 
-For more information on partials, refer to the "Layouts and Rendering in Rails":layouts_and_rendering.html#using-partials guide.
+想知道更多 partials 的資訊，請參閱 "Layouts and Rendering in Rails":layouts_and_rendering.html#using-partials 。
 
-The +form_for+ block is used to create an HTML form. Within this block, you have access to methods to build various controls on the form. For example, +f.text_field :name+ tells Rails to create a text input on the form, and to hook it up to the +name+ attribute of the instance being displayed. You can only use these methods with attributes of the model that the form is based on (in this case +name+, +title+, and +content+). Rails uses +form_for+ in preference to having you write raw HTML because the code is more succinct, and because it explicitly ties the form to a particular model instance.
+這個 +form_for+ 區塊被用來建立 HTML 表單。在 block 區塊之中，你可以使用各種函式來建構表單。例如 +f.text_field :name+ 可以建立出一個文字輸入框，並填入 @post 的 +name+ 屬性資料。但這個表單只能基於這個 model 有的屬性(在這個例子是 +name+、+title+跟+content+)。Rails 偏好使用 +form_for+ 而不是讓你寫表單 HTML，這是因為程式碼可以更加簡潔，而且可以明確地綁在一個 model 實例上。
 
-The +form_for+ block is also smart enough to work out if you are doing a _New Post_ or an _Edit Post_ action, and will set the form +action+ tags and submit button names appropriately in the HTML output.
++form_for+ 區塊也非常聰明，不同 _New Post_ 跟 _Edit Post_ 的表單 +action+ 屬性跟送出按鈕的文字也會跟著不同 (譯註: 根據 @post 的不同)。
 
-TIP: If you need to create an HTML form that displays arbitrary fields, not tied to a model, you should use the +form_tag+ method, which provides shortcuts for building forms that are not necessarily tied to a model instance.
+TIP: 如果你需要建立任意欄位的 HTML 表單，而不綁在某一個 model 上，你可以使用 +form_tag+ 函式。它也提供了建構表單的函式而不需要綁在 model 實例上。
 
-When the user clicks the +Create Post+ button on this form, the browser will send information back to the +create+ method of the controller (Rails knows to call the +create+ method because the form is sent with an HTTP POST request; that's one of the conventions that I mentioned earlier):
+當一個使用者點擊表單的 +Create Post+ 按鈕時，瀏覽器就會送出資料到 controller 的 +create+ 函式(Rails 知道要呼叫 +create+ 函式是因為表單是用 HTTP POST 請求的，這是一個稍早提過的 RESTful 慣例):
 
 <ruby>
 def create
@@ -666,15 +666,15 @@ def create
 end
 </ruby>
 
-The +create+ action instantiates a new Post object from the data supplied by the user on the form, which Rails makes available in the +params+ hash. After successfully saving the new post, +create+ returns the appropriate format that the user has requested (HTML in our case). It then redirects the user to the resulting post +show+ action and sets a notice to the user that the Post was successfully created.
++create+ action 會透過從表單傳來的資料，也就是 Rails 提供的 +params+ hash 雜湊，來實例化一個新的 Post 物件。成功儲存之後， +create+ 會根據使用者的請求回傳一個適當的格式(在這個例子是 HTML)。這裡它是把使用者導向(redirect) +show+ action 來顯示文章內容，並設定 notice 提醒使用者 Post 已經成功被建立。
 
-If the post was not successfully saved, due to a validation error, then the controller returns the user back to the +new+ action with any error messages so that the user has the chance to fix the error and try again.
+如果文章因為 validation 錯誤而儲存失敗，這裡會回傳給使用者帶有錯誤訊息的 +new+ action，好讓使用者可以修正問題再試一次。
 
-The "Post was successfully created" message is stored inside of the Rails +flash+ hash, (usually just called the Flash) so that messages can be carried over to another action, providing the user with useful information on the status of their request. In the case of +create+, the user never actually sees any page rendered during the Post creation process, because it immediately redirects to the new Post as soon Rails saves the record. The Flash carries over a message to the next action, so that when the user is redirected back to the +show+ action, they are presented with a message saying "Post was successfully created."
+"Post was successfully created" 的訊息會被儲存在 Rails 的 +flash+ hash 裡 (通常就稱作 Flash) 好讓訊息可以被帶到另一個 action，它可以提供使用者一些有用的資訊。在這個 +create+ 的 action 中，使用者並沒有真的看到任何頁面，因為它馬上就被導向到新的文章頁面。而這個 Flash 就帶著訊息到下一個 action，好讓使用者在 +show+ action 頁面看到 "Post was successfully created." 這個訊息。
 
 h4. 顯示個別文章
 
-When you click the +show+ link for a post on the index page, it will bring you to a URL like +http://localhost:3000/posts/1+. Rails interprets this as a call to the +show+ action for the resource, and passes in +1+ as the +:id+ parameter. Here's the +show+ action:
+當你在 index 頁面點擊 +show+ 的文章連結，就會前往如 +http://localhost:3000/posts/1+ 的網址。 Rails 會針對這個 resource 去呼叫 +show+ action，然後傳進 +1+ 到 +id+ 參數。以下是 +show+ action。
 
 <ruby>
 def show
@@ -687,7 +687,7 @@ def show
 end
 </ruby>
 
-The +show+ action uses +Post.find+ to search for a single record in the database by its id value. After finding the record, Rails displays it by using +show.html.erb+:
+這個 +show+ action 使用 +Post.find+ 根據 id 的值去搜尋資料庫找出一篇文章。在找到資料之後，Rails 用 +show.html.erb+ 顯示出來：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -712,9 +712,9 @@ The +show+ action uses +Post.find+ to search for a single record in the database
 <%= link_to 'Back', posts_path %>
 </erb>
 
-h4. Editing Posts
+h4. 編輯文章
 
-Like creating a new post, editing a post is a two-part process. The first step is a request to +edit_post_path(@post)+ with a particular post. This calls the +edit+ action in the controller:
+就像建立新文章，編輯文章也有兩個步驟。第一個是請求特定一篇文章的 +edit_post_path(@post) 頁面。這會呼叫 controller 的 +edit+ action：
 
 <ruby>
 def edit
@@ -722,7 +722,7 @@ def edit
 end
 </ruby>
 
-After finding the requested post, Rails uses the +edit.html.erb+ view to display it:
+在找到要編輯的文章之後，Rails 顯示 +edit.html.erb+ 頁面：
 
 <erb>
 <h1>Editing post</h1>
@@ -734,9 +734,9 @@ After finding the requested post, Rails uses the +edit.html.erb+ view to display
 <% end %>
 </erb>
 
-Again, as with the +new+ action, the +edit+ action is using the +form+ partial, this time however, the form will do a PUT action to the PostsController and the submit button will display "Update Post"
+這裡又像 +new+ action，+edit+ action 也使用 +form+ partial，只是這一次表單會用 HTTP PUT 動作給 PostsController，而且送出按鈕的字樣變成 "Update Post"。
 
-Submitting the form created by this view will invoke the +update+ action within the controller:
+送出表單後，會呼叫 controller 的 +update+ action：
 
 <ruby>
 def update
@@ -756,11 +756,11 @@ def update
 end
 </ruby>
 
-In the +update+ action, Rails first uses the +:id+ parameter passed back from the edit view to locate the database record that's being edited. The +update_attributes+ call then takes the rest of the parameters from the request and applies them to this record. If all goes well, the user is redirected to the post's +show+ view. If there are any problems, it's back to the +edit+ view to correct them.
+在 +update+ action，Rails 首先用 +:id+ 參數找到要編輯的資料。接著 +update_attributes+ 會根據表單傳進來的參數修改到資料上。如果一切正常，使用者會被導向到文章的 +show+ 頁面。如果驗證有任何問題，它會顯示 +edit+ 頁面好讓使用者可以修正資料。correct them.
 
 h4. 刪除文章
 
-Finally, clicking one of the +destroy+ links sends the associated id to the +destroy+ action:
+最後，點擊 +destroy+ 超連結會呼叫 +destroy+ action：
 
 <ruby>
 def destroy
@@ -774,7 +774,7 @@ def destroy
 end
 </ruby>
 
-The +destroy+ method of an Active Record model instance removes the corresponding record from the database. After that's done, there isn't any record to display, so Rails redirects the user's browser to the index view for the model.
+Active Record model 的 +destroy+ 函式會刪除對應的資料庫資料。完成之後，就沒辦法顯示了，所以 Rails 將使用者導向這個 model 的 index 頁面。
 
 h3. 新增第二個 Model
 
@@ -1017,11 +1017,11 @@ Once we have made the new comment, we send the user back to the original post us
 
 Now you can add posts and comments to your blog and have them show up in the right places.
 
-h3. Refactorization
+h3. 重構
 
 Now that we have Posts and Comments working, if we take a look at the +app/views/posts/show.html.erb+ template, it's getting long and awkward. We can use partials to clean this up.
 
-h4. Rendering Partial Collections
+h4. 顯示 Partial Collections
 
 First we will make a comment partial to extract showing all the comments for the post. Create the file +app/views/comments/_comment.html.erb+ and put the following into it:
 
@@ -1086,7 +1086,7 @@ Then in the +app/views/posts/show.html.erb+ you can change it to look like the f
 
 This will now render the partial in +app/views/comments/_comment.html.erb+ once for each comment that is in the +@post.comments+ collection.  As the +render+ method iterates over the <tt>@post.comments</tt> collection, it assigns each comment to a local variable named the same as the partial, in this case +comment+ which is then available in the partial for us to show.
 
-h4. Rendering a Partial Form
+h4. 顯示 Partial 表單
 
 Lets also move that new comment section out to it's own partial, again, you create a file +app/views/comments/_form.html.erb+ and in it you put:
 
@@ -1145,7 +1145,7 @@ The second render just defines the partial template we want to render, <tt>comme
 
 The +@post+ object is available to any partials rendered in the view because we defined it as an instance variable.
 
-h3. Deleting Comments
+h3. 刪除留言
 
 Another important feature on a blog is being able to delete SPAM comments.  To do this, we need to implement a link of some sort in the view and a +DELETE+ action in the +CommentsController+.
 
@@ -1515,6 +1515,8 @@ h3. 翻譯詞彙
 | class | 類別 |
 | object | 物件 |
 | instance | 實例 |
+| instantiate | 實例化 |
+| instance variables | 實例變數 |
 | inherit | 繼承 |
 | interface | 介面 |
 | library | 函式庫 |
@@ -1536,6 +1538,8 @@ h3. 翻譯詞彙
 | block | 區塊 |
 | iterate | 迭代 |
 | escaped | 逸出 |
+| tag | 標籤 |
+| attribute | 屬性 |
 
 以下包留原名詞不譯，必要時加上翻譯註解：
 
@@ -1543,15 +1547,17 @@ h3. 翻譯詞彙
 | model | 模型 |
 | controller | 控制器 |
 | view | 視圖 |
+| partial | 指片段的 view |
 | migration | 指資料庫遷移 |
 | RESTful | REST 的形容詞 |
 | action | 指 controller 的 action 時不譯 |
 | view helper | View 輔助函式 |
 | development, test, production mode | 指 Rails 運作的環境 |
 | HTTP verbs | HTTP 協定中的動詞 |
-| template rendering | 樣板演算顯示 |
+| template rendering | 樣板演算顯示/呈現 |
 | scaffolding, scaffold | 鷹架 |
 | timestamp | 時間戳章 |
 | validation | 驗證 |
 | callback | 回呼 |
 | console | 主控台 |
+| hash | 雜湊 |
