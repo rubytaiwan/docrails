@@ -359,20 +359,20 @@ NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法�
 
 |_.檔案                                       |_.目的|
 |db/migrate/20100207214725_create_posts.rb.rb    |Migration to create the posts table in your database (your name will include a different timestamp)|
-|app/models/post.rb                           |The Post model|
-|test/fixtures/posts.yml                      |Dummy posts for use in testing|
-|app/controllers/posts_controller.rb          |The Posts controller|
-|app/views/posts/index.html.erb               |A view to display an index of all posts |
-|app/views/posts/edit.html.erb                |A view to edit an existing post|
-|app/views/posts/show.html.erb                |A view to display a single post|
-|app/views/posts/new.html.erb                 |A view to create a new post|
-|app/views/posts/_form.html.erb               |A partial to control the overall look and feel of the form used in edit and new views|
-|app/helpers/posts_helper.rb                  |Helper functions to be used from the post views|
-|test/unit/post_test.rb                       |Unit testing harness for the posts model|
-|test/functional/posts_controller_test.rb     |Functional testing harness for the posts controller|
-|test/unit/helpers/posts_helper_test.rb       |Unit testing harness for the posts helper|
-|config/routes.rb                             |Edited to include routing information for posts|
-|public/stylesheets/scaffold.css              |Cascading style sheet to make the scaffolded views look better|
+|app/models/post.rb                           |Post model|
+|test/fixtures/posts.yml                      |用來測試的假文章資料|
+|app/controllers/posts_controller.rb          |Posts controller|
+|app/views/posts/index.html.erb               |用來顯示所有文章的 index 頁面|
+|app/views/posts/edit.html.erb                |用來編輯文章的頁面|
+|app/views/posts/show.html.erb                |用來顯示特定一篇文章的頁面|
+|app/views/posts/new.html.erb                 |用來新增文章的頁面|
+|app/views/posts/_form.html.erb               |用來顯示編輯和新增文章的表單 partial|
+|app/helpers/posts_helper.rb                  |可在文章 views 中使用的 Helper 函式|
+|test/unit/post_test.rb                       |posts model 的單元測試|
+|test/functional/posts_controller_test.rb     |posts controller 的功能測試|
+|test/unit/helpers/posts_helper_test.rb       |posts helper 的單元測試|
+|config/routes.rb                             |設定 URL 路徑規則的檔案|
+|public/stylesheets/scaffold.css              |CSS 樣式檔案|
 
 h4. 執行 Migration
 
@@ -1264,21 +1264,21 @@ class CommentsController < ApplicationController
 
 h3. 建立一個有多重 Model 的表單
 
-Another feature of your average blog is the ability to tag posts. To implement this feature your application needs to interact with more than one model on a single form. Rails offers support for nested forms.
+另一個部落格常見的功能是可以為文章下標籤(tag)。要實作這個功能，你的應用程式必須在一個表單中操作不只一個 model。Rails 提供了 nested forms (內嵌的表單)。
 
-To demonstrate this, we will add support for giving each post multiple tags, right in the form where you create the post. First, create a new model to hold the tags:
+要示範這項功能，我們將在你建立文章的地方，可以順便下多個標籤。首先，建立一個新的標籤 Model：
 
 <shell>
 $ rails generate model tag name:string post:references
 </shell>
 
-Again, run the migration to create the database table:
+同樣的，執行 migration 來建立資料庫資料表：
 
 <shell>
 $ rake db:migrate
 </shell>
 
-Next, edit the +post.rb+ file to create the other side of the association, and to tell Rails (via the +accepts_nested_attributes+ macro) that you intend to edit tags via posts:
+接著，編輯 +post.rb+ 檔案來建立關連，然後告訴 Rails (透過 +accepts_nested_attributes+ marco 巨集) 你希望透過文章來設定標籤：
 
 <ruby>
 class Post < ActiveRecord::Base
@@ -1294,9 +1294,9 @@ class Post < ActiveRecord::Base
 end
 </ruby>
 
-The +:allow_destroy+ option on the nested attribute declaration tells Rails to display a "remove" checkbox on the view that you'll build shortly. The +:reject_if+ option prevents saving new tags that do not have any attributes filled in.
+其中的 +:allow_destroy+ 選項告訴 Rails 在等會的 view 中顯示一個 "remove" checkbox。而 +:reject_if+ 選項會阻止儲存空的標籤。
 
-We will modify +views/posts/_form.html.erb+ to render a partial to make a tag:
+修改 +views/posts/_form.html.erb+ 來顯示一個標籤的 partial：
 
 <erb>
 <% @post.tags.build %>
@@ -1333,13 +1333,13 @@ We will modify +views/posts/_form.html.erb+ to render a partial to make a tag:
 <% end %>
 </erb>
 
-Note that we have changed the +f+ in +form_for(@post) do |f|+ to +post_form+ to make it easier to understand what is going on.
+注意到為了接下來程式碼的可讀性，我們修改了 +form_for(@post) do |f|+ 的 +f+ 變成 +post_form+。
 
-This example shows another option of the render helper, being able to pass in local variables, in this case, we want the local variable +form+ in the partial to refer to the +post_form+ object.
+這個範例也展示了 render helper 可以接受 locals 參數來傳遞區域變數，在這個例子，我們希望 partial 裡面的區域變數 +form+ 指的是 +post_form+ 物件。
 
-We also add a <tt>@post.tags.build</tt> at the top of this form, this is to make sure there is a new tag ready to have it's name filled in by the user.  If you do not build the new tag, then the form will not appear as there is no new Tag object ready to create.
+我們也在表單上方新增一行 <tt>@post.tags.build</tt>，這會確保有空的標籤物件可以被使用者編輯，不然的話標籤的表單就沒辦法顯示。
 
-Now create the folder <tt>app/views/tags</tt> and make a file in there called <tt>_form.html.erb</tt> which contains the form for the tag:
+建立 <tt>app/views/tags</tt> 目錄然後建立一個叫做 <tt>_form.html.erb</tt> 的檔案，內容是標籤的表單：
 
 <erb>
 <%= form.fields_for :tags do |tag_form| %>
@@ -1356,7 +1356,7 @@ Now create the folder <tt>app/views/tags</tt> and make a file in there called <t
 <% end %>
 </erb>
 
-Finally, we will edit the <tt>app/views/posts/show.html.erb</tt> template to show our tags.
+最後，我們編輯 <tt>app/views/posts/show.html.erb</tt> 樣板來顯示標籤。
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -1393,15 +1393,15 @@ Finally, we will edit the <tt>app/views/posts/show.html.erb</tt> template to sho
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-With these changes in place, you'll find that you can edit a post and its tags directly on the same view.
+透過這些修改，你就可以在同一個 view 中同時編輯文章跟標籤。
 
-However, that method call <tt>@post.tags.map { |t| t.name }.join(", ")</tt> is awkward, we could handle this by making a helper method.
+不過呢，那個 <tt>@post.tags.map { |t| t.name }.join(", ")</tt> 實在有點醜，我們可以把它變成一個 helper 函式。
 
 h3. View Helpers
 
-View Helpers live in <tt>app/helpers</tt> and provide small snippets of reusable code for views.  In our case, we want a method that strings a bunch of objects together using their name attribute and joining them with a comma.  As this is for the Post show template, we put it in the PostsHelper.
+View Helpers (輔助函式)放在 <tt>app/helpers</tt> 目錄下，提供一些可以被重複使用的 Views 程式。在這個例子，我們希望有個字串函式可以把一群物件中的 name 屬性用逗號串接在一起。因為這用在 Post show 樣板，我們可以把它放在 PostsHelper。
 
-Open up <tt>app/helpers/posts_helper.rb</tt> and add the following:
+打開 <tt>app/helpers/posts_helper.rb</tt> 加入以下程式：
 
 <erb>
 module PostsHelper
@@ -1411,7 +1411,7 @@ module PostsHelper
 end
 </erb>
 
-Now you can edit the view in <tt>app/views/posts/show.html.erb</tt> to look like this:
+編輯 <tt>app/views/posts/show.html.erb</tt> view 如下：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -1450,42 +1450,37 @@ Now you can edit the view in <tt>app/views/posts/show.html.erb</tt> to look like
 
 h3. 接下來？
 
-Now that you've seen your first Rails application, you should feel free to update it and experiment on your own. But you don't have to do everything without help. As you need assistance getting up and running with Rails, feel free to consult these support resources:
+到目前為止，你已經建立了你的第一個 Rails 應用，請隨意修改實驗你的程式。不過請不要埋頭苦幹，當你需要協助的時候，請問問看以下的資源：
 
-* The "Ruby On Rails guides":index.html
-* The "Ruby on Rails mailing list":http://groups.google.com/group/rubyonrails-talk
-* The "#rubyonrails":irc://irc.freenode.net/#rubyonrails channel on irc.freenode.net
-* The "Rails Wiki":http://wiki.rubyonrails.org/
+* "Ruby On Rails guides":index.html
+* "Ruby on Rails mailing list":http://groups.google.com/group/rubyonrails-talk
+* "#rubyonrails":irc://irc.freenode.net/#rubyonrails channel on irc.freenode.net
+* "Rails Wiki":http://wiki.rubyonrails.org/
+* 譯註： "Ruby Wednesday 定期聚會":http://ruby.tw/post/592398890/ruby-wednesday
+* 譯註： "ruby-tw":irc://irc.freenode.net #ruby-tw channel on irc.freenode.net
+* 譯註： "ppt.cc":telnet://ptt.cc 的 Ruby 版
+* 譯註： "RailsFun!":http://railsfun.tw/
 
-Rails also comes with built-in help that you can generate using the rake command-line utility:
+你也可以透過 Rails 內建的工具產生文件：
 
-* Running +rake doc:guides+ will put a full copy of the Rails Guides in the +doc/guides+ folder of your application. Open +doc/guides/index.html+ in your web browser to explore the Guides.
-* Running +rake doc:rails+ will put a full copy of the API documentation for Rails in the +doc/api+ folder of your application. Open +doc/api/index.html+ in your web browser to explore the API documentation.
+* 執行 +rake doc:guides+ 會產生一份完整的 Rails 指南在你的應用程式 +doc/guides+ 目錄下。用瀏覽器打開 +doc/guides/index.html+ 就可以了。
+* 執行 +rake doc:rails+ 會產生一份 API documentation 文件在你的應用程式 +doc/api+ 目錄下。請打開 +doc/api/index.html+。
 
 h3. 設定上的一些訣竅
 
-The easiest way to work with Rails is to store all external data as UTF-8. If you don't, Ruby libraries and Rails will often be able to convert your native data into UTF-8, but this doesn't always work reliably, so you're better off ensuring that all external data is UTF-8.
+最簡單的方式就是把所有外部資料都當做 UTF-8。如果不是的話，函式庫跟 Rails 會需要轉換你的資料變成 UTF-8，這可能會發生問題。所以最好的方式還是讓所有的外部資料都是 UTF-8。
 
-If you have made a mistake in this area, the most common symptom is a black diamond with a question mark inside appearing in the browser. Another common symptom is characters like "Ã¼" appearing instead of "ü". Rails takes a number of internal steps to mitigate common causes of these problems that can be automatically detected and corrected. However, if you have external data that is not stored as UTF-8, it can occasionally result in these kinds of issues that cannot be automatically detected by Rails and corrected.
+常見的癥兆是在你的瀏覽器中出現一個有問號的黑鑽石，或是 "ü" 變成 "Ã¼"。Rails 內部可以自動偵測然後修正。但是，如果你有外部資料不是 UTF-8，它還是偶爾無法自動幫你偵測和修正。
 
-Two very common sources of data that are not UTF-8:
-* Your text editor: Most text editors (such as Textmate), default to saving files as
-  UTF-8. If your text editor does not, this can result in special characters that you
-  enter in your templates (such as é) to appear as a diamond with a question mark inside
-  in the browser. This also applies to your I18N translation files.
-  Most editors that do not already default to UTF-8 (such as some versions of
-  Dreamweaver) offer a way to change the default to UTF-8. Do so.
-* Your database. Rails defaults to converting data from your database into UTF-8 at
-  the boundary. However, if your database is not using UTF-8 internally, it may not
-  be able to store all characters that your users enter. For instance, if your database
-  is using Latin-1 internally, and your user enters a Russian, Hebrew, or Japanese
-  character, the data will be lost forever once it enters the database. If possible,
-  use UTF-8 as the internal storage of your database.
+兩種常見的非 UTF-8 原因：
+* 你的文字編輯器: 大部分的文字編輯器(例如Textmate)，預設會存成 UTF-8。如果你的不是，這會導致你在樣板中輸入的文字(例如é)，在瀏覽器中會變成有問號的黑鑽石。同樣在你的 I18N 翻譯檔案也可能發生。大部分預設不是 UTF-8 的編輯器(例如某些版本的 Dreamweaver) 可以修改預設值，請改成 UTF-8。
+* 你的資料庫。Rails 預設會將從資料庫出來的資料轉成 UTF-8。但是，如果你的資料庫內部不是 UTF-8，那麼可能沒辦法存進所有使用者輸入的字元。例如，如果你的資料庫內部使用 Latin-1，然後你的使用者輸入俄文、希伯來文或是日文字元，那這個資料就會在進資料庫時不見。所以可能的話，讓資料庫也使用 UTF-8。
 
 h3. 文件修改記錄
 
 "Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213-rails-guides/tickets/2
 
+* July 15, 2010: 翻譯初稿完成 by "ihower":http://ihower.tw
 * July 12, 2010: Fixes, editing and updating of code samples by "Jaime Iniesta":http://jaimeiniesta.com
 * May 16, 2010: Added a section on configuration gotchas to address common encoding problems that people might have by "Yehuda Katz":http://www.yehudakatz.com
 * April 30, 2010: Fixes, editing and updating of code samples by "Rohit Arondekar":http://rohitarondekar.com
@@ -1543,6 +1538,7 @@ h3. 翻譯詞彙
 | attribute | 屬性 |
 | routing | 路徑 |
 | collection | 集合 |
+| macro | 巨集 |
 
 以下包留原名詞不譯，必要時加上翻譯註解：
 
@@ -1568,3 +1564,4 @@ h3. 翻譯詞彙
 | association | 關連 |
 | foreign key | 外部鍵 |
 | nested | 嵌套的 |
+| checkbox | 核對盒 |
