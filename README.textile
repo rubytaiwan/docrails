@@ -7,7 +7,8 @@ Type "LOCALE=zh_tw ruby rails_guides.rb" in docrails/railties/guides directory.
 h3. Status
 
 | Name | Translator | Progress |
-| Getting Started with Rails | ihower | 100% |
+| "Home page":http://guides.ruby.tw/rails3/ | | |
+| "Getting Started with Rails":http://guides.ruby.tw/rails3/getting_started.html | ihower | 100% |
 | Rails Database Migrations | | |
 | Active Record Validations and Callbacks | | |
 | Active Record Associations | | |
