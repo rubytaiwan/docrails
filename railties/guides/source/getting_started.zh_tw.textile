@@ -1147,9 +1147,9 @@ h4. 顯示 Partial 表單
 
 h3. 刪除留言
 
-Another important feature on a blog is being able to delete SPAM comments.  To do this, we need to implement a link of some sort in the view and a +DELETE+ action in the +CommentsController+.
+另一個部落格的重要功能是可以刪除垃圾留言。要辦到這件事，我們需要在 view 有某個超連結和在 controller 中實作 +DELETE+ 動作。
 
-So first, let's add the delete link in the +app/views/comments/_comment.html.erb+ partial:
+首先，讓我們在 +app/views/comments/_comment.html.erb+ partial 加上一個刪除的連結：
 
 <erb>
 <p>
@@ -1169,7 +1169,7 @@ So first, let's add the delete link in the +app/views/comments/_comment.html.erb
 </p>
 </erb>
 
-Clicking this new "Destroy Comment" link will fire off a <tt>DELETE /posts/:id/comments/:id</tt> to our +CommentsController+, which can then use this to find the comment we want to delete, so let's add a destroy action to our controller:
+點擊 "Destroy Comment" 連結將會送出一個 <tt>DELETE /posts/:id/comments/:id</tt> 到 +CommentsController+，我們接下要可以找到要刪除的留言，讓我們在 controller 裡加入一個 destroy action：
 
 <ruby>
 class CommentsController < ApplicationController
@@ -1190,12 +1190,11 @@ class CommentsController < ApplicationController
 end
 </ruby>
 
-The +destroy+ action will find the post we are looking at, locate the comment within the <tt>@post.comments</tt> collection, and then remove it from the database and send us back to the show action for the post.
-
+這個 +destroy+ action 會先找到所屬的文章，然後透過這篇文章的 <tt>@post.comments</tt> 集合找到該留言，接著從資料庫中移除，最後將使用者導向 show action。
 
 h4. 刪除關連的物件
 
-If you delete a post then its associated comments will also need to be deleted. Otherwise they would simply occupy space in the database. Rails allows you to use the +dependent+ option of an association to achieve this. Modify the Post model, +app/models/post.rb+, as follows:
+如果你要刪除一個文章，那麼其關連的留言也需要被一起刪除。不然的話這些留言只會平白佔據你的資料庫。Rails 支援在 association 關連上使用 +dependent+ 選項來解決這件事情。修改 Post model，即 +app/models/post.rb+ 如下：
 
 <ruby>
 class Post < ActiveRecord::Base
@@ -1208,9 +1207,9 @@ end
 
 h3. 安全性
 
-If you were to publish your blog online, anybody would be able to add, edit and delete posts or delete comments.
+如果你打算發佈這個部落格，任何人都可以新增、修改、刪除文章或刪除留言。
 
-Rails provides a very simple HTTP authentication system that will work nicely in this situation. First, we enable simple HTTP based authentication in our <tt>app/controllers/application_controller.rb</tt>:
+Rails 內建提供一個非常簡單的 HTTP 認證系統可以處理這種情形。首先，我們在 <tt>app/controllers/application_controller.rb</tt> 啟用 simple HTTP based authentication：
 
 <ruby>
 class ApplicationController < ActionController::Base
@@ -1227,11 +1226,11 @@ class ApplicationController < ActionController::Base
 end
 </ruby>
 
-You can obviously change the username and password to whatever you want.  We put this method inside of +ApplicationController+ so that it is available to all of our controllers.
+當然你可以修改成你想要的使用者名稱和密碼。我們將這個函式放進 +ApplicationController+ 裡，如此所有 controller 都可以使用 (譯註：因為所有的 controller 都繼承自 +ApplicationController+)。
 
-Then in the +PostsController+ we need to have a way to block access to the various actions if the person is not authenticated, here we can use the Rails <tt>before_filter</tt> method, which allows us to specify that Rails must run a method and only then allow access to the requested action if that method allows it.
+接著在 +PostsController+ 裡，我們要對需要認證的 actions 加上權限檢查，這裡我們使用 Rails 的 <tt>before_filter</tt> 函式，它可以允許我們在執行特定的 actions 前先執行一個函式，而我們在這個函式中來檢查使用者是否有權限執行。
 
-To use the before filter, we specify it at the top of our +PostsController+, in this case, we want the user to be authenticated on every action, except for +index+ and +show+, so we write that:
+我們在 +PostsController+ 的上方來加入 before filter 的設定，在這個例子，我們希望使用者驗證所有的 action 除了 +index+ 跟 +show+，所以可以這麼寫：
 
 <ruby>
 class PostsController < ApplicationController
@@ -1246,7 +1245,7 @@ class PostsController < ApplicationController
 # snipped for brevity
 </ruby>
 
-We also only want to allow authenticated users to delete comments, so in the +CommentsController+ we write:
+我們也希望有權限的使用者才可以刪除留言，所以在 +CommentsController+ 加上：
 
 <ruby>
 class CommentsController < ApplicationController
@@ -1258,7 +1257,7 @@ class CommentsController < ApplicationController
 # snipped for brevity
 </ruby>
 
-Now if you try to create a new post, you will be greeted with a basic HTTP Authentication challenge
+這樣當你試著建立一篇新文章，你會需要先經過 basic HTTP Authentication 認證。
 
 !images/challenge.png(Basic HTTP Authentication Challenge)!
 
