@@ -1499,7 +1499,7 @@ h3. 文件修改記錄
 
 h3. 關於譯者
 
-張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/)，翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ihower/docrails
+張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/) ，翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ihower/docrails
 
 h3. 翻譯詞彙
 
