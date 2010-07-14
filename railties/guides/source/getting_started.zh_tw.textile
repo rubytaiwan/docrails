@@ -1019,11 +1019,11 @@ end
 
 h3. 重構
 
-Now that we have Posts and Comments working, if we take a look at the +app/views/posts/show.html.erb+ template, it's getting long and awkward. We can use partials to clean this up.
+文章跟留言都可以運作了，但是如果我們看看 +app/views/posts/show.html.erb+ 樣板，實在有點又臭又長。我們可以利用 partials 來加以改善。
 
-h4. 顯示 Partial Collections
+h4. 顯示 Partial Collections (集合)
 
-First we will make a comment partial to extract showing all the comments for the post. Create the file +app/views/comments/_comment.html.erb+ and put the following into it:
+首先，我們建立一個留言的 partial 來顯示一篇文章的所有留言。新增 +app/views/comments/_comment.html.erb+ 檔案加入以下程式：
 
 <erb>
 <p>
@@ -1037,7 +1037,7 @@ First we will make a comment partial to extract showing all the comments for the
 </p>
 </erb>
 
-Then in the +app/views/posts/show.html.erb+ you can change it to look like the following:
+然後修改 +app/views/posts/show.html.erb+ 如下：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -1084,11 +1084,11 @@ Then in the +app/views/posts/show.html.erb+ you can change it to look like the f
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-This will now render the partial in +app/views/comments/_comment.html.erb+ once for each comment that is in the +@post.comments+ collection.  As the +render+ method iterates over the <tt>@post.comments</tt> collection, it assigns each comment to a local variable named the same as the partial, in this case +comment+ which is then available in the partial for us to show.
+這將為 ++@post.comments+ 中的每篇留言都套用 app/views/comments/_comment.html.erb 這個 partial。每次 render 函式迭代 @post.comments 集合中，它會把每一篇留言設定到一個與 partial 同名的區域變數(local variable)，在這個例子中，就可以在 partial 裡面使用。
 
 h4. 顯示 Partial 表單
 
-Lets also move that new comment section out to it's own partial, again, you create a file +app/views/comments/_form.html.erb+ and in it you put:
+讓我們也把新增留言的部分移到 partial 去。同樣地，我們新增 +app/views/comments/_form.html.erb+ 內容是：
 
 <erb>
 <%= form_for([@post, @post.comments.build]) do |f| %>
@@ -1108,7 +1108,7 @@ Lets also move that new comment section out to it's own partial, again, you crea
 <% end %>
 </erb>
 
-Then you make the +app/views/posts/show.html.erb+ look like the following:
+然後編輯 +app/views/posts/show.html.erb+ 如下：
 
 <erb>
 <p class="notice"><%= notice %></p>
@@ -1141,9 +1141,9 @@ Then you make the +app/views/posts/show.html.erb+ look like the following:
 <%= link_to 'Back to Posts', posts_path %> |
 </erb>
 
-The second render just defines the partial template we want to render, <tt>comments/form</tt>, Rails is smart enough to spot the forward slash in that string and realise that you want to render the <tt>_form.html.erb</tt> file in the <tt>app/views/comments</tt> directory.
+第二個 render 就是定義要顯示 <tt>comments/form</tt> 這個樣板，Rails 會根據其中的斜線是去找 <tt>app/views/comments</tt> 目錄下的 <tt>_form.html.erb</tt> 檔案。
 
-The +@post+ object is available to any partials rendered in the view because we defined it as an instance variable.
+因為 +@posts+ 被定義成實例變數(instance variable)，所以可以在所有的 partials 中讀取到。
 
 h3. 刪除留言
 
@@ -1516,7 +1516,8 @@ h3. 翻譯詞彙
 | object | 物件 |
 | instance | 實例 |
 | instantiate | 實例化 |
-| instance variables | 實例變數 |
+| instance variable | 實例變數 |
+| local variable | 區域變數 |
 | inherit | 繼承 |
 | interface | 介面 |
 | library | 函式庫 |
@@ -1542,6 +1543,7 @@ h3. 翻譯詞彙
 | tag | 標籤 |
 | attribute | 屬性 |
 | routing | 路徑 |
+| collection | 集合 |
 
 以下包留原名詞不譯，必要時加上翻譯註解：
 
