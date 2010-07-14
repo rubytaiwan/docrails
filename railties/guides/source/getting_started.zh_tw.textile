@@ -358,7 +358,7 @@ NOTE. 雖然鷹架(scaffolding)可以幫助你快速上手，但是可沒辦法�
 鷹架(scaffold)產生器(generator)會建立出 15 個檔案在不同目錄，以下是一個簡單的說明：
 
 |_.檔案                                       |_.目的|
-|db/migrate/20100207214725_create_posts.rb.rb    |Migration to create the posts table in your database (your name will include a different timestamp)|
+|db/migrate/20100207214725_create_posts.rb.rb    |用來建立 posts 資料庫資料表的 Migration (你的檔案名稱會有不同的 timestamp)|
 |app/models/post.rb                           |Post model|
 |test/fixtures/posts.yml                      |用來測試的假文章資料|
 |app/controllers/posts_controller.rb          |Posts controller|
@@ -1499,7 +1499,7 @@ h3. 文件修改記錄
 
 h3. 關於譯者
 
-張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/) 於 July, 2010，翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ihower/docrails
+張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/)，翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ihower/docrails
 
 h3. 翻譯詞彙
 
