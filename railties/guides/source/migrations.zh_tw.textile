@@ -1,0 +1,714 @@
+h2. Migrations（資料庫遷移）
+
+Migrations（資料庫遷移）很好用，可以有條理的轉換資料庫。雖說，要改資料庫，手動的編輯 SQL 也是可以，但是，這樣就得通知其他開發者去執行它，也得一直注意著，下次佈署的時候，要在正式上線的伺服器（production machine）上面，執行哪些變更。
+
+Active Record（活動記錄）會自動追蹤哪些 migrations 已經執行過、哪些還沒。所以，您只要更新手頭的原始碼，然後執行 +rake db:migrate+，其餘的就交給 Active Record，它會自己搞懂該跑哪些 migrations。還有，它也會更新 +db/schema.rb+ 檔案，以符合改動後的資料庫結構。
+
+有了 migrations，就可以用 Ruby 來寫資料庫變更。因為，migration 是獨立於資料庫的（和大多數 Active Record 的功能一樣），也就是說，您不用去煩惱各種資料庫系統的語法差異，像是 +SELECT *+ 的各種變化形之類的。（當然啦，如果要針對某個特定資料庫系統，撰寫專屬功能的話，您也可以直接寫原始 SQL）。打個比方，您可以在開發階段使用 SQLite3，在正式上線階段則使用 MySQL，兩者間的語法細節，它會自動幫你搞定。
+
+接下來，您將學會 migrations 的一切，包括：
+
+* 用來產生 migrations 的 generators（產生器）
+* Active Record 所提供，用來操縱您資料庫的方法（method）
+* 用來操縱方法（method）的 Rake 作業
+* 它們如何關聯到 +schema.rb+
+
+endprologue.
+
+h3. Migration（資料庫遷移）的解剖構造
+
+深入 migration 的細節之前，先來看看它可以用來做哪些事情。這邊有幾個例子：
+
+<ruby>
+class CreateProducts < ActiveRecord::Migration
+  def self.up
+    create_table :products do |t|
+      t.string :name
+      t.text :description
+
+      t.timestamps
+    end
+  end
+
+  def self.down
+    drop_table :products
+  end
+end
+</ruby>
+
+這個 migration 新增了一個資料表 +products+，資料表中，有個字串欄 +name+，還有個文字欄 +description+。另外，主鍵欄 +id+ 其實也會加進去，不過加入主鍵，是原本就預設會做的動作，所以我們不用特別寫在 migrations 裡面。除了主鍵之外，還有兩個 timestamp 欄 +created_at+ 以及 +updated_at+，也會由 Active Record 自動加進去。以上這個 migration，要復原它很容易，就跟刪掉一個資料表一樣簡單。
+
+Migrations 用途多多，除了改變 schema（資料庫綱要）之外，還可以修復不正確的資料，或者生成新的欄位（fields）：
+
+<ruby>
+class AddReceiveNewsletterToUsers < ActiveRecord::Migration
+  def self.up
+    change_table :users do |t|
+      t.boolean :receive_newsletter, :default => false
+    end
+    User.update_all ["receive_newsletter = ?", true]
+  end
+
+  def self.down
+    remove_column :users, :receive_newsletter
+  end
+end
+</ruby>
+
+這個 migration，在資料表 +users+ 中，新增一個欄 +receive_newsletter+。對於新註冊的使用者，我們要它預設成 false，而已註冊的使用者，???我們認定他已經加入了（opt in），所以用 User 這個 model，將現有使用者的標示（flag）???設定為 +true+。
+
+NOTE: 在 migrations 中使用 models 的一些"警告":#using-models-in-your-migrations
+
+h4. Migrations 是類別（classes）
+
+每個 migration 都是 <tt>ActiveRecord::Migration</tt> 的子類別（subclass），有兩個類別方法可以用： +up+（執行所需的轉換）以及 +down+（回復它們）。
+
+Active Record（活動記錄）提供以下方法（methods），用獨立於資料庫的方式，執行一般的資料定義任務（相關細節稍後會講）：
+
+* +create_table+
+* +change_table+
+* +drop_table+
+* +add_column+
+* +change_column+
+* +rename_column+
+* +remove_column+
+* +add_index+
+* +remove_index+
+
+如果，要做某些資料庫系統特有的任務（例如，產生一個 "foreign key (外部鍵)":#active-record-and-referential-integrity 的約束），可以用 +execute+ 來執行任意的 SQL。其實說穿了，migration 不過是個普通的 Ruby 類別而已，所以，您可以在 migration 裡面做的事情，並不限於 Active Record 的這些方法。舉個例子，用 Active Record 新增一欄後，您可以自己寫程式碼，用現有的 records 去設定這一欄的值（必要的話，使用您的 models）。
+
+某些資料庫，像是 PostgreSQL 或 SQLite3，它可以在交易功能（transactions）的內部，撰寫會改變資料庫綱要（schema）的陳述句（statements）。使用這類資料庫系統的時候，migrations 就會被打包在 transaction 之內。相反的，如果您的資料庫系統，無法把 migration 包在 transaction 之內的話（如 MySQL），那麼，當 migration 失敗了，改到一半的 schema，並不會隨著交易的取消，而自動滾回（roll back）。您必須手動挑出這些已經更動的部分。
+
+h4. 在名稱之中
+
+Migrations（資料庫遷移）存放的地方，是在 +db/migrate+ 裡面，每個 migration class（資料庫遷移類別）各是一個檔案。檔案名稱的格式是 +YYYYMMDDHHMMSS_create_products.rb+，檔名最前面，是一個用來識別 migration 的 UTC timestamp（時間戳章），然後接一個底線，然後接 migration 的名稱。Migration class 的名稱???（CamelCased 版本）???跟檔名的後半段應該是一樣的。+20080906120000_create_products.rb+ 裡面，就該定義 +CreateProducts+，而 +20080906120001_add_details_to_products.rb+ 裡面，則定義 +AddDetailsToProducts+。若要改檔名，就<em>必須</em>更新檔案中的 class，否則 Rails 會回報為遺失 class。
+
+對 Rails 來說，辨識 migration 的時候，只會用到編號（也就是 timestamp）的部份。Rails 2.1 之前的版本，migration 從 1 開始編號，每次產生新的 migration 就加一號。這種方法，在多人開發的時候，就很容易編號衝突，一旦撞號了，就得將 migration 滾回（rollback）並且重新編號。若您說什麼都硬是要回到這種舊的編號結構，可以在 +config/application.rb+ 中加入下面這幾行：
+
+<ruby>
+config.active_record.timestamped_migrations = false
+</ruby>
+
+把時間戳章（timestamps），以及目前已經跑過哪些 migrations 的記錄，兩者合併服用，Rails 就能應付多人開發的狀況了。
+
+狀況：艾莉絲先新增 +20080906120000+ 和 +20080906123000+，鮑伯才接著新增 +20080906124500+ 並且執行了它。艾莉絲寫好了，還在檢查她的東西，此時鮑伯卻把剛才的變更給砍了。鮑伯自砍後，艾莉絲才下了她的 +rake db:migrate+ 指令。在這個混亂的時刻，聰明的 Rails 知道，只有艾莉絲的兩項 migrations 還沒做過，所以 +rake db:migrate+ 只會執行這兩項，雖然鮑伯的 migration 擁有較新 timestamp，但 Rails 不會執行它。同樣的，鮑伯先前下的回溯（migrating down）命令，也不會去執行艾莉絲這兩項的 +down+ 方法（methods）。
+
+當然囉，團隊內溝通不可少，假設，艾莉絲的 migration 移除了鮑伯的 migration 會用到的資料表，那鐵定會出包的。
+
+h4. 變更 Migrations
+
+偶爾，寫 migration 會寫錯。若很不幸的已經執行了，那麼，不能單純的只是把它改一改 重跑，因為，Rails 認為它已經跑過了，所以執行 +rake db:migrate+ 時，Rails 會啥都不做。所以說，您必須先將 migration 滾回（rollback），可以用 +rake db:rollback+ 指令。滾回後，重新編輯過，再用 +rake db:migrate+ 執行正確的版本。
+
+一般來說，最好別編輯現有的 migrations，以免害到同事也害到自己。而且，若是在正式上線的伺服器（production machines），就更慘。所以，您該寫一個新的 migration。還沒進入版本控制系統（也就是說，還沒在您的開發機器上落地生根）的 migration，編輯起來，是比較無害的。這些是常識囉。
+
+h3. 建立一個 Migration（資料庫遷移）
+
+h4. 建立一個 Model（模型）
+
+model（模型）和scaffold（鷹架）的產生器（generators）會在新增模型的時候，建立適當的 migration。這個 migration 已經包含了指示，以建立相關連的資料表。如果您告訴 Rails 您想要哪些欄，那麼，也會產生新增那些欄的陳述句（statements）。例如，執行這個：
+
+<shell>
+rails generate model Product name:string description:text
+</shell>
+
+will create a migration that looks like this
+
+就會建立一個 migration，長得像這樣：
+
+<ruby>
+class CreateProducts < ActiveRecord::Migration
+  def self.up
+    create_table :products do |t|
+      t.string :name
+      t.text :description
+
+      t.timestamps
+    end
+  end
+
+  def self.down
+    drop_table :products
+  end
+end
+</ruby>
+
+You can append as many column name/type pairs as you want. By default +t.timestamps+ (which creates the +updated_at+ and +created_at+ columns that are automatically populated by Active Record) will be added for you.
+
+您可以一直追加欄名/欄類型，多少對都可以。依照預設，會自動新增 +t.timestamps+（會產生 +updated_at+ 和 +created_at+ 這兩個欄，是由 Active Record（活動記錄）自動產生出來的）。
+
+h4. Creating a Standalone Migration
+
+If you are creating migrations for other purposes (for example to add a column to an existing 資料表) then you can use the migration generator:
+
+h4. 建立一個獨立的 Migration（資料庫遷移）
+
+若您建立 migration 是為了別的目的（比方說，為了在現有的資料表中新加入一欄），那麼，您可以使用 migration generator（資料庫遷移產生器）：
+
+<shell>
+rails generate migration AddPartNumberToProducts
+</shell>
+
+This will create an empty but appropriately named migration:
+
+這樣做，會建立一個空的、但已命名好的 migration：
+
+<ruby>
+class AddPartNumberToProducts < ActiveRecord::Migration
+  def self.up
+  end
+
+  def self.down
+  end
+end
+</ruby>
+
+If the migration name is of the form "AddXXXToYYY" or "RemoveXXXFromYYY" and is followed by a list of column names and types then a migration containing the appropriate +add_column+ and +remove_column+ statements will be created.
+
+若 migration 的名稱，是「AddXXXToYYY」或者「RemoveXXXFromYYY」這樣的格式，且後面接著一串欄名與欄類型的清單，那麼，這個新建的 migration，就會含有恰當的 +add_column+ 和 +remove_column+ 敘述。
+
+<shell>
+rails generate migration AddPartNumberToProducts part_number:string
+</shell>
+
+will generate
+
+會產生出：
+
+<ruby>
+class AddPartNumberToProducts < ActiveRecord::Migration
+  def self.up
+    add_column :products, :part_number, :string
+  end
+
+  def self.down
+    remove_column :products, :part_number
+  end
+end
+</ruby>
+
+Similarly,
+
+同理，
+
+<shell>
+rails generate migration RemovePartNumberFromProducts part_number:string
+</shell>
+
+generates
+
+則產生出：
+
+<ruby>
+class RemovePartNumberFromProducts < ActiveRecord::Migration
+  def self.up
+    remove_column :products, :part_number
+  end
+
+  def self.down
+    add_column :products, :part_number, :string
+  end
+end
+</ruby>
+
+You are not limited to one magically generated column, for example
+
+這個魔法，並不限於只產生一欄，像是：
+
+<shell>
+rails generate migration AddDetailsToProducts part_number:string price:decimal
+</shell>
+
+generates
+
+就可以產生出：
+
+<ruby>
+class AddDetailsToProducts < ActiveRecord::Migration
+  def self.up
+    add_column :products, :part_number, :string
+    add_column :products, :price, :decimal
+  end
+
+  def self.down
+    remove_column :products, :price
+    remove_column :products, :part_number
+  end
+end
+</ruby>
+
+As always, what has been generated for you is just a starting point. You can add or remove from it as you see fit.
+
+當然，替您做出來的東西，只是個起點，您可以增刪修改，直到滿意為止。
+
+h3. Writing a Migration
+
+h3. 撰寫 Migration（資料庫遷移）
+
+Once you have created your migration using one of the generators it's time to get to work!
+
+一旦用 generator（產生器）產生了您的 migration，工作時間就開始了！
+
+h4. Creating a 資料表
+
+h4. 建立資料表
+
+Migration 函式 +create_table+ will be one of your workhorses. A typical use would be
+
+Migration 的 +create_table+ 函式（method），將成為您的其中一個幫手。典型的用法是：
+
+<ruby>
+create_table :products do |t|
+  t.string :name
+end
+</ruby>
+
+which creates a +products+ 資料表 with a column called +name+ (and as discussed below, an implicit +id+ column).
+
+The 物件 yielded to the block allows you to create columns on the 資料表. There are two ways of doing this: The first (traditional) form looks like
+
+這會建立一個 +products+ 資料表，裡面有個叫做 +name+ 的欄（以及一個內涵的 +id+ 欄，下面會討論到）
+
+??? 物件 yielded to the block讓您可以在資料表上建立欄。建立欄的方法有二，第一種（傳統的）格式看起來像這樣：
+
+<ruby>
+create_table :products do |t|
+  t.column :name, :string, :null => false
+end
+</ruby>
+
+the second form, the so called "sexy" migration, drops the somewhat redundant +column+ 函式. Instead, the +string+, +integer+, etc. 函式s create a column of that type. Subsequent parameters are the same.
+
+第二種格式，也就是所謂的「性感型」migration，把略嫌多餘的 +column+ 函式給扔了。取而代之的是，用 +string+、+integer+ 等函式（methods）來建立該類型的欄。接在其後的參數（parameter）則是一樣的。
+
+<ruby>
+create_table :products do |t|
+  t.string :name, :null => false
+end
+</ruby>
+
+By default +create_table+ will create a primary key called +id+. You can change the name of the primary key with the +:primary_key+ option (don't forget to update the corresponding model) or if you don't want a primary key at all (for example for a HABTM join 資料表) you can pass +:id => false+. If you need to pass 資料庫 specific options you can place a SQL fragment in the +:options+ option. For example
+
+按照預設，+create_table+ 會建立一個叫做 +id+ 的主鍵（primary key）。您可以用 +:primary_key+ 這個選項（option）來更改主鍵的名稱（別忘了，要同時更新相對應的 model），或者，若您根本就不想要主鍵（例如，使用多對多（has_and_belongs_to_many, HABTM）繫結的資料表時），您可以傳入 +:id => false+。若要傳入某個特定資料庫的選項（options），您可以在 +:options+ 選項中放一個 SQL 片段。舉例：
+
+<ruby>
+create_table :products, :options => "ENGINE=BLACKHOLE" do |t|
+  t.string :name, :null => false
+end
+</ruby>
+
+will append +ENGINE=BLACKHOLE+ to the SQL statement used to create the 資料表 (when using MySQL the default is +ENGINE=InnoDB+).
+
+The types supported by Active Record are +:primary_key+, +:string+, +:text+, +:integer+, +:float+, +:decimal+, +:datetime+, +:timestamp+, +:time+, +:date+, +:binary+, +:boolean+.
+
+These will be mapped onto an appropriate underlying 資料庫 type, for example with MySQL +:string+ is mapped to +VARCHAR(255)+. You can create columns of types not supported by Active Record when using the non-sexy syntax, for example
+
+會在建立資料表的 SQL 陳述句中，加上 +ENGINE=BLACKHOLE+。（在 MYSQL 的狀況，預設是 +ENGINE=InnoDB+）
+
+Active Record（活動記錄）有支援的類型（types）包括：+:primary_key+、+:string+、+:text+、+:integer+、+:float+、+:decimal+、+:datetime+、+:timestamp+、+:time+、+:date+、+:binary+、+:boolean+。
+
+它們會各自對應（mapped）到一個恰當的下層資料庫類型，例如，在 MySQL 底下 +:string+ 會對應到 +VARCHAR(255)+。使用「非性感型」語法時，您可以建立 Active Record（活動記錄）所不支援的類型的欄，比方說：
+
+<ruby>
+create_table :products do |t|
+  t.column :name, 'polygon', :null => false
+end
+</ruby>
+
+This may however hinder portability to other 資料庫s.
+
+不過，對於其他的資料庫，這樣做多少會妨礙到可攜性。
+
+h4. Changing 資料表s
+
+A close cousin of +create_table+ is +change_table+, used for changing existing 資料表s. It is used in a similar fashion to +create_table+ but the 物件 yielded to the block knows more tricks. For example
+
+h4. 變更資料表
+
++create_table+ 有個近親叫 +change_table+，用來變更現有的資料表。它的用法跟 +create_table+ 差不多，但它的???物件 yielded to the block???曉得更多花招。舉例：
+
+<ruby>
+change_table :products do |t|
+  t.remove :description, :name
+  t.string :part_number
+  t.index :part_number
+  t.rename :upccode, :upc_code
+end
+</ruby>
+removes the +description+ and +name+ columns, creates a +part_number+ column and adds an index on it. Finally it renames the +upccode+ column.   This is the same as doing
+
+移除了 +description+ 跟 +name+ 兩欄，新增了 +part_number+ 欄，且在上面設定了索引（index）。在結尾處，把 +upccode+ 欄重新命名。這些動作，跟下面所做的是一樣的：
+
+<ruby>
+remove_column :products, :description
+remove_column :products, :name
+add_column :products, :part_number, :string
+add_index :products, :part_number
+rename_column :products, :upccode, :upc_code
+</ruby>
+
+You don't have to keep repeating the 資料表 name and it groups all the statements related to modifying one particular 資料表. The individual transformation names are also shorter, for example +remove_column+ becomes just +remove+ and +add_index+ becomes just +index+.
+
+您不需重複打資料表的名稱，它會將修改同一個資料表的所有陳述句，通通群組起來。每個各別的轉移動作，名稱也變得比較短，像是 +remove_column+ 變成 +remove+，而 +add_index+ 只要寫 +index+。
+
+h4. Special Helpers
+
+Active Record provides some shortcuts for common functionality. It is for example very common to add both the +created_at+ and +updated_at+ columns and so there is a 函式 that does exactly that:
+
+h4. 特殊輔助工具（Helpers）
+
+Active Record（活動記錄）針對常用的功能，提供了一些捷徑。像是新增 +created_at+ 跟 +updated_at+ 欄，都很常見，所以有個函式，正是用來做這件事情：
+
+<ruby>
+create_table :products do |t|
+  t.timestamps
+end
+</ruby>
+will create a new products 資料表 with those two columns (plus the +id+ column) whereas
+
+會建立一個新的 products 資料表，內含這兩個欄（外加 +id+ 欄）。此外：
+
+<ruby>
+change_table :products do |t|
+  t.timestamps
+end
+</ruby>
+adds those columns to an existing 資料表.
+
+則是在現有的資料表中，加入這兩欄。
+
+The other helper is called +references+ (also available as +belongs_to+). In its simplest form it just adds some readability
+
+另一個輔助工具（helper）叫做 +references+（寫成 +belongs_to+ 也可以）。最簡單的用法，它可以只用來增進易讀性：
+
+<ruby>
+create_table :products do |t|
+  t.references :category
+end
+</ruby>
+
+will create a +category_id+ column of the appropriate type. Note that you pass the model name, not the column name. Active Record adds the +_id+ for you. If you have polymorphic +belongs_to+ associations then +references+ will add both of the columns required:
+
+會建立一個恰當類型的 +category_id+ 欄。注意，您輸入的是 model（模型）的名稱，而非欄名。 Active Record 會為您加上 +_id+。若您有多形性（polymorphic）的 +belongs_to+ 關係，那麼 +references+ 會把所需的兩欄都加進去：
+
+<ruby>
+create_table :products do |t|
+  t.references :attachment, :polymorphic => {:default => 'Photo'}
+end
+</ruby>
+will add an +attachment_id+ column and a string +attachment_type+ column with a default value of 'Photo'.
+
+會新增一個 +attachment_id+ 欄，以及一個預設值為 Photo 的字串欄 +attachment_type+。
+
+NOTE: The +references+ helper does not actually create foreign key constraints for you. You will need to use +execute+ for that or a plugin that adds "foreign key support":#active-record-and-referential-integrity.
+
+NOTE:+references+ 輔助工具（helper）並不會建立外部鍵規範/限制/侷限（foreign key constraints）。您必須使用 +execute+ 來做，或者用能夠加入 "外部鍵支援（foreign key support）":#active-record-and-referential-integrity 的外掛。
+
+If the helpers provided by Active Record aren't enough you can use the +execute+ function to execute arbitrary SQL.
+
+如果 Active Record 提供的輔助工具（helpers）不夠用，您可以用 +execute+ 功能來執行任意的 SQL。
+
+For more details and examples of individual 函式s check the API documentation, in particular the documentation for "<tt>ActiveRecord::ConnectionAdapters::SchemaStatements</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html (which provides the 函式s available in the +up+ and +down+ 函式s),  "<tt>ActiveRecord::ConnectionAdapters::TableDefinition</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html (which provides the 函式s available on the 物件 yielded by +create_table+) and "<tt>ActiveRecord::ConnectionAdapters::Table</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html (which provides the 函式s available on the 物件 yielded by +change_table+).
+
+對於各函式（method）的細節跟範例，請參考 API（application programming interface，應用程式介面）文件，特別是關於 "<tt>ActiveRecord::ConnectionAdapters::SchemaStatements</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html （提供了在 +up+ 跟 +down+ 函式（nethod）裡面，可使用的函式）、  "<tt>ActiveRecord::ConnectionAdapters::TableDefinition</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html （提供了在 +create_table+ 所產生的物件（objects）裡面，可使用的函式）、以及 "<tt>ActiveRecord::ConnectionAdapters::Table</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html （提供了在 +change_table+ 所產生的物件裡面，可使用的函式）。
+
+h4. Writing Your +down+ 函式
+
+h4. 撰寫您的 +down+ 函式
+
+The +down+ 函式 of your migration should revert the transformations done by the +up+ 函式. In other words the 資料庫 schema should be unchanged if you do an +up+ followed by a +down+. For example if you create a 資料表 in the +up+ 函式 you should drop it in the +down+ 函式. It is wise to do things in precisely the reverse order to in the +up+ 函式. For example
+
+您的 migraiton 裡面的 +down+ 函式，要能回復 +up+ 函式所造成的變化。也就是說，若執行了 +up+ 然後執行 +down+，那麼您的資料庫結構（database schema）應該會原封不動。像是，如果您用 +up+ 函式建立了一個資料表，您就該在 +down+ 函式中刪除它。明智的作法是，使用跟 +up+ 完全相反的順序，來做這些事情。例如：
+
+<ruby>
+class ExampleMigration < ActiveRecord::Migration
+
+  def self.up
+    create_table :products do |t|
+      t.references :category
+    end
+    #add a foreign key
+    execute <<-SQL
+      ALTER TABLE products
+        ADD CONSTRAINT fk_products_categories
+        FOREIGN KEY (category_id)
+        REFERENCES categories(id)
+    SQL
+
+    add_column :users, :home_page_url, :string
+
+    rename_column :users, :email, :email_address
+  end
+
+  def self.down
+    rename_column :users, :email_address, :email
+    remove_column :users, :home_page_url
+    execute "ALTER TABLE products DROP FOREIGN KEY fk_products_categories"
+    drop_table :products
+  end
+end
+</ruby>
+Sometimes your migration will do something which is just plain irreversible, for example it might destroy some data. In cases like those when you can't reverse the migration you can raise +IrreversibleMigration+ from your +down+ 函式. If someone tries to revert your migration an error message will be
+displayed saying that it can't be done.
+
+有時候，您的 migrations 會做出無法復原的事情，像是刪掉某些資料之類的。像這種無法倒回 migration 的狀況，您可以在 +down+ 函式中寫上（raise） +IrreversibleMigration+。如果有人想復原您的 migration，會出現錯誤訊息，顯示它無法執行。
+
+h3. Running Migrations
+
+h3. 執行 Migrations（資料庫遷移）
+
+Rails provides a set of rake tasks to work with migrations which boils down to running certain sets of migrations. The very first migration related rake task you use will probably be +db:migrate+. In its most basic form it just runs the +up+ 函式 for all the migrations that have not yet been run. If there are no such migrations it exits.
+
+Rails 提供了一組 rake （耙梳）作業，和 migrations 一起運作，???
+Rails 提供一系列的 rake 任務，以便和??? boils down to ???某幾組 migrations 的 migrations 一起執行。你會用到的第一個跟 migration 有關的 rake 任務大概是 ++。最基本的用法，它純執行所有未執行 migraitons 的 ++ 方法。若都執行過了，它就結束。
+
+要注意的是，執行 ++ 也會召喚出（invokes） ++ 任務，這樣會更新你的 -.rb 檔，以便跟資料庫的結構相吻合。
+
+如果你要特別指定某個版本，AR 會執行所需的 migs （up 或 down），直到達到那個版本為止。所謂版本就是 mig 檔名的前置數字，例如要遷移到版本 - 就執行：
+
+<>
+
+如果數字比當前版本還大（也就是說，??? 往上遷移 mig up???）那就會執行 ++ 方法到包含 - 在內的所有版本，如果是 ??? 向下遷移 ??? 則會執行所有 ++ 方法，但不包括 - 本身。
+
+h4 滾回
+
+
+滾回最新的 mig，是常要用到的，像是你寫錯了並且想修正它。與其去追蹤版本編號，不如這樣
+
+<>
+
+---------- page 8 ----------
+
+這會執行最新一個 mig 的 ++ 方法。如果要復原數個 migs 的話，可以多給一個 ++ 參數：
+
+<>
+
+就會執行最近 3 個 migs 的 ++ 方法。
+
+++ 是滾回去又重新滾過來的捷徑。 
+
+
+Note that running the +db:migrate+ also invokes the +db:schema:dump+ task, which will update your db/schema.rb file to match the structure of your 資料庫.
+
+If you specify a target version, Active Record will run the required migrations (up or down) until it has reached the specified version. The
+version is the numerical prefix on the migration's filename. For example to migrate to version 20080906120000 run
+
+<shell>
+rake db:migrate VERSION=20080906120000
+</shell>
+
+If this is greater than the current version (i.e. it is migrating upwards) this will run the +up+ 函式 on all migrations up to and including 20080906120000, if migrating downwards this will run the +down+ 函式 on all the migrations down to, but not including, 20080906120000.
+
+h4. Rolling Back
+
+A common task is to rollback the last migration, for example if you made a mistake in it and wish to correct it. Rather than tracking down the version number associated with the previous migration you can run
+
+<shell>
+rake db:rollback
+</shell>
+
+This will run the +down+ 函式 from the latest migration. If you need to undo several migrations you can provide a +STEP+ parameter:
+
+<shell>
+rake db:rollback STEP=3
+</shell>
+
+will run the +down+ 函式 from the last 3 migrations.
+
+The +db:migrate:redo+ task is a shortcut for doing a rollback and then migrating back up again. As with the +db:rollback+ task you can use the +STEP+ parameter if you need to go more than one version back, for example
+
+<shell>
+rake db:migrate:redo STEP=3
+</shell>
+
+Neither of these Rake tasks do anything you could not do with +db:migrate+, they are simply more convenient since you do not need to explicitly specify the version to migrate to.
+
+Lastly, the +db:reset+ task will drop the 資料庫, recreate it and load the current schema into it.
+
+NOTE: This is not the same as running all the migrations - see the section on "schema.rb":#schema-dumping-and-you.
+
+h4. Being Specific
+
+If you need to run a specific migration up or down the +db:migrate:up+ and +db:migrate:down+ tasks will do that. Just specify the appropriate version and the corresponding migration will have its +up+ or +down+ 函式 invoked, for example
+
+<shell>
+rake db:migrate:up VERSION=20080906120000
+</shell>
+
+will run the +up+ 函式 from the 20080906120000 migration. These tasks check whether the migration has already run, so for example +db:migrate:up VERSION=20080906120000+ will do nothing if Active Record believes that 20080906120000 has already been run.
+
+h4. Being Talkative
+
+By default migrations tell you exactly what they're doing and how long it took. A migration creating a 資料表 and adding an index might produce output like this
+
+<shell>
+20080906170109 CreateProducts: migrating
+-- create_table(:products)
+   -> 0.0021s
+-- add_index(:products, :name)
+   -> 0.0026s
+20080906170109 CreateProducts: migrated (0.0059s)
+</shell>
+
+Several 函式s are provided that allow you to control all this:
+
+* +suppress_messages+ suppresses any output generated by its block
+* +say+ outputs text (the second argument controls whether it is indented or not)
+* +say_with_time+ outputs text along with how long it took to run its block. If the block returns an integer it assumes it is the number of rows affected.
+
+For example, this migration
+
+<ruby>
+class CreateProducts < ActiveRecord::Migration
+  def self.up
+    suppress_messages do
+      create_table :products do |t|
+        t.string :name
+        t.text :description
+        t.timestamps
+      end
+    end
+    say "Created a table"
+    suppress_messages {add_index :products, :name}
+    say "and an index!", true
+    say_with_time 'Waiting for a while' do
+      sleep 10
+      250
+    end
+  end
+
+  def self.down
+    drop_table :products
+  end
+end
+</ruby>
+
+generates the following output
+
+<shell>
+20080906170109 CreateProducts: migrating
+  Created a table
+   -> and an index!
+  Waiting for a while
+   -> 10.0001s
+   -> 250 rows
+20080906170109 CreateProducts: migrated (10.0097s)
+</shell>
+
+If you just want Active Record to shut up then running +rake db:migrate VERBOSE=false+ will suppress any output.
+
+h3. Using Models in Your Migrations
+
+When creating or updating data in a migration it is often tempting to use one of your models. After all they exist to provide easy access to the underlying data. This can be done but some caution should be observed.
+
+Consider for example a migration that uses the +Product+ model to update a row in the corresponding 資料表. Alice later updates the +Product+ model, adding a new column and a validation on it. Bob comes back from holiday, updates the source and runs outstanding migrations with +rake db:migrate+, including the one that used the +Product+ model. When the migration runs the source is up to date and so the +Product+ model has the validation added by Alice. The 資料庫 however is still old and so does not have that column and an error ensues because that validation is on a column that does not yet exist.
+
+Frequently I just want to update rows in the 資料庫 without writing out the SQL by hand: I'm not using anything specific to the model. One pattern for this is to define a copy of the model inside the migration itself, for example:
+
+<ruby>
+class AddPartNumberToProducts < ActiveRecord::Migration
+  class Product < ActiveRecord::Base
+  end
+
+  def self.up
+    ...
+  end
+
+  def self.down
+    ...
+  end
+end
+</ruby>
+The migration has its own minimal copy of the +Product+ model and no longer cares about the +Product+ model defined in the 應用程式.
+
+h4. Dealing with Changing Models
+
+For performance reasons information about the columns a model has is cached. For example if you add a column to a 資料表 and then try and use the corresponding model to insert a new row it may try to use the old column information. You can force Active Record to re-read the column information with the +reset_column_information+ 函式, for example
+
+<ruby>
+class AddPartNumberToProducts < ActiveRecord::Migration
+  class Product < ActiveRecord::Base
+  end
+
+  def self.up
+    add_column :product, :part_number, :string
+    Product.reset_column_information
+    ...
+  end
+
+  def self.down
+    ...
+  end
+end
+</ruby>
+
+
+h3. Schema Dumping and You
+
+h4. What are Schema Files for?
+
+Migrations, mighty as they may be, are not the authoritative source for your 資料庫 schema. That role falls to either +db/schema.rb+ or an SQL file which Active Record generates by examining the 資料庫. They are not designed to be edited, they just represent the current state of the 資料庫.
+
+There is no need (and it is error prone) to deploy a new 實例 of an app by replaying the entire migration history. It is much simpler and faster to just load into the 資料庫 a description of the current schema.
+
+For example, this is how the test 資料庫 is created: the current development 資料庫 is dumped (either to +db/schema.rb+ or +db/development.sql+) and then loaded into the test 資料庫.
+
+Schema files are also useful if you want a quick look at what attributes an Active Record 物件 has. This information is not in the model's 程式碼 and is frequently spread across several migrations but is all summed up in the schema file. The "annotate_models":http://agilewebdevelopment.com/plugins/annotate_models plugin, which automatically adds (and updates) comments at the top of each model summarizing the schema, may also be of interest.
+
+h4. Types of Schema Dumps
+
+There are two ways to dump the schema. This is set in +config/environment.rb+ by the +config.active_record.schema_format+ setting, which may be either +:sql+ or +:ruby+.
+
+If +:ruby+ is selected then the schema is stored in +db/schema.rb+. If you look at this file you'll find that it looks an awful lot like one very big migration:
+
+<ruby>
+ActiveRecord::Schema.define(:version => 20080906171750) do
+  create_table "authors", :force => true do |t|
+    t.string   "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "products", :force => true do |t|
+    t.string   "name"
+    t.text     "description"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "part_number"
+  end
+end
+</ruby>
+
+In many ways this is exactly what it is. This file is created by inspecting the 資料庫 and expressing its structure using +create_table+, +add_index+, and so on. Because this is 資料庫 independent it could be loaded into any 資料庫 that Active Record supports. This could be very useful if you were to distribute an 應用程式 that is able to run against multiple 資料庫s.
+
+There is however a trade-off: +db/schema.rb+ cannot express 資料庫 specific items such as foreign key constraints, triggers or stored procedures. While in a migration you can execute custom SQL statements, the schema dumper cannot reconstitute those statements from the 資料庫. If you are using features like this then you should set the schema format to +:sql+.
+
+Instead of using Active Record's schema dumper the 資料庫's structure will be dumped using a tool specific to that 資料庫 (via the +db:structure:dump+ Rake task) into +db/#{Rails.env}_structure.sql+. For example for PostgreSQL the +pg_dump+ utility is used and for MySQL this file will contain the output of +SHOW CREATE TABLE+ for the various 資料表s. Loading this schema is simply a question of executing the SQL statements contained inside.
+
+By definition this will be a perfect copy of the 資料庫's structure but this will usually prevent loading the schema into a 資料庫 other than the one used to create it.
+
+h4. Schema Dumps and Source Control
+
+Because schema dumps are the authoritative source for your 資料庫 schema, it is strongly recommended that you check them into source control.
+
+h3. Active Record and Referential Integrity
+
+The Active Record way claims that intelligence belongs in your models, not in the 資料庫. As such, features such as triggers or foreign key constraints, which push some of that intelligence back into the 資料庫, are not heavily used.
+
+Validations such as +validates_uniqueness_of+ are one way in which models can enforce data integrity. The +:dependent+ option on associations allows models to automatically destroy child 物件s when the parent is destroyed. Like anything which operates at the 應用程式 level these cannot guarantee referential integrity and so some people augment them with foreign key constraints.
+
+Although Active Record does not provide any tools for working directly with such features, the +execute+ 函式 can be used to execute arbitrary SQL. There are also a number of plugins such as "foreign_key_migrations":http://github.com/harukizaemon/redhillonrails/tree/master/foreign_key_migrations/ which add foreign key support to Active Record (including support for dumping foreign keys in +db/schema.rb+).
+
+h3. Changelog
+
+"Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213-rails-guides/tickets/6
+
+* July 15, 2010: minor typos corrected by "Jaime Iniesta":http://jaimeiniesta.com
+* September 14, 2008: initial version by "Frederick Cheung":credits.html#fcheung
+
+時間戳記(timestamp)欄位 +create_at+ 和 +updated_at+ 是 AR 建立新資料的時候，會自動產生時間。
+
+要逆推這個 migration，就只要把 table 砍掉即可。
+---
+資料庫中不正確的資料，或是產生新的欄位
+---
+在某些連 schema 變更都可以包括在 transactions 裡的資料庫中(例如: PostgreSQL or SQLite3) 中，Migration 會被包裹在 transaction 中。但是.... 
