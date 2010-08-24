@@ -101,17 +101,15 @@ h4. 變更 Migrations
 
 一般來說，最好別編輯現有的 migrations，以免害到同事也害到自己。而且，若是在正式上線的伺服器（production machines），就更慘。所以，您該寫一個新的 migration。還沒進入版本控制系統（也就是說，還沒在您的開發機器上落地生根）的 migration，編輯起來，是比較無害的。這些是常識囉。
 
-h3. 建立一個 Migration（資料庫遷移）
+h3. 建立一個 Migration
 
 h4. 建立一個 Model（模型）
 
-model（模型）和scaffold（鷹架）的產生器（generators）會在新增模型的時候，建立適當的 migration。這個 migration 已經包含了指示，以建立相關連的資料表。如果您告訴 Rails 您想要哪些欄，那麼，也會產生新增那些欄的陳述句（statements）。例如，執行這個：
+新增 model（模型）的時候，model 和scaffold（鷹架）的產生器（generators），會自動產生適當的 migration。這個 migration 裡面，已經把建立相關資料表的步驟都寫好了。如果告訴 Rails，想要哪些欄，Rails 還會連新增欄的陳述句（statements）都一起寫好。例如，執行這個：
 
 <shell>
 rails generate model Product name:string description:text
 </shell>
-
-will create a migration that looks like this
 
 就會建立一個 migration，長得像這樣：
 
@@ -132,25 +130,17 @@ class CreateProducts < ActiveRecord::Migration
 end
 </ruby>
 
-You can append as many column name/type pairs as you want. By default +t.timestamps+ (which creates the +updated_at+ and +created_at+ columns that are automatically populated by Active Record) will be added for you.
+您可以追加一對一對的欄名/欄類型，愛加多少就加多少。如同前面提過的，建立新資料表的同時，也會同時幫您加入 +t.timestamps+ 欄（就是 +updated_at+ 和 +created_at+ 這兩個欄，Active Record 自動加上去的）。
 
-您可以一直追加欄名/欄類型，多少對都可以。依照預設，會自動新增 +t.timestamps+（會產生 +updated_at+ 和 +created_at+ 這兩個欄，是由 Active Record（活動記錄）自動產生出來的）。
+h4. 建立一個獨立的 Migration
 
-h4. Creating a Standalone Migration
-
-If you are creating migrations for other purposes (for example to add a column to an existing 資料表) then you can use the migration generator:
-
-h4. 建立一個獨立的 Migration（資料庫遷移）
-
-若您建立 migration 是為了別的目的（比方說，為了在現有的資料表中新加入一欄），那麼，您可以使用 migration generator（資料庫遷移產生器）：
+若您建立 migration，不是為了新增 model，而是為了其他目的（比方說，在現有資料表中新增一欄），那可以用 migration generator（資料庫遷移產生器）來做：
 
 <shell>
 rails generate migration AddPartNumberToProducts
 </shell>
 
-This will create an empty but appropriately named migration:
-
-這樣做，會建立一個空的、但已命名好的 migration：
+這樣會建立一個空的、但已命名好的 migration：
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
@@ -162,15 +152,11 @@ class AddPartNumberToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-If the migration name is of the form "AddXXXToYYY" or "RemoveXXXFromYYY" and is followed by a list of column names and types then a migration containing the appropriate +add_column+ and +remove_column+ statements will be created.
-
-若 migration 的名稱，是「AddXXXToYYY」或者「RemoveXXXFromYYY」這樣的格式，且後面接著一串欄名與欄類型的清單，那麼，這個新建的 migration，就會含有恰當的 +add_column+ 和 +remove_column+ 敘述。
+把 migration 的名稱，取做「AddXXXToYYY」、「RemoveXXXFromYYY」這類的格式，後面再接上一串欄名/欄類型的清單，這樣的話，這個 migration 就會含有對應的 +add_column+ 和 +remove_column+ 敘述。
 
 <shell>
 rails generate migration AddPartNumberToProducts part_number:string
 </shell>
-
-will generate
 
 會產生出：
 
@@ -186,15 +172,11 @@ class AddPartNumberToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-Similarly,
-
 同理，
 
 <shell>
 rails generate migration RemovePartNumberFromProducts part_number:string
 </shell>
-
-generates
 
 則產生出：
 
@@ -210,15 +192,11 @@ class RemovePartNumberFromProducts < ActiveRecord::Migration
 end
 </ruby>
 
-You are not limited to one magically generated column, for example
-
-這個魔法，並不限於只產生一欄，像是：
+這個魔術，可以產生不只一欄，像是：
 
 <shell>
 rails generate migration AddDetailsToProducts part_number:string price:decimal
 </shell>
-
-generates
 
 就可以產生出：
 
@@ -236,25 +214,15 @@ class AddDetailsToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-As always, what has been generated for you is just a starting point. You can add or remove from it as you see fit.
+這些自動產生的東西，只是個起點，您可以增刪修改，直到滿意為止。
 
-當然，替您做出來的東西，只是個起點，您可以增刪修改，直到滿意為止。
+h3. 撰寫 Migration
 
-h3. Writing a Migration
-
-h3. 撰寫 Migration（資料庫遷移）
-
-Once you have created your migration using one of the generators it's time to get to work!
-
-一旦用 generator（產生器）產生了您的 migration，工作時間就開始了！
-
-h4. Creating a 資料表
+用 generator 產生出 migration 後，接下來就是我們的工作了。
 
 h4. 建立資料表
 
-Migration 函式 +create_table+ will be one of your workhorses. A typical use would be
-
-Migration 的 +create_table+ 函式（method），將成為您的其中一個幫手。典型的用法是：
+Migration 的 +create_table+ 方法（method）可以幫上忙。典型的用法是：
 
 <ruby>
 create_table :products do |t|
@@ -262,11 +230,7 @@ create_table :products do |t|
 end
 </ruby>
 
-which creates a +products+ 資料表 with a column called +name+ (and as discussed below, an implicit +id+ column).
-
-The 物件 yielded to the block allows you to create columns on the 資料表. There are two ways of doing this: The first (traditional) form looks like
-
-這會建立一個 +products+ 資料表，裡面有個叫做 +name+ 的欄（以及一個內涵的 +id+ 欄，下面會討論到）
+這會建立一個 +products+ 資料表，裡面有個欄叫做 +name+（以及一個主鍵欄 +id+，下面會討論到）
 
 ??? 物件 yielded to the block讓您可以在資料表上建立欄。建立欄的方法有二，第一種（傳統的）格式看起來像這樣：
 
