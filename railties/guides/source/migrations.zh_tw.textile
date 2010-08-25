@@ -1,23 +1,23 @@
-h2. Migrations¡]¸ê®Æ®w¾E²¾¡^
+ï»¿h2. Migrationsï¼ˆè³‡æ–™åº«é·ç§»ï¼‰
 
-Migrations¡]¸ê®Æ®w¾E²¾¡^«Ü¦n¥Î¡A¥i¥H¦³±ø²zªºÂà´«¸ê®Æ®w¡CÁö»¡¡A­n§ï¸ê®Æ®w¡A¤â°Êªº½s¿è SQL ¤]¬O¥i¥H¡A¦ı¬O¡A³o¼Ë´N±o³qª¾¨ä¥L¶}µoªÌ¥h°õ¦æ¥¦¡A¤]±o¤@ª½ª`·NµÛ¡A¤U¦¸§G¸pªº®É­Ô¡A­n¦b¥¿¦¡¤W½uªº¦øªA¾¹¡]production machine¡^¤W­±¡A°õ¦æ­ş¨ÇÅÜ§ó¡C
+Migrationsï¼ˆè³‡æ–™åº«é·ç§»ï¼‰å¾ˆå¥½ç”¨ï¼Œå¯ä»¥æœ‰æ¢ç†çš„è½‰æ›è³‡æ–™åº«ã€‚é›–èªªï¼Œè¦æ”¹è³‡æ–™åº«ï¼Œæ‰‹å‹•çš„ç·¨è¼¯ SQL ä¹Ÿæ˜¯å¯ä»¥ï¼Œä½†æ˜¯ï¼Œé€™æ¨£å°±å¾—é€šçŸ¥å…¶ä»–é–‹ç™¼è€…å»åŸ·è¡Œå®ƒï¼Œä¹Ÿå¾—ä¸€ç›´æ³¨æ„è‘—ï¼Œä¸‹æ¬¡ä½ˆç½²çš„æ™‚å€™ï¼Œè¦åœ¨æ­£å¼ä¸Šç·šçš„ä¼ºæœå™¨ï¼ˆproduction machineï¼‰ä¸Šé¢ï¼ŒåŸ·è¡Œå“ªäº›è®Šæ›´ã€‚
 
-Active Record¡]¬¡°Ê°O¿ı¡^·|¦Û°Ê°lÂÜ­ş¨Ç migrations ¤w¸g°õ¦æ¹L¡B­ş¨ÇÁÙ¨S¡C©Ò¥H¡A±z¥u­n§ó·s¤âÀYªº­ì©l½X¡AµM«á°õ¦æ +rake db:migrate+¡A¨ä¾lªº´N¥æµ¹ Active Record¡A¥¦·|¦Û¤v·dÀ´¸Ó¶]­ş¨Ç migrations¡CÁÙ¦³¡A¥¦¤]·|§ó·s +db/schema.rb+ ÀÉ®×¡A¥H²Å¦X§ï°Ê«áªº¸ê®Æ®wµ²ºc¡C
+Active Recordï¼ˆæ´»å‹•è¨˜éŒ„ï¼‰æœƒè‡ªå‹•è¿½è¹¤å“ªäº› migrations å·²ç¶“åŸ·è¡Œéã€å“ªäº›é‚„æ²’ã€‚æ‰€ä»¥ï¼Œæ‚¨åªè¦æ›´æ–°æ‰‹é ­çš„åŸå§‹ç¢¼ï¼Œç„¶å¾ŒåŸ·è¡Œ +rake db:migrate+ï¼Œå…¶é¤˜çš„å°±äº¤çµ¦ Active Recordï¼Œå®ƒæœƒè‡ªå·±ææ‡‚è©²è·‘å“ªäº› migrationsã€‚é‚„æœ‰ï¼Œå®ƒä¹Ÿæœƒæ›´æ–° +db/schema.rb+ æª”æ¡ˆï¼Œä»¥ç¬¦åˆæ”¹å‹•å¾Œçš„è³‡æ–™åº«çµæ§‹ã€‚
 
-¦³¤F migrations¡A´N¥i¥H¥Î Ruby ¨Ó¼g¸ê®Æ®wÅÜ§ó¡C¦]¬°¡Amigration ¬O¿W¥ß©ó¸ê®Æ®wªº¡]©M¤j¦h¼Æ Active Record ªº¥\¯à¤@¼Ë¡^¡A¤]´N¬O»¡¡A±z¤£¥Î¥h·Ğ´o¦UºØ¸ê®Æ®w¨t²Îªº»yªk®t²§¡A¹³¬O +SELECT *+ ªº¦UºØÅÜ¤Æ§Î¤§Ãşªº¡C¡]·íµM°Õ¡A¦pªG­n°w¹ï¬Y­Ó¯S©w¸ê®Æ®w¨t²Î¡A¼¶¼g±MÄİ¥\¯àªº¸Ü¡A±z¤]¥i¥Hª½±µ¼g­ì©l SQL¡^¡C¥´­Ó¤ñ¤è¡A±z¥i¥H¦b¶}µo¶¥¬q¨Ï¥Î SQLite3¡A¦b¥¿¦¡¤W½u¶¥¬q«h¨Ï¥Î MySQL¡A¨âªÌ¶¡ªº»yªk²Ó¸`¡A¥¦·|¦Û°ÊÀ°§A·d©w¡C
+æœ‰äº† migrationsï¼Œå°±å¯ä»¥ç”¨ Ruby ä¾†å¯«è³‡æ–™åº«è®Šæ›´ã€‚å› ç‚ºï¼Œmigration æ˜¯ç¨ç«‹æ–¼è³‡æ–™åº«çš„ï¼ˆå’Œå¤§å¤šæ•¸ Active Record çš„åŠŸèƒ½ä¸€æ¨£ï¼‰ï¼Œä¹Ÿå°±æ˜¯èªªï¼Œæ‚¨ä¸ç”¨å»ç…©æƒ±å„ç¨®è³‡æ–™åº«ç³»çµ±çš„èªæ³•å·®ç•°ï¼Œåƒæ˜¯ +SELECT *+ çš„å„ç¨®è®ŠåŒ–å½¢ä¹‹é¡çš„ã€‚ï¼ˆç•¶ç„¶å•¦ï¼Œå¦‚æœè¦é‡å°æŸå€‹ç‰¹å®šè³‡æ–™åº«ç³»çµ±ï¼Œæ’°å¯«å°ˆå±¬åŠŸèƒ½çš„è©±ï¼Œæ‚¨ä¹Ÿå¯ä»¥ç›´æ¥å¯«åŸå§‹ SQLï¼‰ã€‚æ‰“å€‹æ¯”æ–¹ï¼Œæ‚¨å¯ä»¥åœ¨é–‹ç™¼éšæ®µä½¿ç”¨ SQLite3ï¼Œåœ¨æ­£å¼ä¸Šç·šéšæ®µå‰‡ä½¿ç”¨ MySQLï¼Œå…©è€…é–“çš„èªæ³•ç´°ç¯€ï¼Œå®ƒæœƒè‡ªå‹•å¹«ä½ æå®šã€‚
 
-±µ¤U¨Ó¡A±z±N¾Ç·| migrations ªº¤@¤Á¡A¥]¬A¡G
+æ¥ä¸‹ä¾†ï¼Œæ‚¨å°‡å­¸æœƒ migrations çš„ä¸€åˆ‡ï¼ŒåŒ…æ‹¬ï¼š
 
-* ¥Î¨Ó²£¥Í migrations ªº generators¡]²£¥Í¾¹¡^
-* Active Record ©Ò´£¨Ñ¡A¥Î¨Ó¾ŞÁa±z¸ê®Æ®wªº¤èªk¡]method¡^
-* ¥Î¨Ó¾ŞÁa¤èªkªº Rake §@·~
-* ¥¦­Ì¦p¦óÃöÁp¨ì +schema.rb+
+* ç”¨ä¾†ç”¢ç”Ÿ migrations çš„ generatorsï¼ˆç”¢ç”Ÿå™¨ï¼‰
+* Active Record æ‰€æä¾›ï¼Œç”¨ä¾†æ“ç¸±æ‚¨è³‡æ–™åº«çš„æ–¹æ³•ï¼ˆmethodï¼‰
+* ç”¨ä¾†æ“ç¸±æ–¹æ³•çš„ Rake ä½œæ¥­
+* å®ƒå€‘å¦‚ä½•é—œè¯åˆ° +schema.rb+
 
 endprologue.
 
-h3. Migration ªº¸Ñ­åºc³y
+h3. Migration çš„è§£å‰–æ§‹é€ 
 
-²`¤J migration ªº²Ó¸`¤§«e¡A¥ı¨Ó¬İ¬İ¥¦¥i¥H¥Î¨Ó°µ­ş¨Ç¨Æ±¡¡C³oÃä¦³´X­Ó¨Ò¤l¡G
+æ·±å…¥ migration çš„ç´°ç¯€ä¹‹å‰ï¼Œå…ˆä¾†çœ‹çœ‹å®ƒå¯ä»¥ç”¨ä¾†åšå“ªäº›äº‹æƒ…ã€‚é€™é‚Šæœ‰å¹¾å€‹ä¾‹å­ï¼š
 
 <ruby>
 class CreateProducts < ActiveRecord::Migration
@@ -36,9 +36,9 @@ class CreateProducts < ActiveRecord::Migration
 end
 </ruby>
 
-³o­Ó migration ·s¼W¤F¤@­Ó¸ê®Æªí +products+¡A¸ê®Æªí¤¤¡A¦³­Ó¦r¦êÄæ +name+¡AÁÙ¦³­Ó¤å¦rÄæ +description+¡C¥t¥~¡A¥DÁäÄæ +id+ ¨ä¹ê¤]·|¥[¶i¥h¡A¤£¹L¥[¤J¥DÁä¡A¬O­ì¥»´N¹w³]·|°µªº°Ê§@¡A©Ò¥H§Ú­Ì¤£¥Î¯S§O¼g¦b migrations ¸Ì­±¡C°£¤F¥DÁä¤§¥~¡AÁÙ¦³¨â­Ó timestamp Äæ +created_at+ ¥H¤Î +updated_at+¡A¤]·|¥Ñ Active Record ¦Û°Ê¥[¶i¥h¡C¥H¤W³o­Ó migration¡A­n´_­ì¥¦«Ü®e©ö¡A´N¸ò§R±¼¤@­Ó¸ê®Æªí¤@¼ËÂ²³æ¡C
+é€™å€‹ migration æ–°å¢äº†ä¸€å€‹è³‡æ–™è¡¨ +products+ï¼Œè³‡æ–™è¡¨ä¸­ï¼Œæœ‰å€‹å­—ä¸²æ¬„ +name+ï¼Œé‚„æœ‰å€‹æ–‡å­—æ¬„ +description+ã€‚å¦å¤–ï¼Œä¸»éµæ¬„ +id+ å…¶å¯¦ä¹ŸæœƒåŠ é€²å»ï¼Œä¸éåŠ å…¥ä¸»éµï¼Œæ˜¯åŸæœ¬å°±é è¨­æœƒåšçš„å‹•ä½œï¼Œæ‰€ä»¥æˆ‘å€‘ä¸ç”¨ç‰¹åˆ¥å¯«åœ¨ migrations è£¡é¢ã€‚é™¤äº†ä¸»éµä¹‹å¤–ï¼Œé‚„æœ‰å…©å€‹ timestamp æ¬„ +created_at+ ä»¥åŠ +updated_at+ï¼Œä¹Ÿæœƒç”± Active Record è‡ªå‹•åŠ é€²å»ã€‚ä»¥ä¸Šé€™å€‹ migrationï¼Œè¦å¾©åŸå®ƒå¾ˆå®¹æ˜“ï¼Œå°±è·Ÿåˆªæ‰ä¸€å€‹è³‡æ–™è¡¨ä¸€æ¨£ç°¡å–®ã€‚
 
-Migrations ¥Î³~¦h¦h¡A°£¤F§ïÅÜ schema¡]¸ê®Æ®wºõ­n¡^¤§¥~¡AÁÙ¥i¥H­×´_¤£¥¿½Tªº¸ê®Æ¡A©ÎªÌ¥Í¦¨·sªºÄæ¦ì¡]fields¡^¡G
+Migrations ç”¨é€”å¤šå¤šï¼Œé™¤äº†æ”¹è®Š schemaï¼ˆè³‡æ–™åº«ç¶±è¦ï¼‰ä¹‹å¤–ï¼Œé‚„å¯ä»¥ä¿®å¾©ä¸æ­£ç¢ºçš„è³‡æ–™ï¼Œæˆ–è€…ç”Ÿæˆæ–°çš„æ¬„ä½ï¼ˆfieldsï¼‰ï¼š
 
 <ruby>
 class AddReceiveNewsletterToUsers < ActiveRecord::Migration
@@ -55,15 +55,15 @@ class AddReceiveNewsletterToUsers < ActiveRecord::Migration
 end
 </ruby>
 
-³o­Ó migration¡A¦b¸ê®Æªí +users+ ¤¤¡A·s¼W¤@­ÓÄæ +receive_newsletter+¡C¹ï©ó·sµù¥Uªº¨Ï¥ÎªÌ¡A§Ú­Ì­n¥¦¹w³]¦¨ false¡A¦Ó¤wµù¥Uªº¨Ï¥ÎªÌ¡A???§Ú­Ì»{©w¥L¤w¸g¥[¤J¤F¡]opt in¡^¡A©Ò¥H¥Î User ³o­Ó model¡A±N²{¦³¨Ï¥ÎªÌªº¼Ğ¥Ü¡]flag¡^???³]©w¬° +true+¡C
+é€™å€‹ migrationï¼Œåœ¨è³‡æ–™è¡¨ +users+ ä¸­ï¼Œæ–°å¢ä¸€å€‹æ¬„ +receive_newsletter+ã€‚å°æ–¼æ–°è¨»å†Šçš„ä½¿ç”¨è€…ï¼Œæˆ‘å€‘è¦å®ƒé è¨­æˆ falseï¼Œè€Œå·²è¨»å†Šçš„ä½¿ç”¨è€…ï¼Œ???æˆ‘å€‘èªå®šä»–å·²ç¶“åŠ å…¥äº†ï¼ˆopt inï¼‰ï¼Œæ‰€ä»¥ç”¨ User é€™å€‹ modelï¼Œå°‡ç¾æœ‰ä½¿ç”¨è€…çš„æ¨™ç¤ºï¼ˆflagï¼‰???è¨­å®šç‚º +true+ã€‚
 
-NOTE: ¦b migrations ¤¤¨Ï¥Î models ªº¤@¨Ç"Äµ§i":#using-models-in-your-migrations
+NOTE: åœ¨ migrations ä¸­ä½¿ç”¨ models çš„ä¸€äº›"è­¦å‘Š":#using-models-in-your-migrations
 
-h4. Migrations ¬OÃş§O¡]classes¡^
+h4. Migrations æ˜¯é¡åˆ¥ï¼ˆclassesï¼‰
 
-¨C­Ó migration ³£¬O <tt>ActiveRecord::Migration</tt> ªº¤lÃş§O¡]subclass¡^¡A¦³¨â­ÓÃş§O¤èªk¥i¥H¥Î¡G +up+¡]°õ¦æ©Ò»İªºÂà´«¡^¥H¤Î +down+¡]¦^´_¥¦­Ì¡^¡C
+æ¯å€‹ migration éƒ½æ˜¯ <tt>ActiveRecord::Migration</tt> çš„å­é¡åˆ¥ï¼ˆsubclassï¼‰ï¼Œæœ‰å…©å€‹é¡åˆ¥æ–¹æ³•å¯ä»¥ç”¨ï¼š +up+ï¼ˆåŸ·è¡Œæ‰€éœ€çš„è½‰æ›ï¼‰ä»¥åŠ +down+ï¼ˆå›å¾©å®ƒå€‘ï¼‰ã€‚
 
-Active Record ´£¨Ñ¥H¤U¤èªk¡A¥Î¿W¥ß©ó¸ê®Æ®wªº¤è¦¡¡A°õ¦æ¤@¯ëªº¸ê®Æ©w¸q¥ô°È¡G
+Active Record æä¾›ä»¥ä¸‹æ–¹æ³•ï¼Œç”¨ç¨ç«‹æ–¼è³‡æ–™åº«çš„æ–¹å¼ï¼ŒåŸ·è¡Œä¸€èˆ¬çš„è³‡æ–™å®šç¾©ä»»å‹™ï¼š
 
 * +create_table+
 * +change_table+
@@ -75,43 +75,43 @@ Active Record ´£¨Ñ¥H¤U¤èªk¡A¥Î¿W¥ß©ó¸ê®Æ®wªº¤è¦¡¡A°õ¦æ¤@¯ëªº¸ê®Æ©w¸q¥ô°È¡G
 * +add_index+
 * +remove_index+
 
-¦pªG¡A­n°µ¬Y¨Ç¸ê®Æ®w¨t²Î¯S¦³ªº¥ô°È¡]¨Ò¦p¡A²£¥Í¤@­Ó "foreign key (¥~³¡Áä)":#active-record-and-referential-integrity ªº¬ù§ô¡^¡A¥i¥H¥Î +execute+ ¨Ó°õ¦æ¥ô·Nªº SQL¡C»¡¬ï¤F¡Amigration ¤£¹L¬O­Ó´¶³qªº Ruby Ãş§O¦Ó¤w¡A©Ò¥H¡A±z¥i¥H¦b migration ¸Ì­±°µªº¨Æ±¡¡A¨Ã¤£­­©ó Active Record ªº³o¨Ç¤èªk¡CÁ|­Ó¨Ò¤l¡A¥Î Active Record ·s¼W¤@Äæ«á¡A±z¥i¥H¦Û¤v¼gµ{¦¡½X¡A¥Î²{¦³ªº records ¥h³]©w³o¤@Äæªº­È¡]¥²­nªº¸Ü¡A¨Ï¥Î±zªº models¡^¡C
+å¦‚æœï¼Œè¦åšæŸäº›è³‡æ–™åº«ç³»çµ±ç‰¹æœ‰çš„ä»»å‹™ï¼ˆä¾‹å¦‚ï¼Œç”¢ç”Ÿä¸€å€‹ "foreign key (å¤–éƒ¨éµ)":#active-record-and-referential-integrity çš„ç´„æŸï¼‰ï¼Œå¯ä»¥ç”¨ +execute+ ä¾†åŸ·è¡Œä»»æ„çš„ SQLã€‚èªªç©¿äº†ï¼Œmigration ä¸éæ˜¯å€‹æ™®é€šçš„ Ruby é¡åˆ¥è€Œå·²ï¼Œæ‰€ä»¥ï¼Œæ‚¨å¯ä»¥åœ¨ migration è£¡é¢åšçš„äº‹æƒ…ï¼Œä¸¦ä¸é™æ–¼ Active Record çš„é€™äº›æ–¹æ³•ã€‚èˆ‰å€‹ä¾‹å­ï¼Œç”¨ Active Record æ–°å¢ä¸€æ¬„å¾Œï¼Œæ‚¨å¯ä»¥è‡ªå·±å¯«ç¨‹å¼ç¢¼ï¼Œç”¨ç¾æœ‰çš„ records å»è¨­å®šé€™ä¸€æ¬„çš„å€¼ï¼ˆå¿…è¦çš„è©±ï¼Œä½¿ç”¨æ‚¨çš„ modelsï¼‰ã€‚
 
-¬Y¨Ç¸ê®Æ®w¡A¹³¬O PostgreSQL ©Î SQLite3¡A¥¦¥i¥H¦b transactions¡]¥æ©ö¥\¯à¡^ªº¤º³¡¡A¼¶¼g·|§ïÅÜ schema¡]¸ê®Æ®wºõ­n¡^ªº³¯­z¥y¡]statements¡^¡C¨Ï¥Î³oÃş¸ê®Æ®w¨t²Îªº®É­Ô¡Amigrations ´N·|³Q¥´¥]¦b transaction ¤§¤º¡C¬Û¤Ïªº¡A¦pªG±zªº¸ê®Æ®w¨t²Î¡AµLªk§â migration ¥]¦b transaction ¤§¤ºªº¸Ü¡]¦p MySQL¡^¡A¨º»ò¡A·í migration ¥¢±Ñ¤F¡A§ï¨ì¤@¥bªº schema¡A¨Ã¤£·|ÀHµÛ¥æ©öªº¨ú®ø¡A¦Ó¦Û°Êºu¦^¡]roll back¡^¡C±z¥²¶·¤â°Ê¬D¥X³o¨Ç¤w¸g§ó°Êªº³¡¤À¡C
+æŸäº›è³‡æ–™åº«ï¼Œåƒæ˜¯ PostgreSQL æˆ– SQLite3ï¼Œå®ƒå¯ä»¥åœ¨ transactionsï¼ˆäº¤æ˜“åŠŸèƒ½ï¼‰çš„å…§éƒ¨ï¼Œæ’°å¯«æœƒæ”¹è®Š schemaï¼ˆè³‡æ–™åº«ç¶±è¦ï¼‰çš„é™³è¿°å¥ï¼ˆstatementsï¼‰ã€‚ä½¿ç”¨é€™é¡è³‡æ–™åº«ç³»çµ±çš„æ™‚å€™ï¼Œmigrations å°±æœƒè¢«æ‰“åŒ…åœ¨ transaction ä¹‹å…§ã€‚ç›¸åçš„ï¼Œå¦‚æœæ‚¨çš„è³‡æ–™åº«ç³»çµ±ï¼Œç„¡æ³•æŠŠ migration åŒ…åœ¨ transaction ä¹‹å…§çš„è©±ï¼ˆå¦‚ MySQLï¼‰ï¼Œé‚£éº¼ï¼Œç•¶ migration å¤±æ•—äº†ï¼Œæ”¹åˆ°ä¸€åŠçš„ schemaï¼Œä¸¦ä¸æœƒéš¨è‘—äº¤æ˜“çš„å–æ¶ˆï¼Œè€Œè‡ªå‹•æ»¾å›ï¼ˆroll backï¼‰ã€‚æ‚¨å¿…é ˆæ‰‹å‹•æŒ‘å‡ºé€™äº›å·²ç¶“æ›´å‹•çš„éƒ¨åˆ†ã€‚
 
-h4. ¦b¦WºÙ¤§¤¤
+h4. åœ¨åç¨±ä¹‹ä¸­
 
-Migrations ¦s©ñªº¦a¤è¡A¬O¦b +db/migrate+ ¸Ì­±¡A¨C­Ó migration class ¦U¬O¤@­ÓÀÉ®×¡CÀÉ®×¦WºÙªº®æ¦¡¬O +YYYYMMDDHHMMSS_create_products.rb+¡AÀÉ¦W³Ì«e­±¡A¬O¤@­Ó¥Î¨ÓÃÑ§O migration ªº UTC timestamp¡]®É¶¡ÂW³¹¡^¡AµM«á±µ¤@­Ó©³½u¡AµM«á±µ migration ªº¦WºÙ¡CMigration class ªº¦WºÙ¬O±Ä¥Î CamelCased ¡]¾m®p¦¡¡^ªº©R¦W®æ¦¡¡A³o­Ó¦WºÙ¡A¸òÀÉ¦Wªº«á¥b¬qÀ³¸Ó¬O¤@¼Ëªº¡C©Ò¥H¡A+20080906120000_create_products.rb+ ¸Ì­±¡A´N¸Ó©w¸q +CreateProducts+¡A¦Ó +20080906120001_add_details_to_products.rb+ ¸Ì­±¡A«h©w¸q +AddDetailsToProducts+¡C­Y­n§ïÀÉ¦W¡A´N<em>¥²¶·</em>§ó·sÀÉ®×¤¤ªº class¡A§_«h Rails ·|¦^³ø¬°¿ò¥¢ class¡C
+Migrations å­˜æ”¾çš„åœ°æ–¹ï¼Œæ˜¯åœ¨ +db/migrate+ è£¡é¢ï¼Œæ¯å€‹ migration class å„æ˜¯ä¸€å€‹æª”æ¡ˆã€‚æª”æ¡ˆåç¨±çš„æ ¼å¼æ˜¯ +YYYYMMDDHHMMSS_create_products.rb+ï¼Œæª”åæœ€å‰é¢ï¼Œæ˜¯ä¸€å€‹ç”¨ä¾†è­˜åˆ¥ migration çš„ UTC timestampï¼ˆæ™‚é–“æˆ³ç« ï¼‰ï¼Œç„¶å¾Œæ¥ä¸€å€‹åº•ç·šï¼Œç„¶å¾Œæ¥ migration çš„åç¨±ã€‚Migration class çš„åç¨±æ˜¯æ¡ç”¨ CamelCased ï¼ˆé§å³°å¼ï¼‰çš„å‘½åæ ¼å¼ï¼Œé€™å€‹åç¨±ï¼Œè·Ÿæª”åçš„å¾ŒåŠæ®µæ‡‰è©²æ˜¯ä¸€æ¨£çš„ã€‚æ‰€ä»¥ï¼Œ+20080906120000_create_products.rb+ è£¡é¢ï¼Œå°±è©²å®šç¾© +CreateProducts+ï¼Œè€Œ +20080906120001_add_details_to_products.rb+ è£¡é¢ï¼Œå‰‡å®šç¾© +AddDetailsToProducts+ã€‚è‹¥è¦æ”¹æª”åï¼Œå°±<em>å¿…é ˆ</em>æ›´æ–°æª”æ¡ˆä¸­çš„ classï¼Œå¦å‰‡ Rails æœƒå›å ±ç‚ºéºå¤± classã€‚
 
-¹ï Rails ¨Ó»¡¡A¿ëÃÑ migration ªº®É­Ô¡A¥u·|¥Î¨ì½s¸¹¡]¤]´N¬O timestamp¡^ªº³¡¥÷¡CRails 2.1 ¤§«eªºª©¥»¡Amigration ±q 1 ¶}©l½s¸¹¡A¨C¦¸²£¥Í·sªº migration ´N¥[¤@¸¹¡C³oºØ¤èªk¡A¦b¦h¤H¶}µoªº®É­Ô¡A´N«Ü®e©ö½s¸¹½Ä¬ğ¡A¤@¥¹¼²¸¹¤F¡A´N±o±N migration ºu¦^¡]rollback¡^¨Ã¥B­«·s½s¸¹¡C­Y±z»¡¤°»ò³£µw¬O­n¦^¨ì³oºØÂÂªº½s¸¹µ²ºc¡A¥i¥H¦b +config/application.rb+ ¤¤¥[¤J¤U­±³o´X¦æ¡G
+å° Rails ä¾†èªªï¼Œè¾¨è­˜ migration çš„æ™‚å€™ï¼Œåªæœƒç”¨åˆ°ç·¨è™Ÿï¼ˆä¹Ÿå°±æ˜¯ timestampï¼‰çš„éƒ¨ä»½ã€‚Rails 2.1 ä¹‹å‰çš„ç‰ˆæœ¬ï¼Œmigration å¾ 1 é–‹å§‹ç·¨è™Ÿï¼Œæ¯æ¬¡ç”¢ç”Ÿæ–°çš„ migration å°±åŠ ä¸€è™Ÿã€‚é€™ç¨®æ–¹æ³•ï¼Œåœ¨å¤šäººé–‹ç™¼çš„æ™‚å€™ï¼Œå°±å¾ˆå®¹æ˜“ç·¨è™Ÿè¡çªï¼Œä¸€æ—¦æ’è™Ÿäº†ï¼Œå°±å¾—å°‡ migration æ»¾å›ï¼ˆrollbackï¼‰ä¸¦ä¸”é‡æ–°ç·¨è™Ÿã€‚è‹¥æ‚¨èªªä»€éº¼éƒ½ç¡¬æ˜¯è¦å›åˆ°é€™ç¨®èˆŠçš„ç·¨è™Ÿçµæ§‹ï¼Œå¯ä»¥åœ¨ +config/application.rb+ ä¸­åŠ å…¥ä¸‹é¢é€™å¹¾è¡Œï¼š
 
 <ruby>
 config.active_record.timestamped_migrations = false
 </ruby>
 
-§â®É¶¡ÂW³¹¡]timestamps¡^¡A¥H¤Î¥Ø«e¤w¸g¶]¹L­ş¨Ç migrations ªº°O¿ı¡A¨âªÌ¦X¨ÖªA¥Î¡ARails ´N¯àÀ³¥I¦h¤H¶}µoªºª¬ªp¤F¡C
+æŠŠæ™‚é–“æˆ³ç« ï¼ˆtimestampsï¼‰ï¼Œä»¥åŠç›®å‰å·²ç¶“è·‘éå“ªäº› migrations çš„è¨˜éŒ„ï¼Œå…©è€…åˆä½µæœç”¨ï¼ŒRails å°±èƒ½æ‡‰ä»˜å¤šäººé–‹ç™¼çš„ç‹€æ³äº†ã€‚
 
-ª¬ªp¡G¦ã²úµ·¥ı·s¼W +20080906120000+ ©M +20080906123000+¡AÀj§B¤~±µµÛ·s¼W +20080906124500+ ¨Ã¥B°õ¦æ¤F¥¦¡C¦ã²úµ·¼g¦n¤F¡AÁÙ¦bÀË¬d¦oªºªF¦è¡A¦¹®ÉÀj§B«o§â­è¤~ªºÅÜ§óµ¹¬å¤F¡CÀj§B¦Û¬å«á¡A¦ã²úµ·¤~¤U¤F¦oªº +rake db:migrate+ «ü¥O¡C¦b³o­Ó²V¶Ãªº®É¨è¡AÁo©úªº Rails ª¾¹D¡A¥u¦³¦ã²úµ·ªº¨â¶µ migrations ÁÙ¨S°µ¹L¡A©Ò¥H +rake db:migrate+ ¥u·|°õ¦æ³o¨â¶µ¡AÁöµMÀj§Bªº migration ¾Ö¦³¸û·s timestamp¡A¦ı Rails ¤£·|°õ¦æ¥¦¡C¦P¼Ëªº¡AÀj§B¥ı«e¤Uªº¦^·¹¡]migrating down¡^©R¥O¡A¤]¤£·|¥h°õ¦æ¦ã²úµ·³o¨â¶µªº +down+ ¤èªk¡C
+ç‹€æ³ï¼šè‰¾è‰çµ²å…ˆæ–°å¢ +20080906120000+ å’Œ +20080906123000+ï¼Œé®‘ä¼¯æ‰æ¥è‘—æ–°å¢ +20080906124500+ ä¸¦ä¸”åŸ·è¡Œäº†å®ƒã€‚è‰¾è‰çµ²å¯«å¥½äº†ï¼Œé‚„åœ¨æª¢æŸ¥å¥¹çš„æ±è¥¿ï¼Œæ­¤æ™‚é®‘ä¼¯å»æŠŠå‰›æ‰çš„è®Šæ›´çµ¦ç äº†ã€‚é®‘ä¼¯è‡ªç å¾Œï¼Œè‰¾è‰çµ²æ‰ä¸‹äº†å¥¹çš„ +rake db:migrate+ æŒ‡ä»¤ã€‚åœ¨é€™å€‹æ··äº‚çš„æ™‚åˆ»ï¼Œè°æ˜çš„ Rails çŸ¥é“ï¼Œåªæœ‰è‰¾è‰çµ²çš„å…©é … migrations é‚„æ²’åšéï¼Œæ‰€ä»¥ +rake db:migrate+ åªæœƒåŸ·è¡Œé€™å…©é …ï¼Œé›–ç„¶é®‘ä¼¯çš„ migration æ“æœ‰è¼ƒæ–° timestampï¼Œä½† Rails ä¸æœƒåŸ·è¡Œå®ƒã€‚åŒæ¨£çš„ï¼Œé®‘ä¼¯å…ˆå‰ä¸‹çš„å›æº¯ï¼ˆmigrating downï¼‰å‘½ä»¤ï¼Œä¹Ÿä¸æœƒå»åŸ·è¡Œè‰¾è‰çµ²é€™å…©é …çš„ +down+ æ–¹æ³•ã€‚
 
-·íµMÅo¡A¹Î¶¤¤º·¾³q¤£¥i¤Ö¡A°²³]¡A¦ã²úµ·ªº migration ²¾°£¤FÀj§Bªº migration ·|¥Î¨ìªº¸ê®Æªí¡A¨ºÅK©w·|¥X¥]ªº¡C
+ç•¶ç„¶å›‰ï¼Œåœ˜éšŠå…§æºé€šä¸å¯å°‘ï¼Œå‡è¨­ï¼Œè‰¾è‰çµ²çš„ migration ç§»é™¤äº†é®‘ä¼¯çš„ migration æœƒç”¨åˆ°çš„è³‡æ–™è¡¨ï¼Œé‚£éµå®šæœƒå‡ºåŒ…çš„ã€‚
 
-h4. ÅÜ§ó Migrations
+h4. è®Šæ›´ Migrations
 
-°¸º¸¡A¼g migration ·|¼g¿ù¡C­Y«Ü¤£©¯ªº¤w¸g°õ¦æ¤F¡A¨º»ò¡A¤£¯à³æ¯Âªº¥u¬O§â¥¦§ï¤@§ï­«¶]¡A¦]¬°¡ARails »{¬°¥¦¤w¸g¶]¹L¤F¡A©Ò¥H°õ¦æ +rake db:migrate+ ®É¡ARails ·|Ô£³£¤£°µ¡C©Ò¥H»¡¡A±z¥²¶·¥ı±N migration ºu¦^¡Aºu¦^¥i¥H¥Î +rake db:rollback+ «ü¥O¡Cºu¦^«á¡A­«·s½s¿è¹L¡A¦A¥Î +rake db:migrate+ °õ¦æ¥¿½Tªºª©¥»¡C
+å¶çˆ¾ï¼Œå¯« migration æœƒå¯«éŒ¯ã€‚è‹¥å¾ˆä¸å¹¸çš„å·²ç¶“åŸ·è¡Œäº†ï¼Œé‚£éº¼ï¼Œä¸èƒ½å–®ç´”çš„åªæ˜¯æŠŠå®ƒæ”¹ä¸€æ”¹é‡è·‘ï¼Œå› ç‚ºï¼ŒRails èªç‚ºå®ƒå·²ç¶“è·‘éäº†ï¼Œæ‰€ä»¥åŸ·è¡Œ +rake db:migrate+ æ™‚ï¼ŒRails æœƒå•¥éƒ½ä¸åšã€‚æ‰€ä»¥èªªï¼Œæ‚¨å¿…é ˆå…ˆå°‡ migration æ»¾å›ï¼Œæ»¾å›å¯ä»¥ç”¨ +rake db:rollback+ æŒ‡ä»¤ã€‚æ»¾å›å¾Œï¼Œé‡æ–°ç·¨è¼¯éï¼Œå†ç”¨ +rake db:migrate+ åŸ·è¡Œæ­£ç¢ºçš„ç‰ˆæœ¬ã€‚
 
-¤@¯ë¨Ó»¡¡A³Ì¦n§O½s¿è²{¦³ªº migrations¡A¥H§K®`¨ì¦P¨Æ¤]®`¨ì¦Û¤v¡C¦Ó¥B¡A­Y¬O¦b¥¿¦¡¤W½uªº¦øªA¾¹¡]production machines¡^¡A´N§óºG¡C©Ò¥H¡A±z¸Ó¼g¤@­Ó·sªº migration¡CÁÙ¨S¶i¤Jª©¥»±±¨î¨t²Î¡]¤]´N¬O»¡¡AÁÙ¨S¦b±zªº¶}µo¾÷¾¹¤W¸¨¦a¥Í®Ú¡^ªº migration¡A½s¿è°_¨Ó¡A¬O¤ñ¸ûµL®`ªº¡C³o¨Ç¬O±`ÃÑÅo¡C
+ä¸€èˆ¬ä¾†èªªï¼Œæœ€å¥½åˆ¥ç·¨è¼¯ç¾æœ‰çš„ migrationsï¼Œä»¥å…å®³åˆ°åŒäº‹ä¹Ÿå®³åˆ°è‡ªå·±ã€‚è€Œä¸”ï¼Œè‹¥æ˜¯åœ¨æ­£å¼ä¸Šç·šçš„ä¼ºæœå™¨ï¼ˆproduction machinesï¼‰ï¼Œå°±æ›´æ…˜ã€‚æ‰€ä»¥ï¼Œæ‚¨è©²å¯«ä¸€å€‹æ–°çš„ migrationã€‚é‚„æ²’é€²å…¥ç‰ˆæœ¬æ§åˆ¶ç³»çµ±ï¼ˆä¹Ÿå°±æ˜¯èªªï¼Œé‚„æ²’åœ¨æ‚¨çš„é–‹ç™¼æ©Ÿå™¨ä¸Šè½åœ°ç”Ÿæ ¹ï¼‰çš„ migrationï¼Œç·¨è¼¯èµ·ä¾†ï¼Œæ˜¯æ¯”è¼ƒç„¡å®³çš„ã€‚é€™äº›æ˜¯å¸¸è­˜å›‰ã€‚
 
-h3. «Ø¥ß¤@­Ó Migration
+h3. å»ºç«‹ä¸€å€‹ Migration
 
-h4. «Ø¥ß¤@­Ó Model¡]¼Ò«¬¡^
+h4. å»ºç«‹ä¸€å€‹ Modelï¼ˆæ¨¡å‹ï¼‰
 
-·s¼W model¡]¼Ò«¬¡^ªº®É­Ô¡Amodel ©M scaffold¡]ÆN¬[¡^ªº generators¡]²£¥Í¾¹¡^¡A·|¦Û°Ê²£¥Í¾A·íªº migration¡C³o­Ó migration ¸Ì­±¡A¤w¸g§â«Ø¥ß¬ÛÃö¸ê®Æªíªº¨BÆJ³£¼g¦n¤F¡C¦pªG§i¶D Rails¡A·Q­n­ş¨ÇÄæ¡ARails ÁÙ·|³s·s¼WÄæªº³¯­z¥y³£¤@°_¼g¦n¡C¨Ò¦p¡A°õ¦æ³o­Ó¡G
+æ–°å¢ modelï¼ˆæ¨¡å‹ï¼‰çš„æ™‚å€™ï¼Œmodel å’Œ scaffoldï¼ˆé·¹æ¶ï¼‰çš„ generatorsï¼ˆç”¢ç”Ÿå™¨ï¼‰ï¼Œæœƒè‡ªå‹•ç”¢ç”Ÿé©ç•¶çš„ migrationã€‚é€™å€‹ migration è£¡é¢ï¼Œå·²ç¶“æŠŠå»ºç«‹ç›¸é—œè³‡æ–™è¡¨çš„æ­¥é©Ÿéƒ½å¯«å¥½äº†ã€‚å¦‚æœå‘Šè¨´ Railsï¼Œæƒ³è¦å“ªäº›æ¬„ï¼ŒRails é‚„æœƒé€£æ–°å¢æ¬„çš„é™³è¿°å¥éƒ½ä¸€èµ·å¯«å¥½ã€‚ä¾‹å¦‚ï¼ŒåŸ·è¡Œé€™å€‹ï¼š
 
 <shell>
 rails generate model Product name:string description:text
 </shell>
 
-´N·|«Ø¥ß¤@­Ó migration¡Aªø±o¹³³o¼Ë¡G
+å°±æœƒå»ºç«‹ä¸€å€‹ migrationï¼Œé•·å¾—åƒé€™æ¨£ï¼š
 
 <ruby>
 class CreateProducts < ActiveRecord::Migration
@@ -130,17 +130,17 @@ class CreateProducts < ActiveRecord::Migration
 end
 </ruby>
 
-±z¥i¥H°l¥[¤@¹ï¤@¹ïªºÄæ¦W/ÄæÃş«¬¡A·R¥[¦h¤Ö´N¥[¦h¤Ö¡C¦p¦P«e­±´£¹Lªº¡A«Ø¥ß·s¸ê®Æªíªº¦P®É¡A¤]·|¦P®ÉÀ°±z¥[¤J +t.timestamps+ Äæ¡]´N¬O +updated_at+ ©M +created_at+ ³o¨â­ÓÄæ¡AActive Record ¦Û°Ê¥[¤W¥hªº¡^¡C
+æ‚¨å¯ä»¥è¿½åŠ ä¸€å°ä¸€å°çš„æ¬„å/æ¬„é¡å‹ï¼Œæ„›åŠ å¤šå°‘å°±åŠ å¤šå°‘ã€‚å¦‚åŒå‰é¢æéçš„ï¼Œå»ºç«‹æ–°è³‡æ–™è¡¨çš„åŒæ™‚ï¼Œä¹ŸæœƒåŒæ™‚å¹«æ‚¨åŠ å…¥ +t.timestamps+ æ¬„ï¼ˆå°±æ˜¯ +updated_at+ å’Œ +created_at+ é€™å…©å€‹æ¬„ï¼ŒActive Record è‡ªå‹•åŠ ä¸Šå»çš„ï¼‰ã€‚
 
-h4. «Ø¥ß¤@­Ó¿W¥ßªº Migration
+h4. å»ºç«‹ä¸€å€‹ç¨ç«‹çš„ Migration
 
-­Y±z«Ø¥ß migration¡A¤£¬O¬°¤F·s¼W model¡A¦Ó¬O¬°¤F¨ä¥L¥Øªº¡]¤ñ¤è»¡¡A¦b²{¦³¸ê®Æªí¤¤·s¼W¤@Äæ¡^¡A¨º¥i¥H¥Î migration generator¡]¸ê®Æ®w¾E²¾²£¥Í¾¹¡^¨Ó°µ¡G
+è‹¥æ‚¨å»ºç«‹ migrationï¼Œä¸æ˜¯ç‚ºäº†æ–°å¢ modelï¼Œè€Œæ˜¯ç‚ºäº†å…¶ä»–ç›®çš„ï¼ˆæ¯”æ–¹èªªï¼Œåœ¨ç¾æœ‰è³‡æ–™è¡¨ä¸­æ–°å¢ä¸€æ¬„ï¼‰ï¼Œé‚£å¯ä»¥ç”¨ migration generatorï¼ˆè³‡æ–™åº«é·ç§»ç”¢ç”Ÿå™¨ï¼‰ä¾†åšï¼š
 
 <shell>
 rails generate migration AddPartNumberToProducts
 </shell>
 
-³o¼Ë·|«Ø¥ß¤@­ÓªÅªº¡B¦ı¤w©R¦W¦nªº migration¡G
+é€™æ¨£æœƒå»ºç«‹ä¸€å€‹ç©ºçš„ã€ä½†å·²å‘½åå¥½çš„ migrationï¼š
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
@@ -152,13 +152,13 @@ class AddPartNumberToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-§â migration ªº¦WºÙ¡A¨ú°µ¡uAddXXXToYYY¡v¡B¡uRemoveXXXFromYYY¡v³oÃşªº®æ¦¡¡A«á­±¦A±µ¤W¤@¦êÄæ¦W/ÄæÃş«¬ªº²M³æ¡A³o¼Ëªº¸Ü¡A³o­Ó migration ´N·|§t¦³¹ïÀ³ªº +add_column+ ©M +remove_column+ ±Ô­z¡C
+æŠŠ migration çš„åç¨±ï¼Œå–åšã€ŒAddXXXToYYYã€ã€ã€ŒRemoveXXXFromYYYã€é€™é¡çš„æ ¼å¼ï¼Œå¾Œé¢å†æ¥ä¸Šä¸€ä¸²æ¬„å/æ¬„é¡å‹çš„æ¸…å–®ï¼Œé€™æ¨£çš„è©±ï¼Œé€™å€‹ migration å°±æœƒå«æœ‰å°æ‡‰çš„ +add_column+ å’Œ +remove_column+ æ•˜è¿°ã€‚
 
 <shell>
 rails generate migration AddPartNumberToProducts part_number:string
 </shell>
 
-·|²£¥Í¥X¡G
+æœƒç”¢ç”Ÿå‡ºï¼š
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
@@ -172,13 +172,13 @@ class AddPartNumberToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-¦P²z¡A
+åŒç†ï¼Œ
 
 <shell>
 rails generate migration RemovePartNumberFromProducts part_number:string
 </shell>
 
-«h²£¥Í¥X¡G
+å‰‡ç”¢ç”Ÿå‡ºï¼š
 
 <ruby>
 class RemovePartNumberFromProducts < ActiveRecord::Migration
@@ -192,13 +192,13 @@ class RemovePartNumberFromProducts < ActiveRecord::Migration
 end
 </ruby>
 
-³o­ÓÅ]³N¡A¥i¥H²£¥Í¤£¥u¤@Äæ¡A¹³¬O¡G
+é€™å€‹é­”è¡“ï¼Œå¯ä»¥ç”¢ç”Ÿä¸åªä¸€æ¬„ï¼Œåƒæ˜¯ï¼š
 
 <shell>
 rails generate migration AddDetailsToProducts part_number:string price:decimal
 </shell>
 
-´N¥i¥H²£¥Í¥X¡G
+å°±å¯ä»¥ç”¢ç”Ÿå‡ºï¼š
 
 <ruby>
 class AddDetailsToProducts < ActiveRecord::Migration
@@ -214,15 +214,15 @@ class AddDetailsToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-³o¨Ç¦Û°Ê²£¥ÍªºªF¦è¡A¥u¬O­Ó°_ÂI¡A±z¥i¥H¼W§R­×§ï¡Aª½¨ìº¡·N¬°¤î¡C
+é€™äº›è‡ªå‹•ç”¢ç”Ÿçš„æ±è¥¿ï¼Œåªæ˜¯å€‹èµ·é»ï¼Œæ‚¨å¯ä»¥å¢åˆªä¿®æ”¹ï¼Œç›´åˆ°æ»¿æ„ç‚ºæ­¢ã€‚
 
-h3. ¼¶¼g Migration
+h3. æ’°å¯« Migration
 
-¥Î generator ²£¥Í¥X migration «á¡A±µ¤U¨Ó´N¬O§Ú­Ìªº¤u§@¤F¡C
+ç”¨ generator ç”¢ç”Ÿå‡º migration å¾Œï¼Œæ¥ä¸‹ä¾†å°±æ˜¯æˆ‘å€‘çš„å·¥ä½œäº†ã€‚
 
-h4. «Ø¥ß¸ê®Æªí
+h4. å»ºç«‹è³‡æ–™è¡¨
 
-­n«Ø¥ß·s¸ê®Æªíªº¸Ü¡A¥i¥H¥Î migration ªº +create_table+ ¤èªk¡C¨å«¬ªº¥Îªk¬O¡G
+è¦å»ºç«‹æ–°è³‡æ–™è¡¨çš„è©±ï¼Œå¯ä»¥ç”¨ migration çš„ +create_table+ æ–¹æ³•ã€‚å…¸å‹çš„ç”¨æ³•æ˜¯ï¼š
 
 <ruby>
 create_table :products do |t|
@@ -230,9 +230,9 @@ create_table :products do |t|
 end
 </ruby>
 
-³o·|«Ø¥ß¤@­Ó +products+ ¸ê®Æªí¡A¸Ì­±¦³­ÓÄæ¥s°µ +name+¡]·íµM¡A¦p¦P¥ı«e©Ò»¡ªº¡A¤]·|¶¶«K¥[¤W¤@­Ó¥DÁäÄæ +id+¡^¡C
+é€™æœƒå»ºç«‹ä¸€å€‹ +products+ è³‡æ–™è¡¨ï¼Œè£¡é¢æœ‰å€‹æ¬„å«åš +name+ï¼ˆç•¶ç„¶ï¼Œå¦‚åŒå…ˆå‰æ‰€èªªçš„ï¼Œä¹Ÿæœƒé †ä¾¿åŠ ä¸Šä¸€å€‹ä¸»éµæ¬„ +id+ï¼‰ã€‚
 
-³o¬qµ{¦¡½X°Ï¶ô¡]block¡^Åı±z¥i¥H¦b¸ê®Æªí¤W·s¼WÄæ¡C·s¼Wªº¤èªk¦³¤G¡A²Ä¤@ºØ®æ¦¡¡A¤]´N¬O¶Ç²Îªº¼gªk¡A¬İ°_¨Ó¹³³o¼Ë¡G
+é€™æ®µç¨‹å¼ç¢¼å€å¡Šï¼ˆblockï¼‰è®“æ‚¨å¯ä»¥åœ¨è³‡æ–™è¡¨ä¸Šæ–°å¢æ¬„ã€‚æ–°å¢çš„æ–¹æ³•æœ‰äºŒï¼Œç¬¬ä¸€ç¨®æ ¼å¼ï¼Œä¹Ÿå°±æ˜¯å‚³çµ±çš„å¯«æ³•ï¼Œçœ‹èµ·ä¾†åƒé€™æ¨£ï¼š
 
 <ruby>
 create_table :products do |t|
@@ -240,7 +240,7 @@ create_table :products do |t|
 end
 </ruby>
 
-²Ä¤GºØ®æ¦¡¡A¤]´N¬O©Ò¿×¡u©Ê·P«¬¡vªº¼gªk¡A§â +column+ µ¹¥µ¤F¡A¨ú¦Ó¥N¤§¡A¥Î +string+¡B+integer+ µ¥¤èªk¡A¨Ó«Ø¥ß¸ÓÃş«¬ªºÄæ¡C¦Ü©ó±µ¦b«á­±ªº°Ñ¼Æ¡]parameter¡^¡A«h¬O¤@¼Ëªº¡C
+ç¬¬äºŒç¨®æ ¼å¼ï¼Œä¹Ÿå°±æ˜¯æ‰€è¬‚ã€Œæ€§æ„Ÿå‹ã€çš„å¯«æ³•ï¼ŒæŠŠ +column+ çµ¦æ‰”äº†ï¼Œå–è€Œä»£ä¹‹ï¼Œç”¨ +string+ã€+integer+ ç­‰æ–¹æ³•ï¼Œä¾†å»ºç«‹è©²é¡å‹çš„æ¬„ã€‚è‡³æ–¼æ¥åœ¨å¾Œé¢çš„åƒæ•¸ï¼ˆparameterï¼‰ï¼Œå‰‡æ˜¯ä¸€æ¨£çš„ã€‚
 
 <ruby>
 create_table :products do |t|
@@ -248,7 +248,7 @@ create_table :products do |t|
 end
 </ruby>
 
-+create_table+ ®É·s¼Wªº¥DÁäÄæ¡A¹w³]¦WºÙ¬O +id+¡A­n§ï¦WºÙ¡A¥i¥H¥Î +:primary_key+ ³o­Ó¿ï¶µ¡]option¡^¡A°O±o¡A§ï¦WºÙªº¦P®É¡A§O§Ñ¤F­n¦P®É§ó·s¬Û¹ïÀ³ªº model¡C¦pªG¡A±z®Ú¥»´N¤£­n¥DÁä¡]¨Ò¦p¡A¨Ï¥Î¦h¹ï¦hÃ´µ² (HABTM) ªº¸ê®Æªí®É¡^¡A¨º´N¶Ç¤J +:id => false+¡C¥t¥~¡A¦pªG­n¶Ç¤J¬Y­Ó¯S©w¸ê®Æ®w¨t²Îªº¿ï¶µ¡]options¡^¡A±z¥i¥H¦b +:options+ ¿ï¶µ¤¤©ñ¤@­Ó SQL ¤ù¬q¡CÁ|¨Ò¡G
++create_table+ æ™‚æ–°å¢çš„ä¸»éµæ¬„ï¼Œé è¨­åç¨±æ˜¯ +id+ï¼Œè¦æ”¹åç¨±ï¼Œå¯ä»¥ç”¨ +:primary_key+ é€™å€‹é¸é …ï¼ˆoptionï¼‰ï¼Œè¨˜å¾—ï¼Œæ”¹åç¨±çš„åŒæ™‚ï¼Œåˆ¥å¿˜äº†è¦åŒæ™‚æ›´æ–°ç›¸å°æ‡‰çš„ modelã€‚å¦‚æœï¼Œæ‚¨æ ¹æœ¬å°±ä¸è¦ä¸»éµï¼ˆä¾‹å¦‚ï¼Œä½¿ç”¨å¤šå°å¤šç¹«çµ (HABTM) çš„è³‡æ–™è¡¨æ™‚ï¼‰ï¼Œé‚£å°±å‚³å…¥ +:id => false+ã€‚å¦å¤–ï¼Œå¦‚æœè¦å‚³å…¥æŸå€‹ç‰¹å®šè³‡æ–™åº«ç³»çµ±çš„é¸é …ï¼ˆoptionsï¼‰ï¼Œæ‚¨å¯ä»¥åœ¨ +:options+ é¸é …ä¸­æ”¾ä¸€å€‹ SQL ç‰‡æ®µã€‚èˆ‰ä¾‹ï¼š
 
 <ruby>
 create_table :products, :options => "ENGINE=BLACKHOLE" do |t|
@@ -256,11 +256,11 @@ create_table :products, :options => "ENGINE=BLACKHOLE" do |t|
 end
 </ruby>
 
-³o¼Ë´N·|¦b«Ø¥ß¸ê®Æªíªº SQL ¤¤¡A¥[¤W +ENGINE=BLACKHOLE+¡C¡]¦pªG¬O¥Î MYSQL ªº¸Ü¡A¹w³]¬O +ENGINE=InnoDB+¡^
+é€™æ¨£å°±æœƒåœ¨å»ºç«‹è³‡æ–™è¡¨çš„ SQL ä¸­ï¼ŒåŠ ä¸Š +ENGINE=BLACKHOLE+ã€‚ï¼ˆå¦‚æœæ˜¯ç”¨ MYSQL çš„è©±ï¼Œé è¨­æ˜¯ +ENGINE=InnoDB+ï¼‰
 
-Active Record ¦³¤ä´©ªºÃş«¬¡]types¡^¥]¬A¡G+:primary_key+¡B+:string+¡B+:text+¡B+:integer+¡B+:float+¡B+:decimal+¡B+:datetime+¡B+:timestamp+¡B+:time+¡B+:date+¡B+:binary+¡B+:boolean+¡C
+Active Record æœ‰æ”¯æ´çš„é¡å‹ï¼ˆtypesï¼‰åŒ…æ‹¬ï¼š+:primary_key+ã€+:string+ã€+:text+ã€+:integer+ã€+:float+ã€+:decimal+ã€+:datetime+ã€+:timestamp+ã€+:time+ã€+:date+ã€+:binary+ã€+:boolean+ã€‚
 
-³o¨ÇÃş«¬¡A·|¦Û°Ê¹ïÀ³¨ì¤U¼h¸ê®Æ®w¡A¨Ò¦p¡A¦b MySQL ©³¤U¡A+:string+ ·|¹ïÀ³¨ì +VARCHAR(255)+¡C¦pªG¡A±z­n«Ø¥ß Active Record ¤£¤ä´©ªºÃş«¬¡A¨º¥i¥H¥Î¡u¤£©Ê·P«¬¡v»yªk¡A¤ñ¤è»¡¡G
+é€™äº›é¡å‹ï¼Œæœƒè‡ªå‹•å°æ‡‰åˆ°ä¸‹å±¤è³‡æ–™åº«ï¼Œä¾‹å¦‚ï¼Œåœ¨ MySQL åº•ä¸‹ï¼Œ+:string+ æœƒå°æ‡‰åˆ° +VARCHAR(255)+ã€‚å¦‚æœï¼Œæ‚¨è¦å»ºç«‹ Active Record ä¸æ”¯æ´çš„é¡å‹ï¼Œé‚£å¯ä»¥ç”¨ã€Œä¸æ€§æ„Ÿå‹ã€èªæ³•ï¼Œæ¯”æ–¹èªªï¼š
 
 <ruby>
 create_table :products do |t|
@@ -268,11 +268,11 @@ create_table :products do |t|
 end
 </ruby>
 
-¤£¹L¡A¦b¤£¦P¸ê®Æ®w¨t²Î¤§¶¡¡A³o¼Ë°µ¦h¤Ö·|§«Ãª¨ì¥iÄâ©Ê¡C
+ä¸éï¼Œåœ¨ä¸åŒè³‡æ–™åº«ç³»çµ±ä¹‹é–“ï¼Œé€™æ¨£åšå¤šå°‘æœƒå¦¨ç¤™åˆ°å¯æ”œæ€§ã€‚
 
-h4. ÅÜ§ó¸ê®Æªí
+h4. è®Šæ›´è³‡æ–™è¡¨
 
-­nÅÜ§ó²{¦³ªº¸ê®Æªí¡A¥i¥H¥Î+create_table+ ªºªñ¿Ë +change_table+¡C¥¦ªº¥Îªk¸ò +create_table+ ®t¤£¦h¡A¦ı¥¦ªºµ{¦¡½X°Ï¶ô¦³§ó¦h©Û¦¡¥i¥Î¡CÁ|¨Ò¡G
+è¦è®Šæ›´ç¾æœ‰çš„è³‡æ–™è¡¨ï¼Œå¯ä»¥ç”¨+create_table+ çš„è¿‘è¦ª +change_table+ã€‚å®ƒçš„ç”¨æ³•è·Ÿ +create_table+ å·®ä¸å¤šï¼Œä½†å®ƒçš„ç¨‹å¼ç¢¼å€å¡Šæœ‰æ›´å¤šæ‹›å¼å¯ç”¨ã€‚èˆ‰ä¾‹ï¼š
 
 <ruby>
 change_table :products do |t|
@@ -283,7 +283,7 @@ change_table :products do |t|
 end
 </ruby>
 
-²¾°£¨â­ÓÄæ +description+ ¸ò +name+¡A·s¼W¤@­ÓÄæ +part_number+¡A¥B¦b¦¹Äæ³]©w¤F¯Á¤Ş¡]index¡^¡C³Ì«á¡A­«·s©R¦W¤F +upccode+ Äæ¡C³o¸ò¤U­±³o¬qªºµ²ªG¬O¤@¼Ëªº¡G
+ç§»é™¤å…©å€‹æ¬„ +description+ è·Ÿ +name+ï¼Œæ–°å¢ä¸€å€‹æ¬„ +part_number+ï¼Œä¸”åœ¨æ­¤æ¬„è¨­å®šäº†ç´¢å¼•ï¼ˆindexï¼‰ã€‚æœ€å¾Œï¼Œé‡æ–°å‘½åäº† +upccode+ æ¬„ã€‚é€™è·Ÿä¸‹é¢é€™æ®µçš„çµæœæ˜¯ä¸€æ¨£çš„ï¼š
 
 <ruby>
 remove_column :products, :description
@@ -293,12 +293,12 @@ add_index :products, :part_number
 rename_column :products, :upccode, :upc_code
 </ruby>
 
-¹ï·Ó¤§¤U¡A¥i¥Hµo²{¡A¥Îµ{¦¡½X°Ï¶ô¡]block¡^ªº¼gªk¡A´N¤£¥Î­«½Æ¥´¸ê®Æªí¦WºÙ¡A¦]¬°¡A¥¦·|±N­×§ï¦P­Ó¸ê®Æªíªº©Ò¦³³¯­z¥y¡A¸s²Õ°_¨Ó¡C°£¦¹¤§¥~¡A¼g¦b°Ï¶ô¤ºªº¦U§O°Ê§@¡A¤]¥i¥HÁYµu¡A¹³¬O +remove_column+ ÅÜ¦¨ +remove+¡A¦Ó +add_index+ ¥u­n¼g +index+¡C
+å°ç…§ä¹‹ä¸‹ï¼Œå¯ä»¥ç™¼ç¾ï¼Œç”¨ç¨‹å¼ç¢¼å€å¡Šï¼ˆblockï¼‰çš„å¯«æ³•ï¼Œå°±ä¸ç”¨é‡è¤‡æ‰“è³‡æ–™è¡¨åç¨±ï¼Œå› ç‚ºï¼Œå®ƒæœƒå°‡ä¿®æ”¹åŒå€‹è³‡æ–™è¡¨çš„æ‰€æœ‰é™³è¿°å¥ï¼Œç¾¤çµ„èµ·ä¾†ã€‚é™¤æ­¤ä¹‹å¤–ï¼Œå¯«åœ¨å€å¡Šå…§çš„å„åˆ¥å‹•ä½œï¼Œä¹Ÿå¯ä»¥ç¸®çŸ­ï¼Œåƒæ˜¯ +remove_column+ è®Šæˆ +remove+ï¼Œè€Œ +add_index+ åªè¦å¯« +index+ã€‚
 
-h4. ¯S®í»²§U¤u¨ã¡]Helpers¡^
-Ä¶µù¡G³o¬O Active Record ªº Helper¡A¤p¤ß¤£­n¸ò View Helper ·d²V¤F¡C
+h4. ç‰¹æ®Šè¼”åŠ©å·¥å…·ï¼ˆHelpersï¼‰
+è­¯è¨»ï¼šé€™æ˜¯ Active Record çš„ Helperï¼Œå°å¿ƒä¸è¦è·Ÿ View Helper ææ··äº†ã€‚
 
-¦³¨Ç¥\¯à«Ü±`¥Î¡A¹³¬O·s¼W +created_at+ ¸ò +updated_at+ Äæ¡C¬°¦¹¡AActive Record ´£¨Ñ¤F±¶®|¡G
+æœ‰äº›åŠŸèƒ½å¾ˆå¸¸ç”¨ï¼Œåƒæ˜¯æ–°å¢ +created_at+ è·Ÿ +updated_at+ æ¬„ã€‚ç‚ºæ­¤ï¼ŒActive Record æä¾›äº†æ·å¾‘ï¼š
 
 <ruby>
 create_table :products do |t|
@@ -306,7 +306,7 @@ create_table :products do |t|
 end
 </ruby>
 
-¥H¤W·|«Ø¥ß¤@­Ó·sªº products ¸ê®Æªí¡A¤º§t³o¨â­ÓÄæ¡]ÁÙ¦³ +id+ Äæ¡^¡C¦¹¥~¡G
+ä»¥ä¸Šæœƒå»ºç«‹ä¸€å€‹æ–°çš„ products è³‡æ–™è¡¨ï¼Œå…§å«é€™å…©å€‹æ¬„ï¼ˆé‚„æœ‰ +id+ æ¬„ï¼‰ã€‚æ­¤å¤–ï¼š
 
 <ruby>
 change_table :products do |t|
@@ -314,9 +314,9 @@ change_table :products do |t|
 end
 </ruby>
 
-«h¬O¦b²{¦³ªº¸ê®Æªí¤¤¡A¥[¤J³o¨âÄæ¡C
+å‰‡æ˜¯åœ¨ç¾æœ‰çš„è³‡æ–™è¡¨ä¸­ï¼ŒåŠ å…¥é€™å…©æ¬„ã€‚
 
-¥t¤@­Ó»²§U¤u¨ã¡A¥s°µ +references+¡A§â¥¦¼g¦¨ +belongs_to+ ¤]¥i¥H¡C¥¦ªº¥\¯à¡A³Ì°ò¥»ªº¸Ü¬O¼W¶i©öÅª©Ê¡G
+å¦ä¸€å€‹è¼”åŠ©å·¥å…·ï¼Œå«åš +references+ï¼ŒæŠŠå®ƒå¯«æˆ +belongs_to+ ä¹Ÿå¯ä»¥ã€‚å®ƒçš„åŠŸèƒ½ï¼Œæœ€åŸºæœ¬çš„è©±æ˜¯å¢é€²æ˜“è®€æ€§ï¼š
 
 <ruby>
 create_table :products do |t|
@@ -324,7 +324,7 @@ create_table :products do |t|
 end
 </ruby>
 
-¥H¤W·|«Ø¥ß¤@­ÓÄæ +category_id+¡A¨Ãµ¹¥¦¤@­Ó«ê·íªºÃş«¬¡C³oÃä­nª`·N¡A±z©Ò¿é¤Jªº¡A¬O model ªº¦WºÙ¡A¦Ó¤£¬OÄæªº¦WºÙ¡C Active Record ·|¦Û°Ê¦b model ¦WºÙªº§Àºİ¥[¤W +_id+¡C­Y±z¦³ polymorphic¡]¦h§Î¡^ªº +belongs_to+ Ãö«Y¡A¨º»ò +references+ ·|§â¨â­Ó©Ò»İªºÄæ³£¥[¶i¥h¡G
+ä»¥ä¸Šæœƒå»ºç«‹ä¸€å€‹æ¬„ +category_id+ï¼Œä¸¦çµ¦å®ƒä¸€å€‹æ°ç•¶çš„é¡å‹ã€‚é€™é‚Šè¦æ³¨æ„ï¼Œæ‚¨æ‰€è¼¸å…¥çš„ï¼Œæ˜¯ model çš„åç¨±ï¼Œè€Œä¸æ˜¯æ¬„çš„åç¨±ã€‚ Active Record æœƒè‡ªå‹•åœ¨ model åç¨±çš„å°¾ç«¯åŠ ä¸Š +_id+ã€‚è‹¥æ‚¨æœ‰ polymorphicï¼ˆå¤šå½¢ï¼‰çš„ +belongs_to+ é—œä¿‚ï¼Œé‚£éº¼ +references+ æœƒæŠŠå…©å€‹æ‰€éœ€çš„æ¬„éƒ½åŠ é€²å»ï¼š
 
 <ruby>
 create_table :products do |t|
@@ -332,17 +332,17 @@ create_table :products do |t|
 end
 </ruby>
 
-·|·s¼W¤@­Ó +attachment_id+ Äæ¡A¥H¤Î¤@­Ó¹w³]­È¬° Photo ªº¦r¦êÄæ +attachment_type+¡C
+æœƒæ–°å¢ä¸€å€‹ +attachment_id+ æ¬„ï¼Œä»¥åŠä¸€å€‹é è¨­å€¼ç‚º Photo çš„å­—ä¸²æ¬„ +attachment_type+ã€‚
 
-NOTE:+references+ »²§U¤u¨ã¤£·|«Ø¥ß¥~³¡Áä¬ù§ô¡]foreign key constraints¡^¡C±z¥²¶·¨Ï¥Î +execute+ ¨Ó°µ¡A©ÎªÌ¡A¥Î¯à°÷¥[¤J "¥~³¡Áä¤ä´©¡]foreign key support¡^":#active-record-and-referential-integrity ªº¥~±¾¡C
+NOTE:+references+ è¼”åŠ©å·¥å…·ä¸æœƒå»ºç«‹å¤–éƒ¨éµç´„æŸï¼ˆforeign key constraintsï¼‰ã€‚æ‚¨å¿…é ˆä½¿ç”¨ +execute+ ä¾†åšï¼Œæˆ–è€…ï¼Œç”¨èƒ½å¤ åŠ å…¥ "å¤–éƒ¨éµæ”¯æ´ï¼ˆforeign key supportï¼‰":#active-record-and-referential-integrity çš„å¤–æ›ã€‚
 
-¦pªG Active Record ªº»²§U¤u¨ã¤£°÷¥Î¡A±z¥i¥H¥Î +execute+ ¥\¯à¨Ó°õ¦æ¥ô·Nªº SQL¡C
+å¦‚æœ Active Record çš„è¼”åŠ©å·¥å…·ä¸å¤ ç”¨ï¼Œæ‚¨å¯ä»¥ç”¨ +execute+ åŠŸèƒ½ä¾†åŸ·è¡Œä»»æ„çš„ SQLã€‚
 
-¹ï©ó¦U¤èªkªº²Ó¸`¸ò½d¨Ò¡A½Ğ°Ñ¦Ò API ¤å¥ó¡A¯S§O¬OÃö©ó "<tt>ActiveRecord::ConnectionAdapters::SchemaStatements</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html ¡]´£¨Ñ¤F¦b +up+ ¸ò +down+ ¸Ì­±¡A¥i¨Ï¥Îªº¤èªk¡^¡B  "<tt>ActiveRecord::ConnectionAdapters::TableDefinition</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html ¡]´£¨Ñ¤F¦b +create_table+ ©Ò²£¥Íªºª«¥ó¸Ì­±¡A¥i¨Ï¥Îªº¤èªk¡^¡B¥H¤Î "<tt>ActiveRecord::ConnectionAdapters::Table</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html ¡]´£¨Ñ¤F¦b +change_table+ ©Ò²£¥Íªºª«¥ó¸Ì­±¡A¥i¨Ï¥Îªº¤èªk¡^¡C
+å°æ–¼å„æ–¹æ³•çš„ç´°ç¯€è·Ÿç¯„ä¾‹ï¼Œè«‹åƒè€ƒ API æ–‡ä»¶ï¼Œç‰¹åˆ¥æ˜¯é—œæ–¼ "<tt>ActiveRecord::ConnectionAdapters::SchemaStatements</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html ï¼ˆæä¾›äº†åœ¨ +up+ è·Ÿ +down+ è£¡é¢ï¼Œå¯ä½¿ç”¨çš„æ–¹æ³•ï¼‰ã€  "<tt>ActiveRecord::ConnectionAdapters::TableDefinition</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html ï¼ˆæä¾›äº†åœ¨ +create_table+ æ‰€ç”¢ç”Ÿçš„ç‰©ä»¶è£¡é¢ï¼Œå¯ä½¿ç”¨çš„æ–¹æ³•ï¼‰ã€ä»¥åŠ "<tt>ActiveRecord::ConnectionAdapters::Table</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html ï¼ˆæä¾›äº†åœ¨ +change_table+ æ‰€ç”¢ç”Ÿçš„ç‰©ä»¶è£¡é¢ï¼Œå¯ä½¿ç”¨çš„æ–¹æ³•ï¼‰ã€‚
 
-h4. ¼¶¼g±zªº +down+ ¤èªk
+h4. æ’°å¯«æ‚¨çš„ +down+ æ–¹æ³•
 
-Migraiton ¸Ì­±ªº +down+ ¤èªk¡A­n¯à´_­ì +up+ ¤èªk©Ò³y¦¨ªºÅÜ§ó¡C¤]´N¬O»¡¡A­Y°õ¦æ¤F +up+ µM«á°õ¦æ +down+¡A¨º»ò database schema¡]¸ê®Æ®wºõ­n¡^À³¸Ó·|­ì«Ê¤£°Ê¡C©Ò¥H»¡¡A¦pªG¥Î +up+ «Ø¥ß¤@­Ó¸ê®Æªí¡A´N¸Ó¦b +down+ ¤¤§R°£¥¦¡C©ú´¼ªº§@ªk¬O¡A¨Ï¥Î¸ò +up+ §¹¥ş¬Û¤Ïªº¶¶§Ç¡A¨Ó°µ³o¨Ç¨Æ±¡¡C¨Ò¦p¡G
+Migraiton è£¡é¢çš„ +down+ æ–¹æ³•ï¼Œè¦èƒ½å¾©åŸ +up+ æ–¹æ³•æ‰€é€ æˆçš„è®Šæ›´ã€‚ä¹Ÿå°±æ˜¯èªªï¼Œè‹¥åŸ·è¡Œäº† +up+ ç„¶å¾ŒåŸ·è¡Œ +down+ï¼Œé‚£éº¼ database schemaï¼ˆè³‡æ–™åº«ç¶±è¦ï¼‰æ‡‰è©²æœƒåŸå°ä¸å‹•ã€‚æ‰€ä»¥èªªï¼Œå¦‚æœç”¨ +up+ å»ºç«‹ä¸€å€‹è³‡æ–™è¡¨ï¼Œå°±è©²åœ¨ +down+ ä¸­åˆªé™¤å®ƒã€‚æ˜æ™ºçš„ä½œæ³•æ˜¯ï¼Œä½¿ç”¨è·Ÿ +up+ å®Œå…¨ç›¸åçš„é †åºï¼Œä¾†åšé€™äº›äº‹æƒ…ã€‚ä¾‹å¦‚ï¼š
 
 <ruby>
 class ExampleMigration < ActiveRecord::Migration
@@ -373,19 +373,19 @@ class ExampleMigration < ActiveRecord::Migration
 end
 </ruby>
 
-¦³®É­Ô¡A±zªº migrations ·|°µ¥XµLªk´_­ìªº¨Æ±¡¡A¹³¬O§R±¼¬Y¨Ç¸ê®Æ¤§Ãşªº¡C¦pªG¥X²{¤F³oºØµLªk­Ë¦^ migration ªºª¬ªp¡A±z¥i¥H¦b +down+ ¤èªk¤¤¥á¥X¨Ò¥~¡]raise¡^ +IrreversibleMigration+¡C³o¼Ë¤@¨Ó¡A¦pªG¦³¤H·Q´_­ì±zªº migration¡A·|¥X²{¿ù»~°T®§¡AÅã¥Ü¥¦µLªk°õ¦æ¡C
+æœ‰æ™‚å€™ï¼Œæ‚¨çš„ migrations æœƒåšå‡ºç„¡æ³•å¾©åŸçš„äº‹æƒ…ï¼Œåƒæ˜¯åˆªæ‰æŸäº›è³‡æ–™ä¹‹é¡çš„ã€‚å¦‚æœå‡ºç¾äº†é€™ç¨®ç„¡æ³•å€’å› migration çš„ç‹€æ³ï¼Œæ‚¨å¯ä»¥åœ¨ +down+ æ–¹æ³•ä¸­ä¸Ÿå‡ºä¾‹å¤–ï¼ˆraiseï¼‰ +IrreversibleMigration+ã€‚é€™æ¨£ä¸€ä¾†ï¼Œå¦‚æœæœ‰äººæƒ³å¾©åŸæ‚¨çš„ migrationï¼Œæœƒå‡ºç¾éŒ¯èª¤è¨Šæ¯ï¼Œé¡¯ç¤ºå®ƒç„¡æ³•åŸ·è¡Œã€‚
 
-h3. °õ¦æ Migrations
+h3. åŸ·è¡Œ Migrations
 
-Rails ´£¨Ñ¤@¨t¦C rake ¥ô°È¨Ó°õ¦æ migrations¡C²Ä¤@­Ó¸ò migration ¦³Ãöªº rake ¥ô°È¬O +db:migrate+¡C¥¦ªº¥Îªk¡A³Ì°ò¥»ªº¡A´N¬O³æ¯Âªº°õ¦æ©Ò¦³ÁÙ¨S°õ¦æ migraitons ªº +up+ ¤èªk¡C­Y©Ò¦³ migrations ³£°õ¦æ¹L¤F¡A¥¦´N·|ª½±µµ²§ô¡C
-
-
-
-­nª`·Nªº¬O¡A°õ¦æ +db:migrate+ ¤]·|¤@°_°õ¦æ +db:schema:dump+¡A¥h§ó·s db/schema.rb ÀÉ¡A¥H«K¸ò¸ê®Æ®wªºµ²ºc¬Û§k¦X¡C
+Rails æä¾›ä¸€ç³»åˆ— rake ä»»å‹™ä¾†åŸ·è¡Œ migrationsã€‚ç¬¬ä¸€å€‹è·Ÿ migration æœ‰é—œçš„ rake ä»»å‹™æ˜¯ +db:migrate+ã€‚å®ƒçš„ç”¨æ³•ï¼Œæœ€åŸºæœ¬çš„ï¼Œå°±æ˜¯å–®ç´”çš„åŸ·è¡Œæ‰€æœ‰é‚„æ²’åŸ·è¡Œ migraitons çš„ +up+ æ–¹æ³•ã€‚è‹¥æ‰€æœ‰ migrations éƒ½åŸ·è¡Œéäº†ï¼Œå®ƒå°±æœƒç›´æ¥çµæŸã€‚
 
 
 
-¦pªG§A­n migrate ¨ì¬Y­Ó¯S©wª©¥»¡AActive Record ·|°õ¦æ©Ò»İªº migrations¡]¥i¯à¬O up ©Î down¡^¡Aª½¨ì¨ì¹F¨º­Óª©¥»¬°¤î¡C©Ò¿×ª©¥»¡A´N¬O migrations ÀÉ¦Wªº«e¸m¼Æ¦r¡A¨Ò¦p­n¾E²¾¨ìª©¥» 20080906120000 ªº¸Ü¡A´N°õ¦æ¡G
+è¦æ³¨æ„çš„æ˜¯ï¼ŒåŸ·è¡Œ +db:migrate+ ä¹Ÿæœƒä¸€èµ·åŸ·è¡Œ +db:schema:dump+ï¼Œå»æ›´æ–° db/schema.rb æª”ï¼Œä»¥ä¾¿è·Ÿè³‡æ–™åº«çš„çµæ§‹ç›¸å»åˆã€‚
+
+
+
+å¦‚æœä½ è¦ migrate åˆ°æŸå€‹ç‰¹å®šç‰ˆæœ¬ï¼ŒActive Record æœƒåŸ·è¡Œæ‰€éœ€çš„ migrationsï¼ˆå¯èƒ½æ˜¯ up æˆ– downï¼‰ï¼Œç›´åˆ°åˆ°é”é‚£å€‹ç‰ˆæœ¬ç‚ºæ­¢ã€‚æ‰€è¬‚ç‰ˆæœ¬ï¼Œå°±æ˜¯ migrations æª”åçš„å‰ç½®æ•¸å­—ï¼Œä¾‹å¦‚è¦é·ç§»åˆ°ç‰ˆæœ¬ 20080906120000 çš„è©±ï¼Œå°±åŸ·è¡Œï¼š
 
 
 
@@ -393,21 +393,21 @@ Rails ´£¨Ñ¤@¨t¦C rake ¥ô°È¨Ó°õ¦æ migrations¡C²Ä¤@­Ó¸ò migration ¦³Ãöªº rake ¥ô°È
 rake db:migrate VERSION=20080906120000
 </shell>
 
-¦pªG¼Æ¦r¤ñ·í«eª©¥»ÁÙ¤j¡]¤]´N¬O»¡¡A©¹¤W¾E²¾¡^¡A¨º´N·|°õ¦æ +up+ ¤èªk¨ì¥]§t 20080906120000 ¦b¤ºªº©Ò¦³ª©¥»¡A¦pªG¬O©¹¤U¾E²¾«h·|°õ¦æ©Ò¦³ +down+ ¤èªk¡A¦ı¤£¥]¬A 20080906120000 ¥»¨­¡C
+å¦‚æœæ•¸å­—æ¯”ç•¶å‰ç‰ˆæœ¬é‚„å¤§ï¼ˆä¹Ÿå°±æ˜¯èªªï¼Œå¾€ä¸Šé·ç§»ï¼‰ï¼Œé‚£å°±æœƒåŸ·è¡Œ +up+ æ–¹æ³•åˆ°åŒ…å« 20080906120000 åœ¨å…§çš„æ‰€æœ‰ç‰ˆæœ¬ï¼Œå¦‚æœæ˜¯å¾€ä¸‹é·ç§»å‰‡æœƒåŸ·è¡Œæ‰€æœ‰ +down+ æ–¹æ³•ï¼Œä½†ä¸åŒ…æ‹¬ 20080906120000 æœ¬èº«ã€‚
 
 
 
-h4. ºu¦^¡]Rolling Back¡^
+h4. æ»¾å›ï¼ˆRolling Backï¼‰
 
-±`±`¡A·|»İ­n
+å¸¸å¸¸ï¼Œæœƒéœ€è¦
 
-ºu¦^³Ì·sªº migration¡A¤ñ¤è»¡¤£¤p¤ß¼g¿ù¤F¡A­n¦^¥h­×§ï¥¦¡C­n¤Uºu¦^«ü¥Oªº®É­Ô¡A¥i¥H¤£¥Î¿é¤J¸¨¸¨ªøªºª©¥»½s¸¹¡A¦Ó¥i¥H³o¼Ë´N¦n¡G
+æ»¾å›æœ€æ–°çš„ migrationï¼Œæ¯”æ–¹èªªä¸å°å¿ƒå¯«éŒ¯äº†ï¼Œè¦å›å»ä¿®æ”¹å®ƒã€‚è¦ä¸‹æ»¾å›æŒ‡ä»¤çš„æ™‚å€™ï¼Œå¯ä»¥ä¸ç”¨è¼¸å…¥è½è½é•·çš„ç‰ˆæœ¬ç·¨è™Ÿï¼Œè€Œå¯ä»¥é€™æ¨£å°±å¥½ï¼š
 
 <shell>
 rake db:rollback
 </shell>
 
-³o·|°õ¦æ³Ì·s¤@­Ó migration ªº +down+ ¤èªk¡C¦pªG­n´_­ì¼Æ­Ó migrations ªº¸Ü¡A¥i¥H¦hµ¹¤@­Ó +STEP+ °Ñ¼Æ¡G
+é€™æœƒåŸ·è¡Œæœ€æ–°ä¸€å€‹ migration çš„ +down+ æ–¹æ³•ã€‚å¦‚æœè¦å¾©åŸæ•¸å€‹ migrations çš„è©±ï¼Œå¯ä»¥å¤šçµ¦ä¸€å€‹ +STEP+ åƒæ•¸ï¼š
 
 
 <shell>
@@ -415,34 +415,34 @@ rake db:rollback STEP=3
 </shell>
 
 
-³o¼Ë¡A´N·|°õ¦æ³Ìªñ 3 ­Ó migrations ªº +down+ ¤èªk¡C
+é€™æ¨£ï¼Œå°±æœƒåŸ·è¡Œæœ€è¿‘ 3 å€‹ migrations çš„ +down+ æ–¹æ³•ã€‚
 
 
-­nºu¦^µM«á­«·s°õ¦æ migration ªº¸Ü¡A+db:migrate:redo+ ¬O­Ó±¶®|¡C¦pªG­n­Ë°h¤£¥u¤@­Óª©¥»¡A¥i¥H¥Î +STEP+ °Ñ¼Æ¡A´N¸ò +db:rollback+ ªº¥Îªk¤@¼Ë¡G
+è¦æ»¾å›ç„¶å¾Œé‡æ–°åŸ·è¡Œ migration çš„è©±ï¼Œ+db:migrate:redo+ æ˜¯å€‹æ·å¾‘ã€‚å¦‚æœè¦å€’é€€ä¸åªä¸€å€‹ç‰ˆæœ¬ï¼Œå¯ä»¥ç”¨ +STEP+ åƒæ•¸ï¼Œå°±è·Ÿ +db:rollback+ çš„ç”¨æ³•ä¸€æ¨£ï¼š
 
 <shell>
 rake db:migrate:redo STEP=3
 </shell>
 
-³o¨â­Ó Rake ¥ô°È¡A¥u¬O¤ñ¸û¤è«K¡AÅı±z¤£¥Î¿é¤J¤@¤j¦êª©¥»½s¸¹ªº¼Æ¦r¡C°£¤F¿é¤J¤ñ¸û«K§Q¤§¥~¡A¨Ã¨S¦³¤ñ +db:migrate+ ¦h¥X¤°»òÃB¥~ªº¥\¯à¡C
+é€™å…©å€‹ Rake ä»»å‹™ï¼Œåªæ˜¯æ¯”è¼ƒæ–¹ä¾¿ï¼Œè®“æ‚¨ä¸ç”¨è¼¸å…¥ä¸€å¤§ä¸²ç‰ˆæœ¬ç·¨è™Ÿçš„æ•¸å­—ã€‚é™¤äº†è¼¸å…¥æ¯”è¼ƒä¾¿åˆ©ä¹‹å¤–ï¼Œä¸¦æ²’æœ‰æ¯” +db:migrate+ å¤šå‡ºä»€éº¼é¡å¤–çš„åŠŸèƒ½ã€‚
 
-³Ì«á¬O +db:reset+ ¥ô°È¡A¥¦·|§R±¼¡]drop¡^¸ê®Æ®w¡BµM«á­«·s«Ø¥ß¸ê®Æ®w¡AµM«á¦b­«·s«Ø¥ßªº¸ê®Æ®w¸Ì­±¡AÅª¤J¥Ø«eªº schema¡]¸ê®Æ®wºõ­n¡^¡C
+æœ€å¾Œæ˜¯ +db:reset+ ä»»å‹™ï¼Œå®ƒæœƒåˆªæ‰ï¼ˆdropï¼‰è³‡æ–™åº«ã€ç„¶å¾Œé‡æ–°å»ºç«‹è³‡æ–™åº«ï¼Œç„¶å¾Œåœ¨é‡æ–°å»ºç«‹çš„è³‡æ–™åº«è£¡é¢ï¼Œè®€å…¥ç›®å‰çš„ schemaï¼ˆè³‡æ–™åº«ç¶±è¦ï¼‰ã€‚
 
-NOTE: ©Ò¿×ªº­«Åª schema¡A¸ò°õ¦æ¥ş³¡ migrations ¬O¤£¤@¼Ëªº¡A½Ğ°Ñ·Ó "schema.rb":#schema-dumping-and-you.
+NOTE: æ‰€è¬‚çš„é‡è®€ schemaï¼Œè·ŸåŸ·è¡Œå…¨éƒ¨ migrations æ˜¯ä¸ä¸€æ¨£çš„ï¼Œè«‹åƒç…§ "schema.rb":#schema-dumping-and-you.
 
-h4. Migration ¥i¥H«Üºë½T
+h4. Migration å¯ä»¥å¾ˆç²¾ç¢º
 
-¦pªG¡A­n³æ³æ°õ¦æ¬Y­Ó¯S©wªº migration¡A¨º¥i¥H¥Î +db:migrate:up+ ¸ò +db:migrate:down+ ³o¨â¶µ¥ô°È¡C¥u­n¼g¤Wª©¥»½s¸¹¡A´N¥i¥H¤Şµo¥¦ªº +up+ ©Î +down+ ¤èªk¡G
+å¦‚æœï¼Œè¦å–®å–®åŸ·è¡ŒæŸå€‹ç‰¹å®šçš„ migrationï¼Œé‚£å¯ä»¥ç”¨ +db:migrate:up+ è·Ÿ +db:migrate:down+ é€™å…©é …ä»»å‹™ã€‚åªè¦å¯«ä¸Šç‰ˆæœ¬ç·¨è™Ÿï¼Œå°±å¯ä»¥å¼•ç™¼å®ƒçš„ +up+ æˆ– +down+ æ–¹æ³•ï¼š
 
 <shell>
 rake db:migrate:up VERSION=20080906120000
 </shell>
 
-³o·|°õ¦æ 20080906120000 ³o¤@ª©ªº migration ªº +up+ ¤èªk¡C+db:migrate:up+ ©M +db:migrate:down+ ·|¥h½T»{³o­Ó migration ¥Ø«e¦³¨S¦³¶]¹L¡A©Ò¥H¡A¦pªG Active Record »{¬° 20080906120000 ¤w¸g¶]¹L¤F¡A¨º»ò°õ¦æ +db:migrate:up VERSION=20080906120000+ ´N¤£·|°µ¥ô¦ó°Ê§@¡C
+é€™æœƒåŸ·è¡Œ 20080906120000 é€™ä¸€ç‰ˆçš„ migration çš„ +up+ æ–¹æ³•ã€‚+db:migrate:up+ å’Œ +db:migrate:down+ æœƒå»ç¢ºèªé€™å€‹ migration ç›®å‰æœ‰æ²’æœ‰è·‘éï¼Œæ‰€ä»¥ï¼Œå¦‚æœ Active Record èªç‚º 20080906120000 å·²ç¶“è·‘éäº†ï¼Œé‚£éº¼åŸ·è¡Œ +db:migrate:up VERSION=20080906120000+ å°±ä¸æœƒåšä»»ä½•å‹•ä½œã€‚
 
-h4. Migration ¤]¥i¥H«Ü°·½Í
+h4. Migration ä¹Ÿå¯ä»¥å¾ˆå¥è«‡
 
-¨Ì·Ó¹w³]­È¡Amigrations ·|§i¶D§A¥¦­Ì¦b°µ¤°»ò¡Bªá¦h¤[®É¶¡¡C¤ñ¤è»¡¡A«Ø¥ß¸ê®Æªí¨Ã¥B¥[¤J¯Á¤Ş¡]index¡^ªº¸Ü¡A·|²£¥Í³o¼Ëªº¿é¥Xµ²ªG¡]output¡^¡G
+ä¾ç…§é è¨­å€¼ï¼Œmigrations æœƒå‘Šè¨´ä½ å®ƒå€‘åœ¨åšä»€éº¼ã€èŠ±å¤šä¹…æ™‚é–“ã€‚æ¯”æ–¹èªªï¼Œå»ºç«‹è³‡æ–™è¡¨ä¸¦ä¸”åŠ å…¥ç´¢å¼•ï¼ˆindexï¼‰çš„è©±ï¼Œæœƒç”¢ç”Ÿé€™æ¨£çš„è¼¸å‡ºçµæœï¼ˆoutputï¼‰ï¼š
 
 <shell>
 20080906170109 CreateProducts: migrating
@@ -453,13 +453,13 @@ h4. Migration ¤]¥i¥H«Ü°·½Í
 20080906170109 CreateProducts: migrated (0.0059s)
 </shell>
 
-·Q­n±±¨î³o¨Ç output ªº¸Ü¡A¥i¥H¥Î³o´X­Ó¤èªk¡G
+æƒ³è¦æ§åˆ¶é€™äº› output çš„è©±ï¼Œå¯ä»¥ç”¨é€™å¹¾å€‹æ–¹æ³•ï¼š
 
-* +suppress_messages+ §í¨î³o­Óµ{¦¡½X°Ï¶ô¡]block¡^ªº¥ô¦ó¿é¥Xµ²ªG
-* +say+ ¿é¥X¤å¦r¡]²Ä¤G­Ó°Ñ¼Æ¥i¥H«ü©w¬O§_­nÁY±Æ¡^
-* +say_with_time+ ¿é¥X¤å¦r¡A¥H¤Î³o¬qµ{¦¡½X°Ï¶ô­nªá¦h¤Ö®É¶¡¶]§¹¡C¦pªGµ{¦¡°Ï¶ô¤¤¿é¤J¡]returns¡^¤F¤@­Ó¾ã¼Æ¡]integer¡^¡A·|·í¥¦¬O¨ü¼vÅTªº¦Cªº¼Æ¥Ø¡C
+* +suppress_messages+ æŠ‘åˆ¶é€™å€‹ç¨‹å¼ç¢¼å€å¡Šï¼ˆblockï¼‰çš„ä»»ä½•è¼¸å‡ºçµæœ
+* +say+ è¼¸å‡ºæ–‡å­—ï¼ˆç¬¬äºŒå€‹åƒæ•¸å¯ä»¥æŒ‡å®šæ˜¯å¦è¦ç¸®æ’ï¼‰
+* +say_with_time+ è¼¸å‡ºæ–‡å­—ï¼Œä»¥åŠé€™æ®µç¨‹å¼ç¢¼å€å¡Šè¦èŠ±å¤šå°‘æ™‚é–“è·‘å®Œã€‚å¦‚æœç¨‹å¼å€å¡Šä¸­è¼¸å…¥ï¼ˆreturnsï¼‰äº†ä¸€å€‹æ•´æ•¸ï¼ˆintegerï¼‰ï¼Œæœƒç•¶å®ƒæ˜¯å—å½±éŸ¿çš„åˆ—çš„æ•¸ç›®ã€‚
 
-¨Ò¦p¡G
+ä¾‹å¦‚ï¼š
 
 <ruby>
 class CreateProducts < ActiveRecord::Migration
@@ -486,7 +486,7 @@ class CreateProducts < ActiveRecord::Migration
 end
 </ruby>
 
-·|²£¥Í³o¼Ëªº¿é¥Xµ²ªG¡G
+æœƒç”¢ç”Ÿé€™æ¨£çš„è¼¸å‡ºçµæœï¼š
 
 <shell>
 20080906170109 CreateProducts: migrating
@@ -498,15 +498,15 @@ end
 20080906170109 CreateProducts: migrated (10.0097s)
 </shell>
 
-¦pªG±z§Æ±æ Active Record ³¬¼L¡A¨º»ò°õ¦æ +rake db:migrate VERBOSE=false+ ´N¥i¥H§í¨î¥ô¦ó¿é¥Xµ²ªG¤F¡C
+å¦‚æœæ‚¨å¸Œæœ› Active Record é–‰å˜´ï¼Œé‚£éº¼åŸ·è¡Œ +rake db:migrate VERBOSE=false+ å°±å¯ä»¥æŠ‘åˆ¶ä»»ä½•è¼¸å‡ºçµæœäº†ã€‚
 
-h3. ¦b Migrations ¤¤¨Ï¥Î Models
+h3. åœ¨ Migrations ä¸­ä½¿ç”¨ Models
 
-¦b migration ¤¤¡A¤£ºŞ¬O«Ø¥ß·sªº¸ê®Æ¡AÁÙ¬O§ó·s²{¦³ªº¸ê®Æ¡A¦h¤Ö³£·|¥Î¨ì¤@­Ó model¡]¼Ò«¬¡^¡A²¦³º model ¦s¦bªº¥Øªº¡A´N¬O¬°¤F¤è«K§Ú­Ì³B²z©³¼hªº¸ê®Æ¡C³o·íµM¬O ok ªº¡A¦ı¦³¨Ç¦a¤è»İ­n¯d·N¤@¤U¡C
+åœ¨ migration ä¸­ï¼Œä¸ç®¡æ˜¯å»ºç«‹æ–°çš„è³‡æ–™ï¼Œé‚„æ˜¯æ›´æ–°ç¾æœ‰çš„è³‡æ–™ï¼Œå¤šå°‘éƒ½æœƒç”¨åˆ°ä¸€å€‹ modelï¼ˆæ¨¡å‹ï¼‰ï¼Œç•¢ç«Ÿ model å­˜åœ¨çš„ç›®çš„ï¼Œå°±æ˜¯ç‚ºäº†æ–¹ä¾¿æˆ‘å€‘è™•ç†åº•å±¤çš„è³‡æ–™ã€‚é€™ç•¶ç„¶æ˜¯ ok çš„ï¼Œä½†æœ‰äº›åœ°æ–¹éœ€è¦ç•™æ„ä¸€ä¸‹ã€‚
 
-°²³]¦³³o¼Ëªº¤@­Óª¬ªp¡G¦³­Ó migration¡A­n¥Î +Product+ ¼Ò«¬¡A¥h§ó·s¸ê®Æªí¤¤ªº¬Y¤@¦C¡CµM«á¡A¦ã²úµ·§ó·s¤F +Product+ ¼Ò«¬¡A·s¥[¤J¤@Äæ¡AÁÙ¦b¤W­±³]©w¤FÅçÃÒ¾÷¨î¡]validation¡^¡C±µµÛ¡AÀj§B¦¬°²¦^¨Ó¤W¯Z¡A§ó·s¤F­ì©l½X¨Ã¥B¥Î +rake db:migrate+ °õ¦æ©Ò¦³ÁÙ¨S¶]¹Lªº migrations¡A¨ä¤¤¡A¥]¬A¤F­n¥Î¨ì +Product+ ¼Ò«¬ªº¨º¤@­Ó migration¡C¦¹®É¡A¥Ñ©ó­ì©l½X¤w¸g§ó·s¤F¡A©Ò¥H +Product+ ¼Ò«¬¸Ì¤w¸g¥[¤J¤F¦ã²úµ·©Ò³]©wªºÅçÃÒ¾÷¨î¡A¦ı¬O¡A¸ê®Æ®w«oÁÙ¬OÂÂªº¡A¸Ì­±¨S¦³©Ò¿×ªºÅçÃÒÄæ¡Aµ²ªG¡A¦]¬°ÅçÃÒ³]©w¦b¤@­Ó¤£¦s¦bªºÄæ¤W­±¡A´N¥X²{¤F¿ù»~¡C
+å‡è¨­æœ‰é€™æ¨£çš„ä¸€å€‹ç‹€æ³ï¼šæœ‰å€‹ migrationï¼Œè¦ç”¨ +Product+ æ¨¡å‹ï¼Œå»æ›´æ–°è³‡æ–™è¡¨ä¸­çš„æŸä¸€åˆ—ã€‚ç„¶å¾Œï¼Œè‰¾è‰çµ²æ›´æ–°äº† +Product+ æ¨¡å‹ï¼Œæ–°åŠ å…¥ä¸€æ¬„ï¼Œé‚„åœ¨ä¸Šé¢è¨­å®šäº†é©—è­‰æ©Ÿåˆ¶ï¼ˆvalidationï¼‰ã€‚æ¥è‘—ï¼Œé®‘ä¼¯æ”¶å‡å›ä¾†ä¸Šç­ï¼Œæ›´æ–°äº†åŸå§‹ç¢¼ä¸¦ä¸”ç”¨ +rake db:migrate+ åŸ·è¡Œæ‰€æœ‰é‚„æ²’è·‘éçš„ migrationsï¼Œå…¶ä¸­ï¼ŒåŒ…æ‹¬äº†è¦ç”¨åˆ° +Product+ æ¨¡å‹çš„é‚£ä¸€å€‹ migrationã€‚æ­¤æ™‚ï¼Œç”±æ–¼åŸå§‹ç¢¼å·²ç¶“æ›´æ–°äº†ï¼Œæ‰€ä»¥ +Product+ æ¨¡å‹è£¡å·²ç¶“åŠ å…¥äº†è‰¾è‰çµ²æ‰€è¨­å®šçš„é©—è­‰æ©Ÿåˆ¶ï¼Œä½†æ˜¯ï¼Œè³‡æ–™åº«å»é‚„æ˜¯èˆŠçš„ï¼Œè£¡é¢æ²’æœ‰æ‰€è¬‚çš„é©—è­‰æ¬„ï¼Œçµæœï¼Œå› ç‚ºé©—è­‰è¨­å®šåœ¨ä¸€å€‹ä¸å­˜åœ¨çš„æ¬„ä¸Šé¢ï¼Œå°±å‡ºç¾äº†éŒ¯èª¤ã€‚
 
-«Ü¦h®É­Ô¡A­n§ó·s¸ê®Æ®w¤¤ªº¬Y´X¦C¡A¦ı¤£·Q°Ê¤â¼g SQL¡A²¦³º¡A¤S¨S¦³­n¥Î¨ì model¡]¼Ò«¬¡^¡CÀ³¥I³oºØª¬ªp¡A¨ä¤¤¤@­Ó¤è¦¡¡A´N¬O¦b migration ¤º³¡¡A©w¸q¤@­Ó model ªº°Æ¥»¡G
+å¾ˆå¤šæ™‚å€™ï¼Œè¦æ›´æ–°è³‡æ–™åº«ä¸­çš„æŸå¹¾åˆ—ï¼Œä½†ä¸æƒ³å‹•æ‰‹å¯« SQLï¼Œç•¢ç«Ÿï¼Œåˆæ²’æœ‰è¦ç”¨åˆ° modelï¼ˆæ¨¡å‹ï¼‰ã€‚æ‡‰ä»˜é€™ç¨®ç‹€æ³ï¼Œå…¶ä¸­ä¸€å€‹æ–¹å¼ï¼Œå°±æ˜¯åœ¨ migration å…§éƒ¨ï¼Œå®šç¾©ä¸€å€‹ model çš„å‰¯æœ¬ï¼š
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
@@ -523,11 +523,11 @@ class AddPartNumberToProducts < ActiveRecord::Migration
 end
 </ruby>
 
-³o­Ó migration ¸Ì­±¡A¦³¥÷ +Product+ ¼Ò«¬ªº°g§A°Æ¥»¡A¦]¦¹¡A´N¤£¥Î²z·|À³¥Îµ{¦¡¸Ì­±ªº +Product+ ¼Ò«¬¤F¡C
+é€™å€‹ migration è£¡é¢ï¼Œæœ‰ä»½ +Product+ æ¨¡å‹çš„è¿·ä½ å‰¯æœ¬ï¼Œå› æ­¤ï¼Œå°±ä¸ç”¨ç†æœƒæ‡‰ç”¨ç¨‹å¼è£¡é¢çš„ +Product+ æ¨¡å‹äº†ã€‚
 
-h4. ÅÜ§ó Models
+h4. è®Šæ›´ Models
 
-¦Ò¶q¨ì®Ä¯àªº°İÃD¡Amodel ¸Ì­±ªºÄæ¡A·|³Q§Ö¨ú¡]cached¡^°_¨Ó¡A¦pªG¡A¥ı¦b¸ê®Æªí¤¤·s¼W¤@Äæ¡AµM«á¡A¥Î¬ÛÃöªº model ¨Ó´¡¤J¤@¦C¡A¦¹®É¡A¥i¯à·|¥Î¨ìÂÂªºÄæ¸ê°T¡]column information¡^¡A¨Ó·s¼W³o¤@¦C¡C¦pªG­n±j¨î Active Record ­«ÅªÄæ¸ê°T¡A¥i¥H¥Î +reset_column_information+ ¤èªk¡G
+è€ƒé‡åˆ°æ•ˆèƒ½çš„å•é¡Œï¼Œmodel è£¡é¢çš„æ¬„ï¼Œæœƒè¢«å¿«å–ï¼ˆcachedï¼‰èµ·ä¾†ï¼Œå¦‚æœï¼Œå…ˆåœ¨è³‡æ–™è¡¨ä¸­æ–°å¢ä¸€æ¬„ï¼Œç„¶å¾Œï¼Œç”¨ç›¸é—œçš„ model ä¾†æ’å…¥ä¸€åˆ—ï¼Œæ­¤æ™‚ï¼Œå¯èƒ½æœƒç”¨åˆ°èˆŠçš„æ¬„è³‡è¨Šï¼ˆcolumn informationï¼‰ï¼Œä¾†æ–°å¢é€™ä¸€åˆ—ã€‚å¦‚æœè¦å¼·åˆ¶ Active Record é‡è®€æ¬„è³‡è¨Šï¼Œå¯ä»¥ç”¨ +reset_column_information+ æ–¹æ³•ï¼š
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
@@ -547,17 +547,17 @@ end
 </ruby>
 
 
-h3. Schema Dumping¡]­Ë¥X¸ê®Æ®wºõ­n¡^
+h3. Schema Dumpingï¼ˆå€’å‡ºè³‡æ–™åº«ç¶±è¦ï¼‰
 
-h4. Schema ÀÉ®×¬O·F¹À¥Îªº¡H
+h4. Schema æª”æ¡ˆæ˜¯å¹¹å˜›ç”¨çš„ï¼Ÿ
 
-database schema¡]¸ê®Æ®wºõ­n¡^ÀÉ®×¡A»İ­n¤@­Óºë·Ç¥i¾aªº¨Ó·½¡AÁöµM»¡¡Amigrations ¦ü¥G¤]¯à³Ó¥ô³o¨¤¦â¡A¦ı¥¦¨Ã¤£¬O¡C³o­Ó¨¤¦â¥Ñ +db/schema.rb+¡A©ÎªÌ¥Ñ Active Record ÀËÅç¸ê®Æ®w«á©Ò²£¥Íªº SQL ÀÉ¨Ó¾á¥ô¡C¥¦­Ì¤£¬O®³¨Ó½s¿èªº¡A¥u¬O¯Âºé¥NªíµÛ¸ê®Æ®wªº²{ªp¡C
+database schemaï¼ˆè³‡æ–™åº«ç¶±è¦ï¼‰æª”æ¡ˆï¼Œéœ€è¦ä¸€å€‹ç²¾æº–å¯é çš„ä¾†æºï¼Œé›–ç„¶èªªï¼Œmigrations ä¼¼ä¹ä¹Ÿèƒ½å‹ä»»é€™è§’è‰²ï¼Œä½†å®ƒä¸¦ä¸æ˜¯ã€‚é€™å€‹è§’è‰²ç”± +db/schema.rb+ï¼Œæˆ–è€…ç”± Active Record æª¢é©—è³‡æ–™åº«å¾Œæ‰€ç”¢ç”Ÿçš„ SQL æª”ä¾†æ“”ä»»ã€‚å®ƒå€‘ä¸æ˜¯æ‹¿ä¾†ç·¨è¼¯çš„ï¼Œåªæ˜¯ç´”ç²¹ä»£è¡¨è‘—è³‡æ–™åº«çš„ç¾æ³ã€‚
 
-¦pªG¡A­n§G¸pÀ³¥Îµ{¦¡ªº·s instance¡]¹ê¨Ò¡^¡A¨Ã¤£»İ­n§â¾ã­Ó migration ¾úµ{¥ş³¡­«¶]¤@¹M¡A¬O»¡¡A³o¼Ë·dªº¸Ü¤]®e©ö¥X¿ù¡C¨ú¦Ó¥N¤§ªº¡A¥u­n§â¥Ø«e schema ªº´y­z¡A¼g¤J·sªº¸ê®Æ®w´N¥i¥H¤F¡A¤S§Ö¡A¤SÂ²³æ¡C
+å¦‚æœï¼Œè¦ä½ˆç½²æ‡‰ç”¨ç¨‹å¼çš„æ–° instanceï¼ˆå¯¦ä¾‹ï¼‰ï¼Œä¸¦ä¸éœ€è¦æŠŠæ•´å€‹ migration æ­·ç¨‹å…¨éƒ¨é‡è·‘ä¸€éï¼Œæ˜¯èªªï¼Œé€™æ¨£æçš„è©±ä¹Ÿå®¹æ˜“å‡ºéŒ¯ã€‚å–è€Œä»£ä¹‹çš„ï¼Œåªè¦æŠŠç›®å‰ schema çš„æè¿°ï¼Œå¯«å…¥æ–°çš„è³‡æ–™åº«å°±å¯ä»¥äº†ï¼Œåˆå¿«ï¼Œåˆç°¡å–®ã€‚
 
-¨Ò¦p¡A«Ø¥ß¤@­Ó´ú¸Õ¥Î¸ê®Æ®wªº®É­Ô¡A´N§â¥Ø«e¶}µo¶¥¬qªº¸ê®Æ®w­Ë¥X¡]dumped¡^¡A­Ë¨ì +db/schema.rb+ ÁÙ¬O +db/development.sql+ ³£¥i¡AµM«á¡A¼g¤J¨ì´ú¸Õ¸ê®Æ®w¸Ì­±¨Ó¡C
+ä¾‹å¦‚ï¼Œå»ºç«‹ä¸€å€‹æ¸¬è©¦ç”¨è³‡æ–™åº«çš„æ™‚å€™ï¼Œå°±æŠŠç›®å‰é–‹ç™¼éšæ®µçš„è³‡æ–™åº«å€’å‡ºï¼ˆdumpedï¼‰ï¼Œå€’åˆ° +db/schema.rb+ é‚„æ˜¯ +db/development.sql+ éƒ½å¯ï¼Œç„¶å¾Œï¼Œå¯«å…¥åˆ°æ¸¬è©¦è³‡æ–™åº«è£¡é¢ä¾†ã€‚
 
-¦pªG¡A­n§Ö³tÂsÄı Active Record ª«¥ó¸Ì­±¦³­ş¨ÇÄİ©Ê¡]attributes¡^¡Aschema ÀÉ¤]«Ü¦³¥Î¡CÃö©ó Active Record ª«¥óÄİ©Êªº¸ê°T¡A¤£¦b model ªºµ{¦¡½X¸Ì¡A¥B¸g±`¦b¦n´X­Ó migrations ¤§¶¡´²¼½¡A¦ı¬O³Ì²×¡A³£·|¦b schema ÀÉ¸Ì­±°µ¥XÁ`µ²¡C¨ä¦¸¡A¦³­Ó¥~±¾¥s°µ "annotate_models":http://agilewebdevelopment.com/plugins/annotate_models ¡A·|§â schema °µ¥XÁ`µ²¡AµM«á¦Û°Ê¦b¨C­Ó model ªº³»³¡¡A¼W¥[¡]¥B«ùÄò§ó·s¡^µù°O¡A³o­Ó¤]¥i¥H¥Î¥Î¬İ¡C
+å¦‚æœï¼Œè¦å¿«é€Ÿç€è¦½ Active Record ç‰©ä»¶è£¡é¢æœ‰å“ªäº›å±¬æ€§ï¼ˆattributesï¼‰ï¼Œschema æª”ä¹Ÿå¾ˆæœ‰ç”¨ã€‚é—œæ–¼ Active Record ç‰©ä»¶å±¬æ€§çš„è³‡è¨Šï¼Œä¸åœ¨ model çš„ç¨‹å¼ç¢¼è£¡ï¼Œä¸”ç¶“å¸¸åœ¨å¥½å¹¾å€‹ migrations ä¹‹é–“æ•£æ’­ï¼Œä½†æ˜¯æœ€çµ‚ï¼Œéƒ½æœƒåœ¨ schema æª”è£¡é¢åšå‡ºç¸½çµã€‚å…¶æ¬¡ï¼Œæœ‰å€‹å¤–æ›å«åš "annotate_models":http://agilewebdevelopment.com/plugins/annotate_models ï¼ŒæœƒæŠŠ schema åšå‡ºç¸½çµï¼Œç„¶å¾Œè‡ªå‹•åœ¨æ¯å€‹ model çš„é ‚éƒ¨ï¼Œå¢åŠ ï¼ˆä¸”æŒçºŒæ›´æ–°ï¼‰è¨»è¨˜ï¼Œé€™å€‹ä¹Ÿå¯ä»¥ç”¨ç”¨çœ‹ã€‚
 
 h4. Types of Schema Dumps
 
@@ -583,25 +583,25 @@ ActiveRecord::Schema.define(:version => 20080906171750) do
 end
 </ruby>
 
-In many ways this is exactly what it is. This file is created by inspecting the ¸ê®Æ®w and expressing its structure using +create_table+, +add_index+, and so on. Because this is ¸ê®Æ®w independent it could be loaded into any ¸ê®Æ®w that Active Record supports. This could be very useful if you were to distribute an À³¥Îµ{¦¡ that is able to run against multiple ¸ê®Æ®ws.
+In many ways this is exactly what it is. This file is created by inspecting the è³‡æ–™åº« and expressing its structure using +create_table+, +add_index+, and so on. Because this is è³‡æ–™åº« independent it could be loaded into any è³‡æ–™åº« that Active Record supports. This could be very useful if you were to distribute an æ‡‰ç”¨ç¨‹å¼ that is able to run against multiple è³‡æ–™åº«s.
 
-There is however a trade-off: +db/schema.rb+ cannot express ¸ê®Æ®w specific items such as foreign key constraints, triggers or stored procedures. While in a migration you can execute custom SQL statements, the schema dumper cannot reconstitute those statements from the ¸ê®Æ®w. If you are using features like this then you should set the schema format to +:sql+.
+There is however a trade-off: +db/schema.rb+ cannot express è³‡æ–™åº« specific items such as foreign key constraints, triggers or stored procedures. While in a migration you can execute custom SQL statements, the schema dumper cannot reconstitute those statements from the è³‡æ–™åº«. If you are using features like this then you should set the schema format to +:sql+.
 
-Instead of using Active Record's schema dumper the ¸ê®Æ®w's structure will be dumped using a tool specific to that ¸ê®Æ®w (via the +db:structure:dump+ Rake task) into +db/#{Rails.env}_structure.sql+. For example for PostgreSQL the +pg_dump+ utility is used and for MySQL this file will contain the output of +SHOW CREATE TABLE+ for the various ¸ê®Æªís. Loading this schema is simply a question of executing the SQL statements contained inside.
+Instead of using Active Record's schema dumper the è³‡æ–™åº«'s structure will be dumped using a tool specific to that è³‡æ–™åº« (via the +db:structure:dump+ Rake task) into +db/#{Rails.env}_structure.sql+. For example for PostgreSQL the +pg_dump+ utility is used and for MySQL this file will contain the output of +SHOW CREATE TABLE+ for the various è³‡æ–™è¡¨s. Loading this schema is simply a question of executing the SQL statements contained inside.
 
-By definition this will be a perfect copy of the ¸ê®Æ®w's structure but this will usually prevent loading the schema into a ¸ê®Æ®w other than the one used to create it.
+By definition this will be a perfect copy of the è³‡æ–™åº«'s structure but this will usually prevent loading the schema into a è³‡æ–™åº« other than the one used to create it.
 
 h4. Schema Dumps and Source Control
 
-Because schema dumps are the authoritative source for your ¸ê®Æ®w schema, it is strongly recommended that you check them into source control.
+Because schema dumps are the authoritative source for your è³‡æ–™åº« schema, it is strongly recommended that you check them into source control.
 
 h3. Active Record and Referential Integrity
 
-The Active Record way claims that intelligence belongs in your models, not in the ¸ê®Æ®w. As such, features such as triggers or foreign key constraints, which push some of that intelligence back into the ¸ê®Æ®w, are not heavily used.
+The Active Record way claims that intelligence belongs in your models, not in the è³‡æ–™åº«. As such, features such as triggers or foreign key constraints, which push some of that intelligence back into the è³‡æ–™åº«, are not heavily used.
 
-Validations such as +validates_uniqueness_of+ are one way in which models can enforce data integrity. The +:dependent+ option on associations allows models to automatically destroy child ª«¥ós when the parent is destroyed. Like anything which operates at the À³¥Îµ{¦¡ level these cannot guarantee referential integrity and so some people augment them with foreign key constraints.
+Validations such as +validates_uniqueness_of+ are one way in which models can enforce data integrity. The +:dependent+ option on associations allows models to automatically destroy child ç‰©ä»¶s when the parent is destroyed. Like anything which operates at the æ‡‰ç”¨ç¨‹å¼ level these cannot guarantee referential integrity and so some people augment them with foreign key constraints.
 
-Although Active Record does not provide any tools for working directly with such features, the +execute+ ¨ç¦¡ can be used to execute arbitrary SQL. There are also a number of plugins such as "foreign_key_migrations":http://github.com/harukizaemon/redhillonrails/tree/master/foreign_key_migrations/ which add foreign key support to Active Record (including support for dumping foreign keys in +db/schema.rb+).
+Although Active Record does not provide any tools for working directly with such features, the +execute+ å‡½å¼ can be used to execute arbitrary SQL. There are also a number of plugins such as "foreign_key_migrations":http://github.com/harukizaemon/redhillonrails/tree/master/foreign_key_migrations/ which add foreign key support to Active Record (including support for dumping foreign keys in +db/schema.rb+).
 
 h3. Changelog
 
