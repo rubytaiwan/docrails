@@ -616,7 +616,7 @@ h3. 關於譯者
 譯者：藍一婷 (a.k.a. "ETBlue":http://etblue.blogspot.com/) 
 技術指導：張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/)
 意見回饋：高見龍 (a.k.a. "Eddie Kao":http://blog.eddie.com.tw/)
-翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ETBlue/docrails
+翻譯的原始碼位於 "http://github.com/ETBlue/docrails":http://github.com/ETBlue/docrails
 
 h3. 翻譯詞彙
 
