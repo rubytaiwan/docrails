@@ -4,7 +4,7 @@ Migrations（資料庫遷移）很好用，可以有條理的轉換資料庫。�
 
 Active Record（活動記錄）會自動追蹤哪些 migrations 已經執行過、哪些還沒。所以，您只要更新手頭的原始碼，然後執行 +rake db:migrate+，其餘的就交給 Active Record，它會自己搞懂該跑哪些 migrations。還有，它也會更新 +db/schema.rb+ 檔案，以符合改動後的資料庫結構。
 
-有了 migrations，就可以用 Ruby 來寫資料庫變更。因為，migration 是獨立於資料庫的（和大多數 Active Record 的功能一樣），也就是說，您不用去煩惱各種資料庫系統的語法差異，像是 +SELECT *+ 的各種變化形之類的。（當然啦，如果要針對某個特定資料庫系統，撰寫專屬功能的話，您也可以直接寫原始 SQL）。打個比方，您可以在開發階段使用 SQLite3，在正式上線階段則使用 MySQL，兩者間的語法細節，它會自動幫你搞定。
+有了 migrations，就可以用 Ruby 來寫資料庫變更。因為，migration 是獨立於資料庫系統的（和大多數 Active Record 的功能一樣），也就是說，您不用去煩惱各種資料庫系統的語法差異，像是 +SELECT *+ 的各種變化形之類的。（當然啦，如果要針對某個特定資料庫系統，撰寫專屬功能的話，您也可以直接寫原始 SQL）。打個比方，您可以在開發階段使用 SQLite3，在正式上線階段則使用 MySQL，兩者間的語法細節，它會自動幫你搞定。
 
 接下來，您將學會 migrations 的一切，包括：
 
@@ -63,7 +63,7 @@ h4. Migrations 是類別（classes）
 
 每個 migration 都是 <tt>ActiveRecord::Migration</tt> 的子類別（subclass），有兩個類別方法可以用： +up+（執行所需的轉換）以及 +down+（回復它們）。
 
-Active Record 提供以下方法，用獨立於資料庫的方式，執行一般的資料定義任務：
+Active Record 提供以下方法，用獨立於資料庫系統的方式，執行一般的資料定義任務：
 
 * +create_table+
 * +change_table+
@@ -559,11 +559,11 @@ database schema（資料庫綱要）檔案，需要一個精準可靠的來源�
 
 如果，要快速瀏覽 Active Record 物件裡面有哪些屬性（attributes），schema 檔也很有用。關於 Active Record 物件屬性的資訊，不在 model 的程式碼裡，且經常在好幾個 migrations 之間散播，但是最終，都會在 schema 檔裡面做出總結。其次，有個外掛叫做 "annotate_models":http://agilewebdevelopment.com/plugins/annotate_models ，會把 schema 做出總結，然後自動在每個 model 的頂部，增加（且持續更新）註記，這個也可以用用看。
 
-h4. Types of Schema Dumps
+h4. Schema Dumps（倒出資料庫綱要）的種類
 
-There are two ways to dump the schema. This is set in +config/environment.rb+ by the +config.active_record.schema_format+ setting, which may be either +:sql+ or +:ruby+.
+要倒出 schema，有 +:sql+ 或者 +:ruby+ 兩種方法。至於是用哪種方法，可以用 +config/environment.rb+ 裡面的 +config.active_record.schema_format+ 來設定。
 
-If +:ruby+ is selected then the schema is stored in +db/schema.rb+. If you look at this file you'll find that it looks an awful lot like one very big migration:
+如果設定成用 +:ruby+ 的話，schema 就會存在 +db/schema.rb+ 裡面。這個檔案，看起來就像是一個超大的 migration：
 
 <ruby>
 ActiveRecord::Schema.define(:version => 20080906171750) do
@@ -583,19 +583,19 @@ ActiveRecord::Schema.define(:version => 20080906171750) do
 end
 </ruby>
 
-In many ways this is exactly what it is. This file is created by inspecting the 資料庫 and expressing its structure using +create_table+, +add_index+, and so on. Because this is 資料庫 independent it could be loaded into any 資料庫 that Active Record supports. This could be very useful if you were to distribute an 應用程式 that is able to run against multiple 資料庫s.
+各方面來說，它也的確是如此，這個檔案的產生方式，正是檢閱資料庫、並且用 +create_table+、+add_index+ 等方法，來表達資料庫的結構。由於 schema 是獨立於資料庫系統的（database independent），只要是 Active Record 有支援的資料庫系統，它都可以寫入。如果，您的應用程式要散佈到多種資料庫系統，這點會非常的有用。
 
-There is however a trade-off: +db/schema.rb+ cannot express 資料庫 specific items such as foreign key constraints, triggers or stored procedures. While in a migration you can execute custom SQL statements, the schema dumper cannot reconstitute those statements from the 資料庫. If you are using features like this then you should set the schema format to +:sql+.
+不過，這也是有代價的，+db/schema.rb+ 沒辦法表達出特定資料庫所專屬的項目（items），像是外部鍵約束（foreign key constraints）、觸發（triggers）或是預存程序（stored procedures）。雖然，migration 裡面可以執行自訂的 SQL 陳述句，但是 schema dumper 卻無法從資料庫中將它們重組回來。如果，您要用到這類自訂 SQL 的功能，那就必須把 schema 的格式設定成 +:sql+。
 
-Instead of using Active Record's schema dumper the 資料庫's structure will be dumped using a tool specific to that 資料庫 (via the +db:structure:dump+ Rake task) into +db/#{Rails.env}_structure.sql+. For example for PostgreSQL the +pg_dump+ utility is used and for MySQL this file will contain the output of +SHOW CREATE TABLE+ for the various 資料表s. Loading this schema is simply a question of executing the SQL statements contained inside.
+設定成 +:sql+ 的話，就不是用 Active Record 的 schema dumper 了，而是用該資料庫系統的專屬工具，從 +db:structure:dump+ 這個 Rake 任務，倒進 +db/#{Rails.env}_structure.sql+ 裡面。比方說，用 PostgreSQL 的話，就是用 +pg_dump+ 這個???公用程序（utility）???，用 MySQL 的話，schema 檔案裡就會有各種資料表的 +SHOW CREATE TABLE+ 的輸出結果。寫入這些 schema，只不過是執行檔案裡的 SQL 陳述句，如此而已。
 
-By definition this will be a perfect copy of the 資料庫's structure but this will usually prevent loading the schema into a 資料庫 other than the one used to create it.
+用 +:sql+ 方式，是可以完美的複製資料庫結構沒錯，不過，如果新的資料庫，跟建立這個 schema 的資料庫，不是使用同樣的資料庫系統的話，常常會沒辦法將 schema 寫入新的資料庫。
 
-h4. Schema Dumps and Source Control
+h4. Schema Dumps（倒出資料庫綱要）以及 Source Control（版本控制）
 
-Because schema dumps are the authoritative source for your 資料庫 schema, it is strongly recommended that you check them into source control.
+既然 schema dumps 是資料庫結構的精確來源，這麼重要的東西，強烈建議您把它登錄到版本控制系統內。
 
-h3. Active Record and Referential Integrity
+h3. Active Record 與Referential Integrity
 
 The Active Record way claims that intelligence belongs in your models, not in the 資料庫. As such, features such as triggers or foreign key constraints, which push some of that intelligence back into the 資料庫, are not heavily used.
 
