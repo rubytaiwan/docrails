@@ -595,19 +595,19 @@ h4. Schema Dumps（倒出資料庫綱要）以及 Source Control（版本控制�
 
 既然 schema dumps 是資料庫結構的精確來源，這麼重要的東西，強烈建議您把它登錄到版本控制系統內。
 
-h3. Active Record 與 Referential Integrity
+h3. Active Record 與 Referential Integrity（參照完整性）
 
 所謂的 Active Record 之道，認為有頭腦的應該是 models（模型），而不是資料庫。所以，一些把動腦工作推回去給資料庫的功能，像是觸發（triggers）或外部鍵約束（foreign key constraints）這類的，就不會常常去用到。
 
-要確保資料完整的話，在 model 裡面，可以用 +validates_uniqueness_of+ 來做驗證功能。The +:dependent+ option on associations allows models to automatically destroy child 物件s when the parent is destroyed. Like anything which operates at the 應用程式 level these cannot guarantee referential integrity and so some people augment them with foreign key constraints.
+要確保資料完整的話，在 model 裡面，可以用 +validates_uniqueness_of+ 來做驗證。model 裡面，資料庫關連（associations）上有個 +:dependent+ 選項，可以設定成，在父物件消滅（destroy）的時候，自動連子物件一起消滅。不過，就像其他在應用程式層級操作的東西一樣，這並不能保證資料表之間的參照完整性，所以，有些人用外部鍵約束（foreign key constraints）來增進這個功能。
 
-Although Active Record does not provide any tools for working directly with such features, the +execute+ 函式 can be used to execute arbitrary SQL. There are also a number of plugins such as "foreign_key_migrations":http://github.com/harukizaemon/redhillonrails/tree/master/foreign_key_migrations/ which add foreign key support to Active Record (including support for dumping foreign keys in +db/schema.rb+).
+關於外部鍵約束的功能，Active Record 並沒有提供可以直接編輯它的工具，不過，還是可以用 +execute+ 方法來執行任意的 SQL。也有不少的外掛，可以幫 Active Record 加上外部鍵的支援（還可以把外部鍵的設定倒給 +db/schema.rb+），像是這個 "foreign_key_migrations":http://github.com/harukizaemon/redhillonrails/tree/master/foreign_key_migrations/ 。
 
 h3. 文件修改記錄
 
 "Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213-rails-guides/tickets/6
 
-* Augest ??, 2010: 翻譯完成 by "ETBlue":http://etblue.blogspot.com
+* Augest 26, 2010: 翻譯完成 by "ETBlue":http://etblue.blogspot.com
 * July 15, 2010: minor typos corrected by "Jaime Iniesta":http://jaimeiniesta.com
 * September 14, 2008: initial version by "Frederick Cheung":credits.html#fcheung
 
