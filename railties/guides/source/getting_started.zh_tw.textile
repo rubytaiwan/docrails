@@ -195,15 +195,11 @@ $ cd blog
 
 h4. 安裝必要的 Gems
 
-Rails 使用 "Bundler":http://www.github.com/carlhuda/bundler gem 來管理所有你應用程式會依存的 gems 到 +vendor+ 目錄。到目前為止，我們根據預設不需要特殊的 gem，我們只需要這樣做：
+Rails 使用 "Bundler":http://gembundler.com gem 來管理所有你應用程式會依存的 gems 到 +vendor+ 目錄。到目前為止，我們根據預設不需要特殊的 gem，我們只需要執行以下指令就可以準備好了：
 
 <shell>
-用 root user 身分:
-$ gem install bundler
 $ bundle install
 </shell>
-
-這會檢查你開發 Rails 應用程式所需要的 gem 。
 
 h4. 設定資料庫
 
@@ -236,7 +232,7 @@ h5. 設定 MySQL 資料庫
 
 <yaml>
 development:
-  adapter: mysql
+  adapter: mysql2
   encoding: utf8
   database: blog_development
   pool: 5
@@ -489,6 +485,8 @@ $ rails console
 </shell>
 
 這段程式先建立了一個 +Post+ 實例，試圖要儲存進資料庫，但是卻回傳 +false+ (表示儲存失敗)，然後觀察文章的 +errors+。
+
+當你完成之後，輸入 +exit+ 按下 +enter+ 來離開主控台(Console)。
 
 TIP: 不像在 development 模式，console 不會自動載入剛修改的程式。如果你在 console 開啟之後才修改程式，請輸入 +reload!+ 重新載入。
 
@@ -1058,8 +1056,7 @@ h4. 顯示 Partial Collections (集合)
 </p>
 
 <h2>Comments</h2>
-<%= render :partial => "comments/comment", 
-           :collection => @post.comments %>
+<%= render @post.comments %>
 
 <h2>Add a comment:</h2>
 <%= form_for([@post, @post.comments.build]) do |f| %>
@@ -1129,8 +1126,7 @@ h4. 顯示 Partial 表單
 </p>
 
 <h2>Comments</h2>
-<%= render :partial => "comments/comment", 
-           :collection => @post.comments %>
+<%= render @post.comments %>
 
 <h2>Add a comment:</h2>
 <%= render "comments/form" %>
@@ -1382,8 +1378,7 @@ end
 </p>
 
 <h2>Comments</h2>
-<%= render :partial => "comments/comment", 
-           :collection => @post.comments %>
+<%= render @post.comments %>
 
 <h2>Add a comment:</h2>
 <%= render "comments/form" %>
@@ -1437,8 +1432,7 @@ end
 </p>
 
 <h2>Comments</h2>
-<%= render :partial => "comments/comment", 
-           :collection => @post.comments %>
+<%= render @post.comments %>
 
 <h2>Add a comment:</h2>
 <%= render "comments/form" %>
@@ -1453,6 +1447,7 @@ h3. 接下來？
 到目前為止，你已經建立了你的第一個 Rails 應用，請隨意修改實驗你的程式。不過請不要埋頭苦幹，當你需要協助的時候，請問問看以下資源：
 
 * "Ruby On Rails guides":index.html
+* The "Ruby on Rails Tutorial":http://railstutorial.org/book
 * "Ruby on Rails mailing list":http://groups.google.com/group/rubyonrails-talk
 * "#rubyonrails":irc://irc.freenode.net/#rubyonrails channel on irc.freenode.net
 * "Rails Wiki":http://wiki.rubyonrails.org/
