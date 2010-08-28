@@ -22,7 +22,7 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
   def test_belongs_to
     Client.find(3).firm.name
     assert_equal companies(:first_firm).name, Client.find(3).firm.name
-    assert !Client.find(3).firm.nil?, "Microsoft should have a firm"
+    assert_not_nil Client.find(3).firm, "Microsoft should have a firm"
   end
 
   def test_belongs_to_with_primary_key
@@ -32,7 +32,7 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
 
   def test_belongs_to_with_primary_key_joins_on_correct_column
     sql = Client.joins(:firm_with_primary_key).to_sql
-    if current_adapter?(:MysqlAdapter)
+    if current_adapter?(:MysqlAdapter) or current_adapter?(:Mysql2Adapter)
       assert_no_match(/`firm_with_primary_keys_companies`\.`id`/, sql)
       assert_match(/`firm_with_primary_keys_companies`\.`name`/, sql)
     elsif current_adapter?(:OracleAdapter)
@@ -75,8 +75,8 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
   end
 
   def test_eager_loading_with_primary_key
-    apple = Firm.create("name" => "Apple")
-    citibank = Client.create("name" => "Citibank", :firm_name => "Apple")
+    Firm.create("name" => "Apple")
+    Client.create("name" => "Citibank", :firm_name => "Apple")
     citibank_result = Client.find(:first, :conditions => {:name => "Citibank"}, :include => :firm_with_primary_key)
     assert_not_nil citibank_result.instance_variable_get("@firm_with_primary_key")
   end
@@ -214,6 +214,10 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     assert_equal 0, Topic.find(t2.id).replies.size
 
     r1.topic = Topic.find(t2.id)
+
+    assert_no_queries do
+      r1.topic = t2
+    end
 
     assert r1.save
     assert_equal 0, Topic.find(t1.id).replies.size

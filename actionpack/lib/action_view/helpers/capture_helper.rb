@@ -106,7 +106,7 @@ module ActionView
       #     <%= javascript_include_tag :defaults %>
       #   <% end %>
       #
-      # That will place <script> tags for Prototype, Scriptaculous, and application.js (if it exists)
+      # That will place <tt>script</tt> tags for Prototype, Scriptaculous, and application.js (if it exists)
       # on the page; this technique is useful if you'll only be using these scripts in a few views.
       #
       # Note that content_for concatenates the blocks it is given for a particular
@@ -165,7 +165,7 @@ module ActionView
       def with_output_buffer(buf = nil) #:nodoc:
         unless buf
           buf = ActionView::OutputBuffer.new
-          buf.force_encoding(output_buffer.encoding) if output_buffer && buf.respond_to?(:force_encoding)
+          buf.force_encoding(output_buffer.encoding) if output_buffer.respond_to?(:encoding) && buf.respond_to?(:force_encoding)
         end
         self.output_buffer, old_buffer = buf, output_buffer
         yield

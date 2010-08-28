@@ -34,25 +34,24 @@ module ActiveModel
           end
         end
       end
-        
+
       def validate_each(record, attribute, value)
         value = options[:tokenizer].call(value) if value.kind_of?(String)
 
         CHECKS.each do |key, validity_check|
           next unless check_value = options[key]
+
+          value ||= [] if key == :maximum
+
+          next if value && value.size.send(validity_check, check_value)
+
+          errors_options = options.except(*RESERVED_OPTIONS)
+          errors_options[:count] = check_value
+
           default_message = options[MESSAGES[key]]
-          options[:message] ||= default_message if default_message
+          errors_options[:message] ||= default_message if default_message
 
-          valid_value = if key == :maximum
-            value.nil? || value.size.send(validity_check, check_value)
-          else
-            value && value.size.send(validity_check, check_value)
-          end
-
-          next if valid_value
-
-          record.errors.add(attribute, MESSAGES[key],
-                            options.except(*RESERVED_OPTIONS).merge!(:count => check_value))
+          record.errors.add(attribute, MESSAGES[key], errors_options)
         end
       end
     end

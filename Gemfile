@@ -1,26 +1,17 @@
 source 'http://rubygems.org'
 
-gem "arel", :git => "git://github.com/rails/arel.git"
+if ENV['AREL']
+  gem "arel", :path => ENV['AREL']
+else
+  gem "arel", :git => "git://github.com/rails/arel.git"
+end
+
 gem "rails", :path => File.dirname(__FILE__)
 
 gem "rake",  ">= 0.8.7"
 gem "mocha", ">= 0.9.8"
-gem "rdoc",  "2.2"
-
-mri = !defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby"
-if mri && RUBY_VERSION < '1.9'
-  gem "system_timer"
-  gem "ruby-debug", ">= 0.10.3"
-end
-
-if mri || RUBY_ENGINE == "rbx"
-  gem 'json'
-  gem 'yajl-ruby'
-  gem "nokogiri", ">= 1.4.2"
-elsif RUBY_ENGINE == "jruby"
-  gem "ruby-debug"
-  gem "jruby-openssl"
-end
+gem "rdoc",  ">= 2.5.10"
+gem "horo",  ">= 1.0.2"
 
 # AS
 gem "memcache-client", ">= 1.8.5"
@@ -28,15 +19,29 @@ gem "memcache-client", ">= 1.8.5"
 # AM
 gem "text-format", "~> 1.0.0"
 
-# AR
-if mri || RUBY_ENGINE == "rbx"
+platforms :mri_18 do
+  gem "system_timer"
+  gem "ruby-debug", ">= 0.10.3"
+end
+
+platforms :ruby do
+  gem 'json'
+  gem 'yajl-ruby'
+  gem "nokogiri", ">= 1.4.3.1"
+
+  # AR
   gem "sqlite3-ruby", "~> 1.3.1", :require => 'sqlite3'
 
   group :db do
     gem "pg", ">= 0.9.0"
     gem "mysql", ">= 2.8.1"
+    gem "mysql2", ">= 0.2.3"
   end
-elsif RUBY_ENGINE == "jruby"
+end
+
+platforms :jruby do
+  gem "ruby-debug", ">= 0.10.3"
+
   gem "activerecord-jdbcsqlite3-adapter"
 
   group :db do
@@ -45,9 +50,14 @@ elsif RUBY_ENGINE == "jruby"
   end
 end
 
-if ENV['CI']
-  gem "nokogiri", ">= 1.4.2"
-
-  # fcgi gem doesn't compile on 1.9
-  gem "fcgi", ">= 0.8.8" if RUBY_VERSION < '1.9.0'
+# gems that are necessary for ActiveRecord tests with Oracle database
+if ENV['ORACLE_ENHANCED_PATH'] || ENV['ORACLE_ENHANCED']
+  platforms :ruby do
+    gem 'ruby-oci8', ">= 2.0.4"
+  end
+  if ENV['ORACLE_ENHANCED_PATH']
+    gem 'activerecord-oracle_enhanced-adapter', :path => ENV['ORACLE_ENHANCED_PATH']
+  else
+    gem "activerecord-oracle_enhanced-adapter", :git => "git://github.com/rsim/oracle-enhanced.git"
+  end
 end

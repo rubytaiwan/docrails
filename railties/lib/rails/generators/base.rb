@@ -3,7 +3,7 @@ begin
 rescue LoadError
   puts "Thor is not available.\nIf you ran this command from a git checkout " \
        "of Rails, please make sure thor is installed,\nand run this command " \
-       "as `ruby /path/to/rails new myapp --dev`"
+       "as `ruby #{$0} #{ARGV.join(" ")} --dev`"
   exit
 end
 
@@ -81,7 +81,7 @@ module Rails
       # guessed based on class invokes hook_for, as noticed in the example above.
       # This can be customized with two options: :base and :as.
       #
-      # Let's suppose you are creating a generator that needs to invoke the 
+      # Let's suppose you are creating a generator that needs to invoke the
       # controller generator from test unit. Your first attempt is:
       #
       #   class AwesomeGenerator < Rails::Generators::Base

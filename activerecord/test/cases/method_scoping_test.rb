@@ -208,6 +208,13 @@ class MethodScopingTest < ActiveRecord::TestCase
     end
   end
 
+  def test_scope_for_create_only_uses_equal
+    table = VerySpecialComment.arel_table
+    relation = VerySpecialComment.scoped
+    relation.where_values << table[:id].not_eq(1)
+    assert_equal({:type => "VerySpecialComment"}, relation.send(:scope_for_create))
+  end
+
   def test_scoped_create
     new_comment = nil
 
@@ -442,7 +449,7 @@ class NestedScopingTest < ActiveRecord::TestCase
     Comment.send(:with_scope, :create => { :body => "Hey guys, nested scopes are broken. Please fix!" }) do
       Comment.send(:with_exclusive_scope, :create => { :post_id => 1 }) do
         assert_equal({:post_id => 1}, Comment.scoped.send(:scope_for_create))
-        assert Comment.new.body.blank?
+        assert_blank Comment.new.body
         comment = Comment.create :body => "Hey guys"
       end
     end

@@ -168,7 +168,7 @@ module Rails
                                         :desc => "Path to an application builder (can be a filesystem path or URL)"
 
       class_option :template,           :type => :string, :aliases => "-m",
-                                        :desc => "Path to an application template (can be a filesystem path or URL)."
+                                        :desc => "Path to an application template (can be a filesystem path or URL)"
 
       class_option :dev,                :type => :boolean, :default => false,
                                         :desc => "Setup the application with Gemfile pointing to your Rails checkout"
@@ -179,11 +179,11 @@ module Rails
       class_option :skip_gemfile,       :type => :boolean, :default => false,
                                         :desc => "Don't create a Gemfile"
 
-      class_option :skip_activerecord,  :type => :boolean, :aliases => "-O", :default => false,
-                                        :desc => "Skip ActiveRecord files"
+      class_option :skip_active_record, :type => :boolean, :aliases => "-O", :default => false,
+                                        :desc => "Skip Active Record files"
 
-      class_option :skip_testunit,      :type => :boolean, :aliases => "-T", :default => false,
-                                        :desc => "Skip TestUnit files"
+      class_option :skip_test_unit,     :type => :boolean, :aliases => "-T", :default => false,
+                                        :desc => "Skip Test::Unit files"
 
       class_option :skip_prototype,     :type => :boolean, :aliases => "-J", :default => false,
                                         :desc => "Skip Prototype files"
@@ -205,7 +205,7 @@ module Rails
 
         super
 
-        if !options[:skip_activerecord] && !DATABASES.include?(options[:database])
+        if !options[:skip_active_record] && !DATABASES.include?(options[:database])
           raise Error, "Invalid value for --database option. Supported for preconfiguration are: #{DATABASES.join(", ")}."
         end
       end
@@ -216,7 +216,7 @@ module Rails
 
         empty_directory '.'
         set_default_accessors!
-        FileUtils.cd(destination_root)
+        FileUtils.cd(destination_root) unless options[:pretend]
       end
 
       def create_root_files
@@ -239,8 +239,8 @@ module Rails
         template "config/boot.rb"
       end
 
-      def create_activerecord_files
-        return if options[:skip_activerecord]
+      def create_active_record_files
+        return if options[:skip_active_record]
         build(:database_yml)
       end
 
@@ -281,7 +281,7 @@ module Rails
       end
 
       def create_test_files
-        build(:test) unless options[:skip_testunit]
+        build(:test) unless options[:skip_test_unit]
       end
 
       def create_tmp_files
@@ -356,8 +356,13 @@ module Rails
         @app_name ||= File.basename(destination_root)
       end
 
+      def defined_app_const_base
+        Rails.respond_to?(:application) && defined?(Rails::Application) &&
+          Rails.application.is_a?(Rails::Application) && Rails.application.class.name.sub(/::Application$/, "")
+      end
+
       def app_const_base
-        @app_const_base ||= app_name.gsub(/\W/, '_').squeeze('_').camelize
+        @app_const_base ||= defined_app_const_base || app_name.gsub(/\W/, '_').squeeze('_').camelize
       end
 
       def app_const
@@ -389,6 +394,7 @@ module Rails
         when "postgresql" then "pg"
         when "sqlite3"    then "sqlite3-ruby"
         when "frontbase"  then "ruby-frontbase"
+        when "mysql"      then "mysql2"
         else options[:database]
         end
       end
@@ -410,7 +416,7 @@ module Rails
           "/opt/local/var/run/mysql4/mysqld.sock",  # mac + darwinports + mysql4
           "/opt/local/var/run/mysql5/mysqld.sock",  # mac + darwinports + mysql5
           "/opt/lampp/var/mysql/mysql.sock"         # xampp for linux
-        ].find { |f| File.exist?(f) } unless Config::CONFIG['host_os'] =~ /mswin|mingw/
+        ].find { |f| File.exist?(f) } unless RbConfig::CONFIG['host_os'] =~ /mswin|mingw/
       end
 
       def empty_directory_with_gitkeep(destination, config = {})

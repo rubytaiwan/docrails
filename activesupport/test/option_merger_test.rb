@@ -1,5 +1,5 @@
 require 'abstract_unit'
-require 'active_support/core_ext/object/misc'
+require 'active_support/core_ext/object/with_options'
 
 class OptionMergerTest < Test::Unit::TestCase
   def setup
@@ -65,7 +65,7 @@ class OptionMergerTest < Test::Unit::TestCase
       end
     end
   end
-  
+
   def test_nested_method_with_options_using_lamdba
     local_lamdba = lambda { { :lambda => true } }
     with_options(@options) do |o|

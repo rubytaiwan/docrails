@@ -22,7 +22,7 @@ module ActiveRecord
         else
           raise_on_type_mismatch(record)
 
-          if counter_cache_name && !@owner.new_record?
+          if counter_cache_name && !@owner.new_record? && record.id != @owner[@reflection.primary_key_name]
             @reflection.klass.increment_counter(counter_cache_name, record.id)
             @reflection.klass.decrement_counter(counter_cache_name, @owner[@reflection.primary_key_name]) if @owner[@reflection.primary_key_name]
           end
@@ -49,12 +49,16 @@ module ActiveRecord
                         else
                           "find"
                         end
+
+          options = @reflection.options.dup
+          (options.keys - [:select, :include, :readonly]).each do |key|
+            options.delete key
+          end
+          options[:conditions] = conditions
+
           the_target = @reflection.klass.send(find_method,
             @owner[@reflection.primary_key_name],
-            :select     => @reflection.options[:select],
-            :conditions => conditions,
-            :include    => @reflection.options[:include],
-            :readonly   => @reflection.options[:readonly]
+            options
           ) if @owner[@reflection.primary_key_name]
           set_inverse_instance(the_target, @owner)
           the_target

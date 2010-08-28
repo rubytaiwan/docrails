@@ -242,7 +242,7 @@ module Rails
       def rake(command, options={})
         log :rake, command
         env  = options[:env] || 'development'
-        sudo = options[:sudo] && Config::CONFIG['host_os'] !~ /mswin|mingw/ ? 'sudo ' : ''
+        sudo = options[:sudo] && RbConfig::CONFIG['host_os'] !~ /mswin|mingw/ ? 'sudo ' : ''
         in_root { run("#{sudo}#{extify(:rake)} #{command} RAILS_ENV=#{env}", :verbose => false) }
       end
 
@@ -275,7 +275,7 @@ module Rails
       #
       def route(routing_code)
         log :route, routing_code
-        sentinel = /\.routes\.draw do(\s*\|map\|)?\s*$/
+        sentinel = /\.routes\.draw do(?:\s*\|map\|)?\s*$/
 
         in_root do
           inject_into_file 'config/routes.rb', "\n  #{routing_code}\n", { :after => sentinel, :verbose => false }
@@ -309,7 +309,7 @@ module Rails
         # Add an extension to the given name based on the platform.
         #
         def extify(name)
-          if Config::CONFIG['host_os'] =~ /mswin|mingw/
+          if RbConfig::CONFIG['host_os'] =~ /mswin|mingw/
             "#{name}.bat"
           else
             name

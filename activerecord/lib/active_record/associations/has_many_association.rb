@@ -24,7 +24,7 @@ module ActiveRecord
         # If the association has a counter cache it gets that value. Otherwise
         # it will attempt to do a count via SQL, bounded to <tt>:limit</tt> if
         # there's one.  Some configuration options like :group make it impossible
-        # to do a SQL count, in those cases the array count will be used.
+        # to do an SQL count, in those cases the array count will be used.
         #
         # That does not depend on whether the collection has already been loaded
         # or not. The +size+ method is the one that takes the loaded flag into
@@ -76,7 +76,7 @@ module ActiveRecord
             else
               relation = Arel::Table.new(@reflection.table_name)
               relation.where(relation[@reflection.primary_key_name].eq(@owner.id).
-                  and(Arel::Predicates::In.new(relation[@reflection.klass.primary_key], records.map(&:id)))
+                  and(relation[@reflection.klass.primary_key].in(records.map { |r| r.id }))
               ).update(relation[@reflection.primary_key_name] => nil)
 
               @owner.class.update_counters(@owner.id, cached_counter_attribute_name => -records.size) if has_cached_counter?
@@ -110,10 +110,10 @@ module ActiveRecord
           create_scoping = {}
           set_belongs_to_association_for(create_scoping)
           {
-            :find => { :conditions => @finder_sql, 
-                       :readonly => false, 
-                       :order => @reflection.options[:order], 
-                       :limit => @reflection.options[:limit], 
+            :find => { :conditions => @finder_sql,
+                       :readonly => false,
+                       :order => @reflection.options[:order],
+                       :limit => @reflection.options[:limit],
                        :include => @reflection.options[:include]},
             :create => create_scoping
           }

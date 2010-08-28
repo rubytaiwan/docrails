@@ -1,9 +1,9 @@
 module ActiveRecord
 
   # = Active Record Dynamic Finder Match
-  # 
-  # Provides dynamic attribute-based finders such as <tt>find_by_country</tt> 
-  # if, for example, the <tt>Person</tt> has an attribute with that name. 
+  #
+  # Refer to ActiveRecord::Base documentation for Dynamic attribute-based finders for detailed info
+  #
   class DynamicFinderMatch
     def self.match(method)
       df_match = self.new(method)

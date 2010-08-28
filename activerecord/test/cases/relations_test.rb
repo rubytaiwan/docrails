@@ -10,16 +10,31 @@ require 'models/entrant'
 require 'models/developer'
 require 'models/company'
 require 'models/bird'
+require 'models/car'
+require 'models/engine'
+require 'models/tyre'
+
 
 class RelationTest < ActiveRecord::TestCase
   fixtures :authors, :topics, :entrants, :developers, :companies, :developers_projects, :accounts, :categories, :categorizations, :posts, :comments,
-    :taggings
+    :taggings, :cars
+
+  def test_two_named_scopes_with_includes_should_not_drop_any_include
+    car = Car.incl_engines.incl_tyres.first
+    assert_no_queries { car.tyres.length }
+    assert_no_queries { car.engines.length }
+  end
 
   def test_apply_relation_as_where_id
     posts = Post.arel_table
     post_authors = posts.where(posts[:author_id].eq(1)).project(posts[:id])
     assert_equal 5, post_authors.to_a.size
     assert_equal 5, Post.where(:id => post_authors).size
+  end
+
+  def test_multivalue_where
+    posts = Post.where('author_id = ? AND id = ?', 1, 1)
+    assert_equal 1, posts.to_a.size
   end
 
   def test_scoped
@@ -187,11 +202,23 @@ class RelationTest < ActiveRecord::TestCase
     end
   end
 
-  def test_respond_to_private_arel_methods
+  def test_respond_to_delegates_to_relation
     relation = Topic.scoped
+    fake_arel = Struct.new(:responds) {
+      def respond_to? method, access = false
+        responds << [method, access]
+      end
+    }.new []
 
-    assert ! relation.respond_to?(:matching_attributes)
-    assert relation.respond_to?(:matching_attributes, true)
+    relation.extend(Module.new { attr_accessor :arel })
+    relation.arel = fake_arel
+
+    relation.respond_to?(:matching_attributes)
+    assert_equal [:matching_attributes, false], fake_arel.responds.first
+
+    fake_arel.responds = []
+    relation.respond_to?(:matching_attributes, true)
+    assert_equal [:matching_attributes, true], fake_arel.responds.first
   end
 
   def test_respond_to_dynamic_finders
@@ -384,7 +411,7 @@ class RelationTest < ActiveRecord::TestCase
 
   def test_find_in_empty_array
     authors = Author.scoped.where(:id => [])
-    assert authors.all.blank?
+    assert_blank authors.all
   end
 
   def test_exists
@@ -459,7 +486,7 @@ class RelationTest < ActiveRecord::TestCase
 
   def test_relation_merging_with_locks
     devs = Developer.lock.where("salary >= 80000").order("id DESC") & Developer.limit(2)
-    assert devs.locked.present?
+    assert_present devs.locked
   end
 
   def test_relation_merging_with_preload

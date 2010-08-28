@@ -25,9 +25,11 @@ class ValidationsTest < ActiveModel::TestCase
     r = Reply.new
     r.title = "There's no content!"
     assert r.invalid?, "A reply without content shouldn't be saveable"
+    assert r.after_validation_performed, "after_validation callback should be called"
 
     r.content = "Messa content!"
     assert r.valid?, "A reply with content should be saveable"
+    assert r.after_validation_performed, "after_validation callback should be called"
   end
 
   def test_single_attr_validation_and_error_msg
@@ -171,8 +173,10 @@ class ValidationsTest < ActiveModel::TestCase
     assert_match %r{<error>Title can't be blank</error>}, xml
     assert_match %r{<error>Content can't be blank</error>}, xml
 
-    json = t.errors.to_json
-    assert_equal t.errors.to_a.to_json, json
+    hash = ActiveSupport::OrderedHash.new
+    hash[:title] = "can't be blank"
+    hash[:content] = "can't be blank"
+    assert_equal t.errors.to_json, hash.to_json
   end
 
   def test_validation_order

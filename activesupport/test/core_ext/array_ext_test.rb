@@ -18,10 +18,10 @@ class ArrayExtAccessTests < Test::Unit::TestCase
     assert_equal %w( a b c ), %w( a b c d ).to(2)
     assert_equal %w( a b c d ), %w( a b c d ).to(10)
   end
-  
+
   def test_second_through_tenth
     array = (1..42).to_a
-    
+
     assert_equal array[1], array.second
     assert_equal array[2], array.third
     assert_equal array[3], array.fourth
@@ -80,6 +80,11 @@ class ArrayExtToSentenceTests < Test::Unit::TestCase
 
   def test_one_element
     assert_equal "one", ['one'].to_sentence
+  end
+
+  def test_one_element_not_same_object
+    elements = ["one"]
+    assert_not_equal elements[0].object_id, elements.to_sentence.object_id
   end
 
   def test_one_non_string_element
@@ -319,7 +324,7 @@ class ArrayExtractOptionsTests < Test::Unit::TestCase
     assert_equal({}, options)
     assert_equal [hash], array
   end
-  
+
   def test_extract_options_extracts_extractable_subclass
     hash = ExtractableHashSubclass.new
     hash[:foo] = 1
@@ -370,14 +375,14 @@ class ArrayExtRandomTests < ActiveSupport::TestCase
     assert_equal 2, s.size
     assert_equal 1, (a-s).size
     assert_equal [], a-(0..20).sum{a.sample(2)}
-  
+
     o = Object.new
     def o.to_int; 1; end
     assert_equal [0], [0].sample(o)
-  
+
     o = Object.new
     assert_raises(TypeError) { [0].sample(o) }
-    
+
     o = Object.new
     def o.to_int; ''; end
     assert_raises(TypeError) { [0].sample(o) }
@@ -396,6 +401,18 @@ class ArrayWrapperTests < Test::Unit::TestCase
   class Proxy
     def initialize(target) @target = target end
     def method_missing(*a) @target.send(*a) end
+  end
+
+  class DoubtfulToAry
+    def to_ary
+      :not_an_array
+    end
+  end
+
+  class NilToAry
+    def to_ary
+      nil
+    end
   end
 
   def test_array
@@ -437,5 +454,13 @@ class ArrayWrapperTests < Test::Unit::TestCase
   def test_struct
     o = Struct.new(:foo).new(123)
     assert_equal [o], Array.wrap(o)
+  end
+
+  def test_wrap_returns_nil_if_to_ary_returns_nil
+    assert_nil Array.wrap(NilToAry.new)
+  end
+
+  def test_wrap_does_not_complain_if_to_ary_does_not_return_an_array
+    assert_equal DoubtfulToAry.new.to_ary, Array.wrap(DoubtfulToAry.new)
   end
 end

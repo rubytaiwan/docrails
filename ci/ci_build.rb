@@ -27,7 +27,7 @@ cd root_dir do
   puts
   puts "[CruiseControl] Bundling RubyGems"
   puts
-  build_results[:bundle] = system 'rm -rf ~/.bundle; env CI=1 bundle update'
+  build_results[:bundle] = system 'bundle update'
 end
 
 cd "#{root_dir}/activesupport" do
@@ -85,6 +85,14 @@ cd "#{root_dir}/activerecord" do
   puts
   build_results[:activerecord_mysql] = rake 'mysql:rebuild_databases', 'mysql:test'
   # build_results[:activerecord_mysql_isolated] = rake 'mysql:rebuild_databases', 'mysql:isolated_test'
+end
+
+cd "#{root_dir}/activerecord" do
+  puts
+  puts "[CruiseControl] Building ActiveRecord with MySQL2"
+  puts
+  build_results[:activerecord_mysql2] = rake 'mysql:rebuild_databases', 'mysql2:test'
+  # build_results[:activerecord_mysql2_isolated] = rake 'mysql:rebuild_databases', 'mysql2:isolated_test'
 end
 
 cd "#{root_dir}/activerecord" do

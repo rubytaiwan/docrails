@@ -41,7 +41,7 @@ module ActiveResource
   #       mock.delete "/people/1.xml", {}, nil, 200
   #     end
   #   end
-  #   
+  #
   #   def test_get_matz
   #     person = Person.find(1)
   #     assert_equal "Matz", person.name
@@ -77,13 +77,13 @@ module ActiveResource
       #       mock.get "/people/1.xml", {}, @matz
       #     end
       #   end
-      #   
+      #
       #   def test_should_request_remote_service
       #     person = Person.find(1)  # Call the remote service
-      #     
+      #
       #     # This request object has the same HTTP method and path as declared by the mock
       #     expected_request = ActiveResource::Request.new(:get, "/people/1.xml")
-      #     
+      #
       #     # Assert that the mock received, and responded to, the expected request from the model
       #     assert ActiveResource::HttpMock.requests.include?(expected_request)
       #   end
@@ -123,7 +123,11 @@ module ActiveResource
         # def post(path, body, headers)
         #   request = ActiveResource::Request.new(:post, path, body, headers)
         #   self.class.requests << request
-        #   self.class.responses.assoc(request).try(:second) || raise(InvalidRequestError.new("No response recorded for #{request}"))
+        #   if response = self.class.responses.assoc(request)
+        #     response[1]
+        #   else
+        #     raise InvalidRequestError.new("Could not find a response recorded for #{request.to_s} - Responses recorded are: - #{inspect_responses}")
+        #   end
         # end
         module_eval <<-EOE, __FILE__, __LINE__ + 1
           def #{method}(path, #{'body, ' if has_body}headers)
@@ -132,7 +136,7 @@ module ActiveResource
             if response = self.class.responses.assoc(request)
               response[1]
             else
-              raise InvalidRequestError.new("No response recorded for \#{request}")
+              raise InvalidRequestError.new("Could not find a response recorded for \#{request.to_s} - Responses recorded are: \#{inspect_responses}")
             end
           end
         EOE
@@ -141,6 +145,10 @@ module ActiveResource
 
     def initialize(site) #:nodoc:
       @site = site
+    end
+
+    def inspect_responses #:nodoc:
+      self.class.responses.map { |r| r[0].to_s }.inspect
     end
   end
 

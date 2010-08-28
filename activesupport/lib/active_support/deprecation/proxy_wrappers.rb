@@ -3,6 +3,13 @@ require 'active_support/inflector'
 module ActiveSupport
   module Deprecation
     class DeprecationProxy #:nodoc:
+      def self.new(*args, &block)
+        object = args.first
+
+        return object unless object
+        super
+      end
+
       instance_methods.each { |m| undef_method m unless m =~ /^__|^object_id$/ }
 
       # Don't give a deprecation warning on inspect since test/unit and error
@@ -51,7 +58,7 @@ module ActiveSupport
         end
     end
 
-    class DeprecatedConstantProxy < DeprecationProxy #:nodoc:
+    class DeprecatedConstantProxy < DeprecationProxy #:nodoc:all
       def initialize(old_const, new_const)
         @old_const = old_const
         @new_const = new_const

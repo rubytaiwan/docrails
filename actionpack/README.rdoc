@@ -1,6 +1,6 @@
 = Action Pack -- From request to response
 
-Action Pack is a framework for handling and responding to web requests. It it
+Action Pack is a framework for handling and responding to web requests. It
 provides mechanisms for *routing* (mapping request URLs to actions), defining
 *controllers* that implement actions, and generating responses by rendering
 *views*, which are templates of various formats. In short, Action Pack
@@ -102,10 +102,10 @@ A short rundown of some of the major features:
     class WeblogController < ActionController::Base
       # filters as methods
       before_filter :authenticate, :cache, :audit
-      
+
       # filter as a proc
       after_filter { |c| c.response.body = Gzip::compress(c.response.body) }
-      
+
       # class filter
       after_filter LocalizeFilter
 

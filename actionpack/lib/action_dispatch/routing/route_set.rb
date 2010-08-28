@@ -392,10 +392,9 @@ module ActionDispatch
         end
 
         def generate
-          error = ActionController::RoutingError.new("No route matches #{options.inspect}")
           path, params = @set.set.generate(:path_info, named_route, options, recall, opts)
 
-          raise error unless path
+          raise_routing_error unless path
 
           params.reject! {|k,v| !v }
 
@@ -404,7 +403,7 @@ module ActionDispatch
           path << "?#{params.to_query}" if params.any?
           "#{script_name}#{path}"
         rescue Rack::Mount::RoutingError
-          raise error
+          raise_routing_error
         end
 
         def opts
@@ -419,6 +418,10 @@ module ActionDispatch
             end
           end
           {:parameterize => parameterize}
+        end
+
+        def raise_routing_error
+          raise ActionController::RoutingError.new("No route matches #{options.inspect}")
         end
 
         def different_controller?
@@ -454,7 +457,7 @@ module ActionDispatch
 
       def url_for(options)
         finalize!
-        options = default_url_options.merge(options || {})
+        options = (options || {}).reverse_merge!(default_url_options)
 
         handle_positional_args(options)
 
@@ -491,7 +494,7 @@ module ActionDispatch
 
       def recognize_path(path, environment = {})
         method = (environment[:method] || "GET").to_s.upcase
-        path = Rack::Mount::Utils.normalize_path(path)
+        path = Rack::Mount::Utils.normalize_path(path) unless path =~ %r{://}
 
         begin
           env = Rack::MockRequest.env_for(path, {:method => method})
@@ -499,7 +502,7 @@ module ActionDispatch
           raise ActionController::RoutingError, e.message
         end
 
-        req = Rack::Request.new(env)
+        req = @request_class.new(env)
         @set.recognize(req) do |route, matches, params|
           params.each do |key, value|
             if value.is_a?(String)

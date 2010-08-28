@@ -4,15 +4,15 @@ require 'rake/rdoctask'
 class RDocTaskWithoutDescriptions < Rake::RDocTask
   def define
     task rdoc_task_name
-    
+
     task rerdoc_task_name => [clobber_task_name, rdoc_task_name]
-    
+
     task clobber_task_name do
       rm_r rdoc_dir rescue nil
     end
-    
+
     task :clobber => [clobber_task_name]
-    
+
     directory @rdoc_dir
     task rdoc_task_name => [rdoc_target]
     file rdoc_target => @rdoc_files + [Rake.application.rakefile] do
@@ -55,7 +55,7 @@ namespace :doc do
     rdoc.template = "#{ENV['template']}.rb" if ENV['template']
     rdoc.title    = "Rails Framework Documentation"
     rdoc.options << '--line-numbers' << '--inline-source'
-    rdoc.rdoc_files.include('README.rdoc')
+    rdoc.rdoc_files.include('README')
 
     gem_path('actionmailer') do |actionmailer|
       %w(README.rdoc CHANGELOG MIT-LICENSE lib/action_mailer/base.rb).each do |file|

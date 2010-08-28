@@ -67,7 +67,8 @@ module ActiveRecord
       preload +=  @includes_values unless eager_loading?
       preload.each {|associations| @klass.send(:preload_associations, @records, associations) }
 
-      # @readonly_value is true only if set explicitly. @implicit_readonly is true if there are JOINS and no explicit SELECT.
+      # @readonly_value is true only if set explicitly. @implicit_readonly is true if there
+      # are JOINS and no explicit SELECT.
       readonly = @readonly_value.nil? ? @implicit_readonly : @readonly_value
       @records.each { |record| record.readonly! } if readonly
 
@@ -99,7 +100,7 @@ module ActiveRecord
       if block_given?
         to_a.many? { |*block_args| yield(*block_args) }
       else
-        @limit_value.present? ? to_a.many? : size > 1
+        @limit_value ? to_a.many? : size > 1
       end
     end
 
@@ -108,7 +109,7 @@ module ActiveRecord
     # ==== Example
     #
     #   Comment.where(:post_id => 1).scoping do
-    #     Comment.first #=> SELECT * FROM comments WHERE post_id = 1
+    #     Comment.first # SELECT * FROM comments WHERE post_id = 1
     #   end
     #
     # Please check unscoped if you want to remove all previous scopes (including
@@ -130,7 +131,8 @@ module ActiveRecord
     # ==== Parameters
     #
     # * +updates+ - A string, array, or hash representing the SET part of an SQL statement.
-    # * +conditions+ - A string, array, or hash representing the WHERE part of an SQL statement. See conditions in the intro.
+    # * +conditions+ - A string, array, or hash representing the WHERE part of an SQL statement.
+    #   See conditions in the intro.
     # * +options+ - Additional options are <tt>:limit</tt> and <tt>:order</tt>, see the examples for usage.
     #
     # ==== Examples
@@ -144,7 +146,7 @@ module ActiveRecord
     #   # Update all avatars migrated more than a week ago
     #   Avatar.update_all ['migrated_at = ?', Time.now.utc], ['migrated_at > ?', 1.week.ago]
     #
-    #   # Update all books that match our conditions, but limit it to 5 ordered by date
+    #   # Update all books that match conditions, but limit it to 5 ordered by date
     #   Book.update_all "author = 'David'", "title LIKE '%Rails%'", :order => 'created_at', :limit => 5
     def update_all(updates, conditions = nil, options = {})
       if conditions || options.present?
@@ -152,7 +154,7 @@ module ActiveRecord
       else
         # Apply limit and order only if they're both present
         if @limit_value.present? == @order_values.present?
-          arel.update(@klass.send(:sanitize_sql_for_assignment, updates))
+          arel.update(Arel::SqlLiteral.new(@klass.send(:sanitize_sql_for_assignment, updates)))
         else
           except(:limit, :order).update_all(updates)
         end
@@ -165,14 +167,14 @@ module ActiveRecord
     # ==== Parameters
     #
     # * +id+ - This should be the id or an array of ids to be updated.
-    # * +attributes+ - This should be a hash of attributes to be set on the object, or an array of hashes.
+    # * +attributes+ - This should be a hash of attributes or an array of hashes.
     #
     # ==== Examples
     #
-    #   # Updating one record:
+    #   # Updates one record
     #   Person.update(15, :user_name => 'Samuel', :group => 'expert')
     #
-    #   # Updating multiple records:
+    #   # Updates multiple records
     #   people = { 1 => { "first_name" => "David" }, 2 => { "first_name" => "Jeremy" } }
     #   Person.update(people.keys, people.values)
     def update(id, attributes)
@@ -262,8 +264,8 @@ module ActiveRecord
     #   Post.delete_all("person_id = 5 AND (category = 'Something' OR category = 'Else')")
     #   Post.delete_all(["person_id = ? AND (category = ? OR category = ?)", 5, 'Something', 'Else'])
     #
-    # Both calls delete the affected posts all at once with a single DELETE statement. 
-    # If you need to destroy dependent associations or call your <tt>before_*</tt> or 
+    # Both calls delete the affected posts all at once with a single DELETE statement.
+    # If you need to destroy dependent associations or call your <tt>before_*</tt> or
     # +after_destroy+ callbacks, use the +destroy_all+ method instead.
     def delete_all(conditions = nil)
       conditions ? where(conditions).delete_all : arel.delete.tap { reset }
@@ -314,14 +316,19 @@ module ActiveRecord
       @to_sql ||= arel.to_sql
     end
 
+    def where_values_hash
+          Hash[@where_values.find_all { |w|
+            w.respond_to?(:operator) && w.operator == :==
+          }.map { |where|
+            [where.operand1.name,
+             where.operand2.respond_to?(:value) ?
+             where.operand2.value : where.operand2]
+        }]
+    end
+
     def scope_for_create
       @scope_for_create ||= begin
-        @create_with_value || @where_values.inject({}) do |hash, where|
-          if where.is_a?(Arel::Predicates::Equality)
-            hash[where.operand1.name] = where.operand2.respond_to?(:value) ? where.operand2.value : where.operand2
-          end
-          hash
-        end
+        @create_with_value || where_values_hash
       end
     end
 
@@ -371,7 +378,7 @@ module ActiveRecord
 
     def references_eager_loaded_tables?
       # always convert table names to downcase as in Oracle quoted table names are in uppercase
-      joined_tables = (tables_in_string(arel.joins(arel)) + [table.name, table.table_alias]).compact.map(&:downcase).uniq
+      joined_tables = (tables_in_string(arel.joins(arel)) + [table.name, table.table_alias]).compact.map{ |t| t.downcase }.uniq
       (tables_in_string(to_sql) - joined_tables).any?
     end
 
@@ -379,7 +386,7 @@ module ActiveRecord
       return [] if string.blank?
       # always convert table names to downcase as in Oracle quoted table names are in uppercase
       # ignore raw_sql_ that is used by Oracle adapter as alias for limit/offset subqueries
-      string.scan(/([a-zA-Z_][\.\w]+).?\./).flatten.map(&:downcase).uniq - ['raw_sql_']
+      string.scan(/([a-zA-Z_][\.\w]+).?\./).flatten.map{ |s| s.downcase }.uniq - ['raw_sql_']
     end
 
   end

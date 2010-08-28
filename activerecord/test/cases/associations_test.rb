@@ -14,10 +14,45 @@ require 'models/reader'
 require 'models/parrot'
 require 'models/ship_part'
 require 'models/ship'
+require 'models/liquid'
+require 'models/molecule'
+require 'models/electron'
 
 class AssociationsTest < ActiveRecord::TestCase
   fixtures :accounts, :companies, :developers, :projects, :developers_projects,
            :computers, :people, :readers
+
+  def test_eager_loading_should_not_change_count_of_children
+    liquid = Liquid.create(:name => 'salty')
+    molecule = liquid.molecules.create(:name => 'molecule_1')
+    molecule.electrons.create(:name => 'electron_1')
+    molecule.electrons.create(:name => 'electron_2')
+
+    liquids = Liquid.includes(:molecules => :electrons).where('molecules.id is not null')
+    assert_equal 1, liquids[0].molecules.length
+  end
+
+  def test_clear_association_cache_stored
+    firm = Firm.find(1)
+    assert_kind_of Firm, firm
+
+    firm.clear_association_cache
+    assert_equal Firm.find(1).clients.collect{ |x| x.name }.sort, firm.clients.collect{ |x| x.name }.sort
+  end
+
+  def test_clear_association_cache_new_record
+     firm            = Firm.new
+     client_stored   = Client.find(3)
+     client_new      = Client.new
+     client_new.name = "The Joneses"
+     clients         = [ client_stored, client_new ]
+
+     firm.clients    << clients
+     assert_equal clients.map(&:name).to_set, firm.clients.map(&:name).to_set
+
+     firm.clear_association_cache
+     assert_equal clients.map(&:name).to_set, firm.clients.map(&:name).to_set
+  end
 
   def test_loading_the_association_target_should_keep_child_records_marked_for_destruction
     ship = Ship.create!(:name => "The good ship Dollypop")
@@ -35,7 +70,7 @@ class AssociationsTest < ActiveRecord::TestCase
     ship.parts.send(:load_target)
     assert_equal 'Deck', ship.parts[0].name
   end
-  
+
 
   def test_include_with_order_works
     assert_nothing_raised {Account.find(:first, :order => 'id', :include => :firm)}
@@ -72,7 +107,7 @@ class AssociationsTest < ActiveRecord::TestCase
     assert !firm.clients(true).empty?, "New firm should have reloaded client objects"
     assert_equal 1, firm.clients(true).size, "New firm should have reloaded clients count"
   end
-  
+
   def test_using_limitable_reflections_helper
     using_limitable_reflections = lambda { |reflections| Tagging.scoped.send :using_limitable_reflections?, reflections }
     belongs_to_reflections = [Tagging.reflect_on_association(:tag), Tagging.reflect_on_association(:super_tag)]
@@ -82,7 +117,7 @@ class AssociationsTest < ActiveRecord::TestCase
     assert !using_limitable_reflections.call(has_many_reflections), "All has many style associations are not limitable"
     assert !using_limitable_reflections.call(mixed_reflections), "No collection associations (has many style) should pass"
   end
-  
+
   def test_force_reload_is_uncached
     firm = Firm.create!("name" => "A New Firm, Inc")
     client = Client.create!("name" => "TheClient.com", :firm => firm)

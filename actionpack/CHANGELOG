@@ -1,4 +1,18 @@
-*Rails 3.0.0 [Release Candidate] (unreleased)*
+* Symbols and strings in routes should yield the same behavior. Note this may break existing apps that were using symbols with the new routes API. [José Valim]
+
+* Add clear_helpers as a way to clean up all helpers added to this controller, maintaing just the helper with the same name as the controller. [José Valim]
+
+
+*Rails 3.0.0 [release candidate 2] (August 23rd, 2010)*
+
+* See http://github.com/rails/rails/compare/v3.0.0_RC...v3.0.0_RC2 for gory details
+
+* Support routing constraints in functional tests. [Andrew White]
+
+* Add a header that tells Internet Explorer (all versions) to use the best available standards support. [Yehuda Katz]
+
+
+*Rails 3.0.0 [release candidate] (July 26th, 2010)*
 
 * Allow stylesheet/javascript extensions to be changed through railties. [Josh Kalderimis]
 
@@ -26,12 +40,13 @@
         resources :comments
       end
     end
-    
+
     You can now use comment_path for /comments/1 instead of post_comment_path for /posts/1/comments/1.
 
 * Add support for multi-subdomain session by setting cookie host in session cookie so you can share session between www.example.com, example.com and user.example.com. #4818 [Guillermo Álvarez]
 
 * Removed textilize, textilize_without_paragraph and markdown helpers. [Santiago Pastorino]
+
 
 *Rails 3.0.0 [beta 4] (June 8th, 2010)*
 
@@ -109,7 +124,7 @@
 * ActionDispatch::Request#content_type returns a String to be compatible with
   Rack::Request. Use #content_mime_type for the Mime::Type instance [YK]
 
-* Updated Prototype to 1.6.1 and Scriptaculous to 1.8.3 [ML] 
+* Updated Prototype to 1.6.1 and Scriptaculous to 1.8.3 [ML]
 
 * Change the preferred way that URL helpers are included into a class[YK & CL]
 
