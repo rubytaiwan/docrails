@@ -1,47 +1,47 @@
 h2. Active Record 的驗證 (Validations) 與回呼 (Callbacks)
 
-這一章說明如何 hook into Active Record 物件的生命週期：如何在物件進入資料庫之前，驗證它的狀態，以及，如何在物件生命週期的特定時間點，執行自訂的操作。
+這一章說明如何 hook into Active Record 物件的生命週期：在物件進入資料庫之前，驗證它的狀態，以及，在物件生命週期的特定時間點，執行自訂的操作。
 
-讀完本篇之後，您會：
+讀完本篇，您會：
 
-* 了解 Active Record 物件的生命週期
-* 使用內建的 Active Record 驗證輔助工具
+* 了解 Active Record 物件的生命週期 (life cycle)
+* 使用內建的 Active Record 驗證輔助工具 (validation helpers)
 * 打造您自訂的驗證方法
 * 處理驗證過程中所產生的錯誤訊息
-* 在物件生命週期期間，會發生一些事件，您將學會針對這些事件撰寫 callback 方法。
-* 在 callbacks （回呼）之間，有些共通的行為，您將學會針對這些行為撰寫特殊類別， 以封裝 (encapsulate) 它們。 
-* 有些事件，並沒有定義在原來的類別中，您將學會針對這些事件，建立觀測器 (Observers)，以便回應它們。
+* 在物件生命週期期間，會發生一些事件，您將學會針對這些事件，撰寫回呼方法 (callback methods) 。
+* 在回呼 (callbacks) 之間，有些共通的行為，您將學會針對這些行為，撰寫特殊類別 (special classes) ，以封裝 (encapsulate) 它們。 
+* 有些事件 (events) ，並沒有定義在原來的類別中，您將學會針對這些事件，建立觀測器 (observers)，以便回應它們。
 endprologue.
 
-h3. 物件生命週期 Object Life Cycle
+h3. 物件生命週期 (Object Life Cycle)
 
-在 Rails 的正常操作下，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>object life cycle</em> 內的 hooks，讓您可以操控程式、操控資料。其中，驗證 (Validations) 的作用，是確保只有有效的資料，被存到資料庫裡面。而 Callbacks 和觀測器 (observers) 的作用，則是在物件狀態變化之前、或變化之後，觸發相關的邏輯。
+Rails 正常操作下，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>object life cycle</em> 內的 hooks，讓您可以操控程式、操控資料。其中，驗證 (validations) 是用來確保只有有效的資料，被存到資料庫裡面。而回呼 (callbacks) 和觀測器 (observers) ，則是在物件狀態變化之前、或變化之後，觸發相關的邏輯。
 
-h3. 驗證的概觀 Validations Overview
+h3. 驗證的概觀 (Validations Overview)
 
-深入 Rails 的 validations 細節前，先了解一下 validations 扮演的角色。
+深入 Rails 的驗證 (validations) 細節前，先了解一下驗證扮演的角色。
 
-h4. 為什麼要驗證 Validations?
+h4. 為什麼要驗證 (Validations) ？
 
-Validations 用來確保你的資料庫裡面，只有有效資料 (valid data) 可以存進去。舉個例子，你的應用程式，可能要確定每個使用者，都提供有效的電子郵件地址和郵寄地址。
+驗證 (validations) 的用意，是要確保資料庫裡，只有有效資料 (valid data) 才存進去。比方說，您的應用程式，可能要確定每個使用者，都提供有效的電子郵件地址、和郵寄地址等。
 
-在存進資料庫前，有幾個驗證資料的方法，包括：native database constraints, client-side validations, controller-level validations, 以及 model-level validations.
+在資料存進資料庫前，有幾個驗證的方法，包括：原生的資料庫約束 (native database constraints) 、客戶端驗證 (client-side validations) 、控制器層級的驗證 (controller-level validations) 、以及模型層級的驗證 (model-level validations)。
 
-* Database constraints and/or 預存程序 stored procedures，這些驗證的機制要依賴特定的資料庫，所以，測試和維護上會比較難。不過，如果資料庫會去給別的應用程式用，那麼在資料庫層級設定 constraints 可能就是不錯的作法。另外，資料庫層級的驗證可以很安全的處理一些事情，像是在重度使用的資料表中，確保唯一值之類的。這些事情，如果用其他的方法，會比較難實作。
-* 客戶端的驗證 Client-side validations 雖然有用，但單單用這個的話，通常不太可靠。如果用 JavaScript 來做，要是 user 的瀏覽器把 JavaScript 關掉，那驗證就被略過了。不過，畢竟 client-side validation 可以很即時的給使用者回饋，如果跟其他的驗證手法併用，那倒是挺方便的。
-* Controller-level validations 是也能用，但常常會變得很笨重，不好測試跟維護。不管怎樣，"keep your controllers skinny":http://weblog.jamisbuck.org/2006/10/18/skinny-controller-fat-model 總是好的，長遠的說，可以讓程式用起來很愉快。
-* Model-level validations 是驗證資料的最佳作法。這種驗證方式，不用去管資料庫是哪個系統，也不會被使用者略過，測試起來很方便，也容易維護。為了方便大家使用 model 層級的驗證，Rails 針對常用功能內建了輔助工具，也讓您可以撰寫自己的 validation methods。
+* 資料庫約束 (database constraints) 或者是預存程序 (stored procedures) ，這些驗證機制，要依賴特定的資料庫，所以，測試和維護會比較難。不過，如果資料庫會去給別的應用程式用，那麼，在資料庫層做約束可能就是不錯的作法。另外，資料庫層級的驗證可以很安全的處理一些事情，像是，在重度使用的資料表中，確保唯一值 (uniqueness) 之類的。這些事情，如果用其他的方法，會比較難實作。
+* 客戶端的驗證 (client-side validations) 雖然可以用，但單單用這個的話，通常不太可靠。如果用 JavaScript 來做，要是使用者的瀏覽器把 JavaScript 關掉，那驗證就被略過了。不過，畢竟客戶端驗證，可以給使用者很即時的回饋，所以，要是能跟其他驗證手法併用，那倒是挺方便的。
+* 控制器層級的驗證 (controller-level validations) ，也是可以用，但常常很笨重，不好測試跟維護。不管怎樣，"keep your controllers skinny":http://weblog.jamisbuck.org/2006/10/18/skinny-controller-fat-model 總是好的，長遠的說，可以讓程式用起來很愉快。
+* 模型層級的驗證 (model-level validations) ，是最佳作法。這種驗證方式，不用去管資料庫是哪個系統，也不會被使用者略過，測試起來很方便，也容易維護。為了方便大家使用 model 層級的驗證，Rails 針對常用功能，內建了輔助工具，當然，您也可以撰寫自己的驗證方法。
 
-h4. 什麼時候會發生 Validation ？
+h4. 什麼時候會發生驗證 (Validation) ？
 
-Active Record objects 有兩種：有跟某一列資料對應的，或者沒有跟資料對應的。當您使用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。Once you call +save+ upon that object it will be saved into the appropriate database table. Active Record uses the +new_record?+ instance method to determine whether an object is already in the database or not. Consider the following simple Active Record class:
+Active Record 類別底下，有兩種物件：跟某一筆資料對應的，或者沒跟資料對應的。當您使用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於，物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別 (class) ：
 
 <ruby>
 class Person < ActiveRecord::Base
 end
 </ruby>
 
-We can see how it works by looking at some +rails console+ output:
+從 +rails console+ 的輸出結果，可以看出它的運作方式：
 
 <shell>
 >> p = Person.new(:name => "John Doe")
@@ -54,11 +54,11 @@ We can see how it works by looking at some +rails console+ output:
 => false
 </shell>
 
-Creating and saving a new record will send an SQL +INSERT+ operation to the database. Updating an existing record will send an SQL +UPDATE+ operation instead. Validations are typically run before these commands are sent to the database. If any validations fail, the object will be marked as invalid and Active Record will not perform the +INSERT+ or +UPDATE+ operation. This helps to avoid storing an invalid object in the database. You can choose to have specific validations run when an object is created, saved, or updated.
+一筆新記錄的新增、儲存，會對資料庫送出一個 SQL 的 +INSERT+ 操作 (operation) 。更新現有的記錄，則送出 +UPDATE+ 操作。通常，送命令到資料庫之前，會做驗證。過程中，有任何一個驗證失敗的話，這個物件就會被標記為無效 (marked as invalid) ，於是 Active Record 就不會執行 +INSERT+ 或 +UPDATE+ 的操作，如此一來，無效的物件就不會存進資料庫。您也可以針對物件新增、儲存、更新，自訂專屬的驗證功能。
 
-CAUTION: There are many ways to change the state of an object in the database. Some methods will trigger validations, but some will not. This means that it's possible to save an object in the database in an invalid state if you aren't careful.
+CAUTION: 在資料庫裡面，要改變物件的狀態 (state) ，有很多種方法。其中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
 
-The following methods trigger validations, and will save the object to the database only if the object is valid:
+下面列出的方法，會觸發驗證，只有驗證合格的物件才會存入資料庫：
 
 * +create+
 * +create!+
@@ -68,11 +68,11 @@ The following methods trigger validations, and will save the object to the datab
 * +update_attributes+
 * +update_attributes!+
 
-The bang versions (e.g. +save!+) raise an exception if the record is invalid. The non-bang versions don't: +save+ and +update_attributes+ return +false+, +create+ and +update+ just return the objects.
+這些方法中，尾巴附有一個驚嘆號的版本 (bang versions) ，像是 +save!+ ，會在這筆紀錄 invalid 的時候，丟出例外 (raise an exception) 。沒有驚嘆號的 (non-bang versions) 則不會丟出例外，其中， +save+ 跟 +update_attributes+ 會傳回 +false+ ，而 +create+ 跟 +update+ 則單純的傳回物件本身。
 
-h4. Skipping Validations
+h4. 略過驗證 (Skipping Validations)
 
-The following methods skip validations, and will save the object to the database regardless of its validity. They should be used with caution.
+下面列出的方法，會略過驗證，不管物件是否有效，都會將它存到資料庫中。所以，要小心使用。
 
 * +decrement!+
 * +decrement_counter+
@@ -83,13 +83,13 @@ The following methods skip validations, and will save the object to the database
 * +update_attribute+
 * +update_counters+
 
-Note that +save+ also has the ability to skip validations if passed +:validate => false+ as argument. This technique should be used with caution.
+對了，如果把 +:validate => false+ 當作引數 (argument) 傳入的話， +save+ 也是可以略過驗證的。這個技巧也是要小心使用。
 
 * +save(:validate => false)+
 
-h4. +valid?+ and +invalid?+
+h4. +valid?+ 與 +invalid?+ （驗證後，是否有錯誤訊息存在）
 
-To verify whether or not an object is valid, Rails uses the +valid?+ method. You can also use this method on your own. +valid?+ triggers your validations and returns true if no errors were added to the object, and false otherwise.
+Rails 在確認物件是否有效的時候，是用 +valid?+ 方法，您平常也可以自己把 +valid?+ 拿來用。它會觸發驗證，如果驗證完，沒有錯誤訊息附加到物件上的話，就傳回真值 (true) ，反之，有錯誤訊息的話，就是假值 (false) 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -100,9 +100,9 @@ Person.create(:name => "John Doe").valid? # => true
 Person.create(:name => nil).valid? # => false
 </ruby>
 
-When Active Record is performing validations, any errors found can be accessed through the +errors+ instance method. By definition an object is valid if this collection is empty after running validations.
+Active Record 在執行驗證的時候，任何的錯誤訊息，都可以用 +errors+ 這個實體方法 (instance method) 來取得 (accessed) 。驗證結束後，如果這個集合 (collection) 仍然是空的，那在定義上，這個物件就會被認為是有效的 (valid) 。
 
-Note that an object instantiated with +new+ will not report errors even if it's technically invalid, because validations are not run when using +new+.
+用 +new+ 實體化 (instantiated) 出來的物件，即使它在技術上是無效的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -134,13 +134,13 @@ end
 => ActiveRecord::RecordInvalid: Validation failed: Name can't be blank
 </ruby>
 
-+invalid?+ is simply the inverse of +valid?+. +invalid?+ triggers your validations and returns true if any errors were added to the object, and false otherwise.
++invalid?+ 純粹是 +valid?+ 的相反， +invalid?+ 會觸發驗證，如果有任何錯誤訊息加到物件上，就傳回真值 (true) ， 反之則是假值 (false) 。
 
-h4(#validations_overview-errors). +errors[]+
+h4(#validations_overview-errors). +errors[]+ （某個屬性內，錯誤訊息的陣列集合）
 
-To verify whether or not a particular attribute of an object is valid, you can use +errors[:attribute]+ that returns an array with all attribute errors, when there are no errors on the specified attribute, an empty array is returned.
+對於物件的某個屬性 (attribute) ，要確認是否有效 (valid) 的話，可以用 +errors[:attribute]+ ，它會傳回一個陣列 (array) ，裡面有這個屬性的全部的錯誤訊息 (attribute errors) 。如果，這個屬性沒有任何錯誤訊息，那就會傳回空的陣列。
 
-This method is only useful _after_ validations have been run, because it only inspects the errors collection and does not trigger validations itself. It's different from the +ActiveRecord::Base#invalid?+ method explained above because it doesn't verify the validity of the object as a whole. It only checks to see whether there are errors found on an individual attribute of the object.
+這個方法，要在驗證執行過 _之後_ 才能使用，因為，它只會檢查錯誤訊息的集合 (errors collection) ，而不會去觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為它不會去確認物件的有效性 (validity) as a whole，它只是去看這個物件的個別屬性，有沒有錯誤訊息在裡面而已。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -151,19 +151,19 @@ end
 >> Person.create.errors[:name].any? # => true
 </ruby>
 
-We'll cover validation errors in greater depth in the "Working with Validation Errors":#working-with-validation-errors section. For now, let's turn to the built-in validation helpers that Rails provides by default.
+關於驗證的錯誤訊息 (validation errors) ，之後的 "Working with Validation Errors":#working-with-validation-errors 章節會再深入解釋。現在，讓我們回頭看看 Rails 內建的驗證輔助工具 (validation helpers) 。
 
-h3. Validation Helpers
+h3. 驗證輔助工具 (Validation Helpers)
 
-Active Record offers many pre-defined validation helpers that you can use directly inside your class definitions. These helpers provide common validation rules. Every time a validation fails, an error message is added to the object's +errors+ collection, and this message is associated with the field being validated.
+Active Record 預先定義好許多驗證輔助工具，您可以在類別定義 (class definition) 裡面，直接使用它們。這些輔助工具，有共通的驗證規則，每次，一個驗證失敗時，就會在該物件的 +errors+ 集合中，加入一條錯誤訊息，這個訊息，則會跟當時正在驗證的欄位 (field) 相關連。
 
-Each helper accepts an arbitrary number of attribute names, so with a single line of code you can add the same kind of validation to several attributes.
+每個輔助工具，可以接收 (accepts) 多個屬性名稱 (attribute names) ，要幾個都可以。所以，只要用一行程式碼，就可以把同一種驗證方式，套用到好幾個不同的屬性上面。
 
-All of them accept the +:on+ and +:message+ options, which define when the validation should be run and what message should be added to the +errors+ collection if it fails, respectively. The +:on+ option takes one of the values +:save+ (the default), +:create+  or +:update+. There is a default error message for each one of the validation helpers. These messages are used when the +:message+ option isn't specified. Let's take a look at each one of the available helpers.
+輔助工具都可接收 +:on+ 跟 +:message+ 選項 (options) ，這些選項，會定義驗證該何時執行，以及，如果驗證失敗的話，該加什麼訊息到 +errors+ 集合中, respectively 。選項 +:on+ 的作用，是將一個值 +:save+ （預設），或者 +:create+ ，或者 +:update+ 。至於選項 +:message+ 的作用，則是自訂錯誤訊息，如果，沒有自訂 +:message+ ，就會採用預設的，反正，每個驗證輔助工具，都有預設的訊息可以用。底下讓我們一個一個來看。
 
-h4. +validates_acceptance_of+
+h4. +validates_acceptance_of+ （驗證使用者是否已接受）
 
-Validates that a checkbox on the user interface was checked when a form was submitted. This is typically used when the user needs to agree to your application's terms of service, confirm reading some text, or any similar concept. This validation is very specific to web applications and this 'acceptance' does not need to be recorded anywhere in your database (if you don't have a field for it, the helper will just create a virtual attribute).
+當使用者送出表格 (form submitted) 時，針對使用者介面中的核取方塊 (checkbox) ，驗證它有沒有勾選。會用到的地方，通常是應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。這種驗證，幾乎都是網路應用程式 (web applications) 在用。這個 'acceptance （是否已接受）' 不用記在資料庫裡，所以，沒有對應的欄位 (field) 也沒關係，輔助工具會建立一個虛擬的屬性 (virtual attribute) 來應付。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -171,9 +171,9 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-The default error message for +validates_acceptance_of+ is "_must be accepted_".
++validates_acceptance_of+ 預設的錯誤訊息是 "_must be accepted_" 。
 
-+validates_acceptance_of+ can receive an +:accept+ option, which determines the value that will be considered acceptance. It defaults to "1", but you can change this.
++validates_acceptance_of+ 可以接收 +:accept+ 選項，決定什麼值代表 acceptance （已接受），預設的值是 "1" ，您要改掉它也可以。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -181,9 +181,9 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-h4. +validates_associated+
+h4. +validates_associated+ （驗證其他有關連的模型）
 
-You should use this helper when your model has associations with other models and they also need to be validated. When you try to save your object, +valid?+ will be called upon each one of the associated objects.
+如果您的 model ，跟其他 models 有關連 (associations) ，而這些相關的 models 也需要驗證，那麼，就需要使用這個輔助工具了。使用 +validates_associated+ 後，當您儲存物件時，每一個跟它相關的物件，都會呼叫 +valid?+ 方法。
 
 <ruby>
 class Library < ActiveRecord::Base
@@ -192,15 +192,15 @@ class Library < ActiveRecord::Base
 end
 </ruby>
 
-This validation will work with all of the association types.
+所有的資料庫關聯類型 (association types) ，都可以使用這種驗證。
 
-CAUTION: Don't use +validates_associated+ on both ends of your associations. They would call each other in an infinite loop.
+CAUTION: 不要在一個資料庫關聯的兩端，同時使用 +validates_associated+ ，因為，它們會一直互相呼叫，最後沒完沒了，停不下來。
 
-The default error message for +validates_associated+ is "_is invalid_". Note that each associated object will contain its own +errors+ collection; errors do not bubble up to the calling model.
++validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關連的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到對方的模型 (calling model) 裡面。
 
-h4. +validates_confirmation_of+
+h4. +validates_confirmation_of+ （驗證使用者的再次確認）
 
-You should use this helper when you have two text fields that should receive exactly the same content. For example, you may want to confirm an email address or a password. This validation creates a virtual attribute whose name is the name of the field that has to be confirmed with "_confirmation" appended.
+如果有兩個文字欄位 (text fields) ，必須收到一模一樣的內容，就會用到這個驗證，比方說，要使用者再確認一次 email address 或是 password 的時候。這個驗證功能，會建立一個虛擬屬性 (virtual attribute) ，虛擬屬性的名稱，就是把那個需要確認的欄位的名稱，尾巴後面再加上 "_confirmation" 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -208,14 +208,14 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-In your view template you could use something like
+使用這個驗證的時候，在視圖模板 (view template) 中，可以寫成：
 
 <erb>
 <%= text_field :person, :email %>
 <%= text_field :person, :email_confirmation %>
 </erb>
 
-This check is performed only if +email_confirmation+ is not +nil+. To require confirmation, make sure to add a presence check for the confirmation attribute (we'll take a look at +validates_presence_of+ later on this guide):
+上面的檢查，只有在 +email_confirmation+ 不是空值 +nil+ 的時候，才會執行，所以，要 require confirmation 的話，要事先確認驗證屬性 (confirmation attribute) 是不是存在 (presence check) 。關於這點，後面會在 +validates_presence_of+ 講到。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -224,11 +224,11 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-The default error message for +validates_confirmation_of+ is "_doesn't match confirmation_".
++validates_confirmation_of+ 預設的錯誤訊息是 "_doesn't match confirmation_" 。
 
-h4. +validates_exclusion_of+
+h4. +validates_exclusion_of+ （驗證屬性的值不被包括在內）
 
-This helper validates that the attributes' values are not included in a given set. In fact, this set can be any enumerable object.
+確認該屬性的值，沒有在指定的 set 中出現。這個 set ，可以是任何一個 enumerable 物件。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -237,13 +237,13 @@ class Account < ActiveRecord::Base
 end
 </ruby>
 
-The +validates_exclusion_of+ helper has an option +:in+ that receives the set of values that will not be accepted for the validated attributes. The +:in+ option has an alias called +:within+ that you can use for the same purpose, if you'd like to. This example uses the +:message+ option to show how you can include the attribute's value.
++validates_exclusion_of+ 有個 +:in+ 的選項，會接收一組值，這組值，也就是被驗證的屬性，所不該接受的值。+:in+ 選項有個別名 (alias) 叫做 +:within+ ，功能是一樣的。上面的範例用 +:message+ 選項??? 來表現如何 include 屬性的值 ???。
 
-The default error message for +validates_exclusion_of+ is "_is reserved_".
++validates_exclusion_of+ 預設的錯誤訊息是 "_is reserved_" 。
 
-h4. +validates_format_of+
+h4. +validates_format_of+ （驗證屬性值的格式）
 
-This helper validates the attributes' values by testing whether they match a given regular expression, which is specified using the +:with+ option.
+這個工具，會測試屬性的值，是否符合 +:with+ 選項所指定的常規表示式 (regular expression) 。
 
 <ruby>
 class Product < ActiveRecord::Base
@@ -252,11 +252,11 @@ class Product < ActiveRecord::Base
 end
 </ruby>
 
-The default error message for +validates_format_of+ is "_is invalid_".
++validates_format_of+ 預設的錯誤訊息是 "_is invalid_" 。
 
-h4. +validates_inclusion_of+
+h4. +validates_inclusion_of+ （驗證屬性的值有被包括在內）
 
-This helper validates that the attributes' values are included in a given set. In fact, this set can be any enumerable object.
+確認該屬性的值，有被包括在指定的 set 裡面，這個 set 可以是任何 enumerable 物件。
 
 <ruby>
 class Coffee < ActiveRecord::Base
@@ -265,13 +265,13 @@ class Coffee < ActiveRecord::Base
 end
 </ruby>
 
-The +validates_inclusion_of+ helper has an option +:in+ that receives the set of values that will be accepted. The +:in+ option has an alias called +:within+ that you can use for the same purpose, if you'd like to. The previous example uses the +:message+ option to show how you can include the attribute's value.
++validates_inclusion_of+ 有個 +:in+ 選項，會接收一組值，就是被驗證的屬性，所能夠接受的值。 +:in+ 選項有個別名 (alias) 叫做 +:within+ ，功能是相同的。上面的範例用 +:message+ 選項來表現如何 include 屬性的值。
 
-The default error message for +validates_inclusion_of+ is "_is not included in the list_".
++validates_inclusion_of+ 預設的錯誤訊息是 "_is not included in the list_" 。
 
-h4. +validates_length_of+
+h4. +validates_length_of+ （驗證長度是否在指定範圍內）
 
-This helper validates the length of the attributes' values. It provides a variety of options, so you can specify length constraints in different ways:
+驗證屬性值的長度。這個工具有多種選項 (options) ，所以，您有許多方法，可以指定長度限制 (length constraints) ：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -282,14 +282,14 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-The possible length constraint options are:
+可用的選項，包括：
 
-* +:minimum+ - The attribute cannot have less than the specified length.
-* +:maximum+ - The attribute cannot have more than the specified length.
-* +:in+ (or +:within+) - The attribute length must be included in a given interval. The value for this option must be a range.
-* +:is+ - The attribute length must be equal to the given value.
+* +:minimum+ - 屬性的值不能比指定長度短。
+* +:maximum+ - 屬性的值不能比指定長度長。
+* +:in+ (or +:within+) - 屬性的值的長度，要在某個區間 (interval) 之內。所以，這個選項的值，必須是一個範圍 (range) 。
+* +:is+ - 屬性的值的長度，要跟指定的長度相等。
 
-The default error messages depend on the type of length validation being performed. You can personalize these messages using the +:wrong_length+, +:too_long+, and +:too_short+ options and <tt>%{count}</tt> as a placeholder for the number corresponding to the length constraint being used. You can still use the +:message+ option to specify an error message.
+不同類型的長度驗證，預設的錯誤訊息，也各自不同。要自訂錯誤訊息，可以用 +:wrong_length+ 、 +:too_long+ 、+:too_short+ 選項，搭配 <tt>%{count}</tt> 做為 placeholder ，留給跟長度限制有關的數字。同樣的，您可以用 +:message+ 選項來自訂錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -298,7 +298,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-This helper counts characters by default, but you can split the value in a different way using the +:tokenizer+ option:
+預設狀態下，此工具會計算字元 (characters) ，不過，要用別的方式 split the value 的話，您可以用 +:tokenizer+ 選項：
 
 <ruby>
 class Essay < ActiveRecord::Base
@@ -311,21 +311,21 @@ class Essay < ActiveRecord::Base
 end
 </ruby>
 
-The +validates_size_of+ helper is an alias for +validates_length_of+.
++validates_length_of+ 輔助工具，別名叫做 +validates_size_of+ 。
 
-h4. +validates_numericality_of+
+h4. +validates_numericality_of+ （驗證屬性的值只包括數值）
 
-This helper validates that your attributes have only numeric values. By default, it will match an optional sign followed by an integral or floating point number. To specify that only integral numbers are allowed set +:only_integer+ to true.
+驗證您的屬性只包含數字值 (numeric values) 。預設是符合 match an optional sign 後面接 followed by 一個整數 (integral) 或浮點數 (floating point number) 。如果只想允許整數，把 +:only_integer+ 設定為 true 就可以了。
 
-If you set +:only_integer+ to +true+, then it will use the
+如果 +:only_integer+ 設為 +true+ ，會用這個常規表示式
 
 <ruby>
 /\A[+-]?\d+\Z/
 </ruby>
 
-regular expression to validate the attribute's value. Otherwise, it will try to convert the value to a number using +Float+.
+來驗證屬性的值。反之，如果沒設定，則會嘗試用 +Float+ 來把值轉換成數字。
 
-WARNING. Note that the regular expression above allows a trailing newline character.
+WARNING. 上面的常規表示式，允許 ??? 字元 (trailing newline character) 。
 
 <ruby>
 class Player < ActiveRecord::Base
@@ -334,7 +334,7 @@ class Player < ActiveRecord::Base
 end
 </ruby>
 
-Besides +:only_integer+, the +validates_numericality_of+ helper also accepts the following options to add constraints to acceptable values:
+除了 +:only_integer+ 之外， +validates_numericality_of+ 還接受下列這些選項，來限制允許的值 (acceptable values) ：
 
 * +:greater_than+ - Specifies the value must be greater than the supplied value. The default error message for this option is "_must be greater than %{count}_".
 * +:greater_than_or_equal_to+ - Specifies the value must be greater than or equal to the supplied value. The default error message for this option is "_must be greater than or equal to %{count}_".
