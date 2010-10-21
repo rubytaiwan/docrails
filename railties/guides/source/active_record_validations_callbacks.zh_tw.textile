@@ -161,7 +161,7 @@ Active Record 預先定義好許多驗證輔助工具，您可以在類別定義
 
 輔助工具都可接收 +:on+ 跟 +:message+ 選項 (options) ，這些選項，會定義驗證該何時執行，以及，如果驗證失敗的話，該加什麼訊息到 +errors+ 集合中, respectively 。選項 +:on+ 的作用，是將一個值 +:save+ （預設），或者 +:create+ ，或者 +:update+ 。至於選項 +:message+ 的作用，則是自訂錯誤訊息，如果，沒有自訂 +:message+ ，就會採用預設的，反正，每個驗證輔助工具，都有預設的訊息可以用。底下讓我們一個一個來看。
 
-h4. +validates_acceptance_of+ （驗證使用者是否已接受）
+h4. +validates_acceptance_of+ （確定使用者已經接受）
 
 當使用者送出表格 (form submitted) 時，針對使用者介面中的核取方塊 (checkbox) ，驗證它有沒有勾選。會用到的地方，通常是應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。這種驗證，幾乎都是網路應用程式 (web applications) 在用。這個 'acceptance （是否已接受）' 不用記在資料庫裡，所以，沒有對應的欄位 (field) 也沒關係，輔助工具會建立一個虛擬的屬性 (virtual attribute) 來應付。
 
@@ -198,7 +198,7 @@ CAUTION: 不要在一個資料庫關聯的兩端，同時使用 +validates_assoc
 
 +validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關連的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到對方的模型 (calling model) 裡面。
 
-h4. +validates_confirmation_of+ （驗證使用者的再次確認）
+h4. +validates_confirmation_of+ （檢查使用者的再次確認）
 
 如果有兩個文字欄位 (text fields) ，必須收到一模一樣的內容，就會用到這個驗證，比方說，要使用者再確認一次 email address 或是 password 的時候。這個驗證功能，會建立一個虛擬屬性 (virtual attribute) ，虛擬屬性的名稱，就是把那個需要確認的欄位的名稱，尾巴後面再加上 "_confirmation" 。
 
@@ -226,7 +226,7 @@ end
 
 +validates_confirmation_of+ 預設的錯誤訊息是 "_doesn't match confirmation_" 。
 
-h4. +validates_exclusion_of+ （驗證屬性的值不被包括在內）
+h4. +validates_exclusion_of+ （確定屬性的值不在其內）
 
 確認該屬性的值，沒有在指定的 set 中出現。這個 set ，可以是任何一個 enumerable 物件。
 
@@ -241,7 +241,7 @@ end
 
 +validates_exclusion_of+ 預設的錯誤訊息是 "_is reserved_" 。
 
-h4. +validates_format_of+ （驗證屬性值的格式）
+h4. +validates_format_of+ （檢查屬性值的格式）
 
 這個工具，會測試屬性的值，是否符合 +:with+ 選項所指定的常規表示式 (regular expression) 。
 
@@ -254,7 +254,7 @@ end
 
 +validates_format_of+ 預設的錯誤訊息是 "_is invalid_" 。
 
-h4. +validates_inclusion_of+ （驗證屬性的值有被包括在內）
+h4. +validates_inclusion_of+ （確定屬性的值有被包括在內）
 
 確認該屬性的值，有被包括在指定的 set 裡面，這個 set 可以是任何 enumerable 物件。
 
@@ -269,7 +269,7 @@ end
 
 +validates_inclusion_of+ 預設的錯誤訊息是 "_is not included in the list_" 。
 
-h4. +validates_length_of+ （驗證長度是否在指定範圍內）
+h4. +validates_length_of+ （確定長度在指定範圍內）
 
 驗證屬性值的長度。這個工具有多種選項 (options) ，所以，您有許多方法，可以指定長度限制 (length constraints) ：
 
@@ -313,7 +313,7 @@ end
 
 +validates_length_of+ 輔助工具，別名叫做 +validates_size_of+ 。
 
-h4. +validates_numericality_of+ （驗證屬性的值只包括數值）
+h4. +validates_numericality_of+ （確保屬性的值只包括數值）
 
 驗證您的屬性只包含數字值 (numeric values) 。預設是符合 match an optional sign 後面接 followed by 一個整數 (integral) 或浮點數 (floating point number) 。如果只想允許整數，把 +:only_integer+ 設定為 true 就可以了。
 
@@ -336,19 +336,19 @@ end
 
 除了 +:only_integer+ 之外， +validates_numericality_of+ 還接受下列這些選項，來限制允許的值 (acceptable values) ：
 
-* +:greater_than+ - Specifies the value must be greater than the supplied value. The default error message for this option is "_must be greater than %{count}_".
-* +:greater_than_or_equal_to+ - Specifies the value must be greater than or equal to the supplied value. The default error message for this option is "_must be greater than or equal to %{count}_".
-* +:equal_to+ - Specifies the value must be equal to the supplied value. The default error message for this option is "_must be equal to %{count}_".
-* +:less_than+ - Specifies the value must be less than the supplied value. The default error message for this option is "_must be less than %{count}_".
-* +:less_than_or_equal_to+ - Specifies the value must be less than or equal the supplied value. The default error message for this option is "_must be less than or equal to %{count}_".
-* +:odd+ - Specifies the value must be an odd number if set to true. The default error message for this option is "_must be odd_".
-* +:even+ - Specifies the value must be an even number if set to true. The default error message for this option is "_must be even_".
+* +:greater_than+ - 必須比這個值還大。預設的錯誤訊息是 "_must be greater than %{count}_" 。
+* +:greater_than_or_equal_to+ - 必須大於或等於這個值。預設的錯誤訊息是 "_must be greater than or equal to %{count}_" 。
+* +:equal_to+ - 必須等於這個值。預設的錯誤訊息是 "_must be equal to %{count}_" 。
+* +:less_than+ - 必須小於這值。預設的錯誤訊息是 "_must be less than %{count}_" 。
+* +:less_than_or_equal_to+ - 必須小於或等於這個值。預設的錯誤訊息是 "_must be less than or equal to %{count}_" 。
+* +:odd+ - 如果設定為 true ，則被驗證的值必須是奇數???。預設的錯誤訊息是 "_must be odd_" 。
+* +:even+ - 如果設定為 true ，則被驗證的值必須是偶數???。預設的錯誤訊息是 "_must be even_" 。
 
-The default error message for +validates_numericality_of+ is "_is not a number_".
++validates_numericality_of+ 預設的錯誤訊息是 "_is not a number_" 。
 
-h4. +validates_presence_of+
+h4. +validates_presence_of+ （確定某個屬性有存在）
 
-This helper validates that the specified attributes are not empty. It uses the +blank?+ method to check if the value is either +nil+ or a blank string, that is, a string that is either empty or consists of whitespace.
+驗證指定的屬性不是空的。此工具使用 +blank?+ 方法，去檢查屬性值是否為 +nil+ 或者空字串 (blank string) ，所謂空字串指的是沒有內容 (empty) 、或者由空白 (whitespace) 組成的字串。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -356,7 +356,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-If you want to be sure that an association is present, you'll need to test whether the foreign key used to map the association is present, and not the associated object itself.
+如果，要確認資料庫關聯 (association) 的存在，那要測試的，是存不存在 map the association 的外部鍵 (foreign key) ，而不是相關連的物件 (associated object) 本身。
 
 <ruby>
 class LineItem < ActiveRecord::Base
@@ -365,13 +365,13 @@ class LineItem < ActiveRecord::Base
 end
 </ruby>
 
-Since +false.blank?+ is true, if you want to validate the presence of a boolean field you should use +validates_inclusion_of :field_name, :in => [true, false]+.
+??? 由於 +false.blank?+ 是 true ，Since +false.blank?+ is true, ??? 要驗證布林欄位 (boolean field) 的存在，必須寫成 +validates_inclusion_of :field_name, :in => [true, false]+ 。
 
-The default error message for +validates_presence_of+ is "_can't be empty_".
++validates_presence_of+ 預設的錯誤訊息是 "_can't be empty_" 。
 
-h4. +validates_uniqueness_of+
+h4. +validates_uniqueness_of+ （確保屬性值是唯一的）
 
-This helper validates that the attribute's value is unique right before the object gets saved. It does not create a uniqueness constraint in the database, so it may happen that two different database connections create two records with the same value for a column that you intend to be unique. To avoid that, you must create a unique index in your database.
+在儲存物件的前一刻，驗證屬性的值，以確定它是唯一的。這個工具，並不會在資料庫中建立唯一限定 (uniqueness constraint) ，所以，可能會有兩個不同 database connections ，在同一個欄，存入了兩筆一樣的記錄 (records) 。要避免這個狀況，您必須為資料庫做一個 unique index 。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -379,9 +379,9 @@ class Account < ActiveRecord::Base
 end
 </ruby>
 
-The validation happens by performing an SQL query into the model's table, searching for an existing record with the same value in that attribute.
+這個驗證的運作方式，是在 model 的資料表內，執行一個 SQL 查詢 (query) 。如此，會在現有的記錄 (record) 裡面，針對指定的屬性，搜尋相同的值。
 
-There is a +:scope+ option that you can use to specify other attributes that are used to limit the uniqueness check:
+要把唯一值檢查 (uniqueness check) 加上其他檢查條件的話，需要用到一些額外的屬性。這些屬性，可以用 +:scope+ 選項來指定：
 
 <ruby>
 class Holiday < ActiveRecord::Base
@@ -390,7 +390,7 @@ class Holiday < ActiveRecord::Base
 end
 </ruby>
 
-There is also a +:case_sensitive+ option that you can use to define whether the uniqueness constraint will be case sensitive or not. This option defaults to true.
+另外，還有個 +:case_sensitive+ 選項，可以設定唯一值的檢查是否要分大小寫 (case sensitive) 。預設是 true 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -398,13 +398,13 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-WARNING. Note that some databases are configured to perform case-insensitive searches anyway.
+WARNING. 有些資料庫，??? 設定成不管怎樣，都會執行不分大小寫的搜尋 are configured to perform case-insensitive searches anyway.
 
-The default error message for +validates_uniqueness_of+ is "_has already been taken_".
++validates_uniqueness_of+ 預設的錯誤訊息是 "_has already been taken_" 。
 
-h4. +validates_with+
+h4. +validates_with+ （用另外的類別來做驗證）
 
-This helper passes the record to a separate class for validation.
+把記錄 (record) 轉交給另一個獨立的類別 (separate class) 來驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -420,14 +420,14 @@ class GoodnessValidator < ActiveRecord::Validator
 end
 </ruby>
 
-The +validates_with+ helper takes a class, or a list of classes to use for validation. There is no default error message for +validates_with+. You must manually add errors to the record's errors collection in the validator class.
++validates_with+ 會用一個或多個類別，來進行驗證。它沒有預設的錯誤訊息，所以，必須用手動 (manual) 的方式，在 validator 類別的定義裡面，把錯誤訊息加入該筆記錄 (record) 的錯誤訊息集合 (errors collection) 中。
 
-The validator class has two attributes by default:
+validator 類別預設有兩個屬性：
 
-* +record+ - the record to be validated
-* +options+ - the extra options that were passed to +validates_with+
+* +record+ - 要驗證的那筆記錄 (record)
+* +options+ - 已傳給 +validates_with+ 的額外選項 (extra options)
 
-Like all other validations, +validates_with+ takes the +:if+, +:unless+ and +:on+ options. If you pass any other options, it will send those options to the validator class as +options+:
+??? +validates_with+ 有 +:if+ 、+:unless+ 、+:on+ 這三個選項可用，這一點，就跟其他驗證方式一樣。如果有傳入其他選項，則會以 +options+ 的方式，送到 validator 類別去：???
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -443,9 +443,9 @@ class GoodnessValidator < ActiveRecord::Validator
 end
 </ruby>
 
-h4. +validates_each+
+h4. +validates_each+ （用區塊來做自訂的驗證）
 
-This helper validates attributes against a block. It doesn't have a predefined validation function. You should create one using a block, and every attribute passed to +validates_each+ will be tested against it. In the following example, we don't want names and surnames to begin with lower case.
+按照區塊 (block) 裡的程式碼，對屬性 (attributes) 做驗證。這個工具，沒有定義任何驗證功能，您要自己用區塊 (block) 來撰寫驗證，然後，每一個傳給 (passed to) +validates_each+ 的屬性，都會根據您的區塊內容來做測試。下面示範，希望 names 跟 surnames 不是小寫開頭：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -455,9 +455,9 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-The block receives the model, the attribute's name and the attribute's value. You can do anything you like to check for valid data within the block. If your validation fails, you can add an error message to the model, therefore making it invalid.
+區塊接收了三樣東西：模型、屬性名稱、屬性的值。在區塊內，可以做任何您想做的驗證。要是驗證失敗，可以在 model 裡加入錯誤訊息，讓它變成無效的 (invalid) 。
 
-h3. Common Validation Options
+h3. 共用的驗證選項 Common Validation Options
 
 There are some common options that all the validation helpers can use. Here they are, except for the +:if+ and +:unless+ options, which are discussed later in "Conditional Validation":#conditional-validation.
 
