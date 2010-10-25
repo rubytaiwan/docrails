@@ -1,6 +1,6 @@
 h2. Active Record 的驗證 (Validations) 與回呼 (Callbacks)
 
-這一章說明如何 hook into Active Record 物件的生命週期：在物件進入資料庫之前，驗證它的狀態，以及，在物件生命週期的特定時間點，執行自訂的操作。
+這一章說明如何 ??? hook into ??? Active Record 物件的生命週期：在物件進入資料庫之前驗證它的狀態，以及，在物件生命週期的特定時間點，執行自訂的操作。
 
 讀完本篇，您會：
 
@@ -27,14 +27,14 @@ h4. 為什麼要驗證 (Validations) ？
 
 在資料存進資料庫前，有幾個驗證的方法，包括：原生的資料庫約束 (native database constraints) 、客戶端驗證 (client-side validations) 、控制器層級的驗證 (controller-level validations) 、以及模型層級的驗證 (model-level validations)。
 
-* 資料庫約束 (database constraints) 或者是預存程序 (stored procedures) ，這些驗證機制，要依賴特定的資料庫，所以，測試和維護會比較難。不過，如果資料庫會去給別的應用程式用，那麼，在資料庫層做約束可能就是不錯的作法。另外，資料庫層級的驗證可以很安全的處理一些事情，像是，在重度使用的資料表中，確保唯一值 (uniqueness) 之類的。這些事情，如果用其他的方法，會比較難實作。
-* 客戶端的驗證 (client-side validations) 雖然可以用，但單單用這個的話，通常不太可靠。如果用 JavaScript 來做，要是使用者的瀏覽器把 JavaScript 關掉，那驗證就被略過了。不過，畢竟客戶端驗證，可以給使用者很即時的回饋，所以，要是能跟其他驗證手法併用，那倒是挺方便的。
+* 資料庫約束 (database constraints) 或者是預存程序 (stored procedures) ，這些驗證機制，要依賴特定的資料庫系統，所以測試和維護會比較難。不過，如果資料庫會去給別的應用程式用，那在資料庫層做約束可能就是不錯的作法。另外，資料庫層級的驗證可以很安全的處理一些事情，像是在重度使用的資料表中，確保唯一值 (uniqueness) 之類的。這些事情，如果用其他的方法，會比較難實作。
+* 客戶端的驗證 (client-side validations) 雖然可以用，但單單用這個的話通常不太可靠。如果用 JavaScript 來做，要是使用者的瀏覽器把 JavaScript 關掉，那驗證就被略過了。不過畢竟，客戶端驗證可以給使用者很即時的回饋，所以，要是能跟其他驗證手法併用，那倒是挺方便的。
 * 控制器層級的驗證 (controller-level validations) ，也是可以用，但常常很笨重，不好測試跟維護。不管怎樣，"keep your controllers skinny":http://weblog.jamisbuck.org/2006/10/18/skinny-controller-fat-model 總是好的，長遠的說，可以讓程式用起來很愉快。
 * 模型層級的驗證 (model-level validations) ，是最佳作法。這種驗證方式，不用去管資料庫是哪個系統，也不會被使用者略過，測試起來很方便，也容易維護。為了方便大家使用 model 層級的驗證，Rails 針對常用功能，內建了輔助工具，當然，您也可以撰寫自己的驗證方法。
 
 h4. 什麼時候會發生驗證 (Validation) ？
 
-Active Record 類別底下，有兩種物件：跟某一筆資料對應的，或者沒跟資料對應的。當您使用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於，物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別 (class) ：
+Active Record 類別底下，有兩種物件：一種是跟某筆資料對應的，另一種是沒有跟資料對應的。當您用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -54,9 +54,9 @@ end
 => false
 </shell>
 
-一筆新記錄的新增、儲存，會對資料庫送出一個 SQL 的 +INSERT+ 操作 (operation) 。更新現有的記錄，則送出 +UPDATE+ 操作。通常，送命令到資料庫之前，會做驗證。過程中，有任何一個驗證失敗的話，這個物件就會被標記為無效 (marked as invalid) ，於是 Active Record 就不會執行 +INSERT+ 或 +UPDATE+ 的操作，如此一來，無效的物件就不會存進資料庫。您也可以針對物件新增、儲存、更新，自訂專屬的驗證功能。
+一筆新記錄 (record) 的新增與儲存，會對資料庫送出一個 SQL 的 +INSERT+ 操作 (operation) 。現有記錄的更新則送出 +UPDATE+ 操作。通常送命令到資料庫前，會先做驗證，任一個驗證失敗的話，這個物件就標記為無效 (marked as invalid) ，於是 Active Record 不會執行 +INSERT+ 或 +UPDATE+ ，無效的物件也就不會存進資料庫。您也可以針對物件新增、儲存、更新，自訂專屬的驗證功能。
 
-CAUTION: 在資料庫裡面，要改變物件的狀態 (state) ，有很多種方法。其中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
+CAUTION: 在資料庫裡面，要改變物件的狀態 (state) ，有很多種方法都能做到，這些方法中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
 
 下面列出的方法，會觸發驗證，只有驗證合格的物件才會存入資料庫：
 
@@ -68,11 +68,11 @@ CAUTION: 在資料庫裡面，要改變物件的狀態 (state) ，有很多種�
 * +update_attributes+
 * +update_attributes!+
 
-這些方法中，尾巴附有一個驚嘆號的版本 (bang versions) ，像是 +save!+ ，會在這筆紀錄 invalid 的時候，丟出例外 (raise an exception) 。沒有驚嘆號的 (non-bang versions) 則不會丟出例外，其中， +save+ 跟 +update_attributes+ 會傳回 +false+ ，而 +create+ 跟 +update+ 則單純的傳回物件本身。
+尾巴附有一個驚嘆號的版本 (bang versions) 像是 +save!+ ，會在這筆紀錄 invalid 的時候丟出例外 (raise an exception) 。沒有驚嘆號的 (non-bang versions) 則不會丟出例外。其中， +save+ 跟 +update_attributes+ 會傳回 +false+ ，而 +create+ 跟 +update+ 則單純的傳回物件本身。
 
 h4. 略過驗證 (Skipping Validations)
 
-下面列出的方法，會略過驗證，不管物件是否有效，都會將它存到資料庫中。所以，要小心使用。
+下面列出的方法會略過驗證，不管物件是否有效，都會將它存到資料庫中。所以，要小心使用。
 
 * +decrement!+
 * +decrement_counter+
@@ -100,7 +100,7 @@ Person.create(:name => "John Doe").valid? # => true
 Person.create(:name => nil).valid? # => false
 </ruby>
 
-Active Record 在執行驗證的時候，任何的錯誤訊息，都可以用 +errors+ 這個實體方法 (instance method) 來取得 (accessed) 。驗證結束後，如果這個集合 (collection) 仍然是空的，那在定義上，這個物件就會被認為是有效的 (valid) 。
+Active Record 在執行驗證的時候，任何的錯誤訊息，都可以用 +errors+ 這個實體方法 (instance method) 來存取 (accessed) 。驗證結束後，如果這個集合 (collection) 仍然是空的，那在定義上，這個物件就會被認為是有效的 (valid) 。
 
 用 +new+ 實體化 (instantiated) 出來的物件，即使它在技術上是無效的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
 
@@ -228,7 +228,7 @@ end
 
 h4. +validates_exclusion_of+ （確定屬性的值不在其內）
 
-確認該屬性的值，沒有在指定的 set 中出現。這個 set ，可以是任何一個 enumerable 物件。
+確認該屬性的值，沒有在指定的 set 中出現。這個 set ，可以是任何一個可逐一列舉的 (enumerable) 物件。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -339,7 +339,7 @@ end
 * +:greater_than+ - 必須比這個值還大。預設的錯誤訊息是 "_must be greater than %{count}_" 。
 * +:greater_than_or_equal_to+ - 必須大於或等於這個值。預設的錯誤訊息是 "_must be greater than or equal to %{count}_" 。
 * +:equal_to+ - 必須等於這個值。預設的錯誤訊息是 "_must be equal to %{count}_" 。
-* +:less_than+ - 必須小於這值。預設的錯誤訊息是 "_must be less than %{count}_" 。
+* +:less_than+ - 必須小於這個值。預設的錯誤訊息是 "_must be less than %{count}_" 。
 * +:less_than_or_equal_to+ - 必須小於或等於這個值。預設的錯誤訊息是 "_must be less than or equal to %{count}_" 。
 * +:odd+ - 如果設定為 true ，則被驗證的值必須是奇數???。預設的錯誤訊息是 "_must be odd_" 。
 * +:even+ - 如果設定為 true ，則被驗證的值必須是偶數???。預設的錯誤訊息是 "_must be even_" 。
@@ -457,13 +457,13 @@ end
 
 區塊接收了三樣東西：模型、屬性名稱、屬性的值。在區塊內，可以做任何您想做的驗證。要是驗證失敗，可以在 model 裡加入錯誤訊息，讓它變成無效的 (invalid) 。
 
-h3. 共用的驗證選項 Common Validation Options
+h3. 共通的驗證選項 (Common Validation Options)
 
-There are some common options that all the validation helpers can use. Here they are, except for the +:if+ and +:unless+ options, which are discussed later in "Conditional Validation":#conditional-validation.
+有些共通的選項 (options) ，所有的驗證輔助工具都能用，下面介紹除了 +:if+ 跟 +:unless+ 之外的共通選項（這兩個選項，會另外在 "條件式驗證 (Conditional Validation)":#conditional-validation 的部份討論）。
 
-h4. +:allow_nil+
+h4. +:allow_nil+ （允許 nil 值）
 
-The +:allow_nil+ option skips the validation when the value being validated is +nil+. Using +:allow_nil+ with +validates_presence_of+ allows for +nil+, but any other +blank?+ value will still be rejected.
++:allow_nil+ 選項，在被驗證的值是 +nil+ 的時候，會略過驗證。在 +validates_presence_of+ 工具裡面，使用 +:allow_nil+ 選項的話，就可以允許 +nil+ 值，不過，其他任何的 +blank?+ 值還是一樣會被拒絕 (rejected) 。
 
 <ruby>
 class Coffee < ActiveRecord::Base
@@ -472,9 +472,9 @@ class Coffee < ActiveRecord::Base
 end
 </ruby>
 
-h4. +:allow_blank+
+h4. +:allow_blank+ （允許 blank 值）
 
-The +:allow_blank+ option is similar to the +:allow_nil+ option. This option will let validation pass if the attribute's value is +blank?+, like +nil+ or an empty string for example.
++:allow_blank+ 有點類似 +:allow_nil+ ，但允許的範圍更廣。 +:allow_blank+ 會在屬性值是 +blank?+ 的時候，也讓驗證通過，像是 +nil+ 或是空字串 (empty string) 之類的。
 
 <ruby>
 class Topic < ActiveRecord::Base
@@ -485,35 +485,35 @@ Topic.create("title" => "").valid? # => true
 Topic.create("title" => nil).valid? # => true
 </ruby>
 
-h4. +:message+
+h4. +:message+ （自訂錯誤訊息）
 
-As you've already seen, the +:message+ option lets you specify the message that will be added to the +errors+ collection when validation fails. When this option is not used, Active Record will use the respective default error message for each validation helper.
++:message+ 選項用來自訂訊息，此訊息會在驗證失敗的時候，加到 +errors+ 集合 (collection) 裡面。沒設定此選項時， Active Record 會採用驗證輔助工具 (validation helpers) 原本就有的、各自的預設錯誤訊息。
 
-h4. +:on+
+h4. +:on+ （在何時驗證）
 
-The +:on+ option lets you specify when the validation should happen. The default behavior for all the built-in validation helpers is to be run on save (both when you're creating a new record and when you're updating it). If you want to change it, you can use +:on => :create+ to run the validation only when a new record is created or +:on => :update+ to run the validation only when a record is updated.
++:on+ 選項可以設定驗證該在何時發生。所有內建的驗證輔助工具，預設的行為，是在儲存的時候，包括新增一筆記錄、以及更新記錄 (record) 時，都會執行驗證。您可以用 +:on => :create+ 指定只要在新增的時候驗證就好，或者，用 +:on => :update+ 設定只要在更新的時候驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
 
-  # it will be possible to update email with a duplicated value
+  # 在更新 email 資料的時候，輸入跟先前一樣的 email 值，是可以的
   validates_uniqueness_of :email, :on => :create
 
-  # it will be possible to create the record with a non-numerical age
+  # 在新增年齡資料的時候，輸入不是數字 (non-numerical) 的值，是可以的
   validates_numericality_of :age, :on => :update
 
-  # the default (validates on both create and update)
+  # 預設的狀況（新增、更新，兩種狀況都驗證）
   validates_presence_of :name, :on => :save
 end
 </ruby>
 
-h3. Conditional Validation
+h3. 條件式驗證 (Conditional Validation)
 
-Sometimes it will make sense to validate an object just when a given predicate is satisfied. You can do that by using the +:if+ and +:unless+ options, which can take a symbol, a string or a +Proc+. You may use the +:if+ option when you want to specify when the validation *should* happen. If you want to specify when the validation *should not* happen, then you may use the +:unless+ option.
+有時候，需要在滿足某些陳述 (predicate) 的狀況下，才對物件做驗證。此時，就要用到 +:if+ 跟 +:unless+ 選項，選項內容可以是符號 (symbol) 、字串 (string) 、或 +Proc+ ???。 +:if+ 選項用來指定驗證何時 *應該* 發生，而 +:unless+ 選項則指定驗證何時 *不應該* 發生。
 
-h4. Using a Symbol with +:if+ and +:unless+
+h4. 在 +:if+ 和 +:unless+ 中使用符號/代號 (Symbol)
 
-You can associate the +:if+ and +:unless+ options with a symbol corresponding to the name of a method that will get called right before validation happens. This is the most commonly used option.
+條件式驗證時，常常要在驗證前，先呼叫某個方法，來判斷驗證條件是否成立。這個方法的名稱，可以當作符號 (symbol) ，來 associate the +:if+ 跟 +:unless+ 選項。這是最常見的一種用法。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -525,9 +525,9 @@ class Order < ActiveRecord::Base
 end
 </ruby>
 
-h4. Using a String with +:if+ and +:unless+
+h4. 在 +:if+ 和 +:unless+ 中使用字串 (String)
 
-You can also use a string that will be evaluated using +eval+ and needs to contain valid Ruby code. You should use this option only when the string represents a really short condition.
+把一段有效的 Ruby 程式碼，以字串的形式，放在條件式中，如此，它就會被丟去給 +eval+ 求值。這個方法，只有適合在字串條件式很短的時候使用。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -535,7 +535,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-h4. Using a Proc with +:if+ and +:unless+
+h4. 在 +:if+ 和 +:unless+ 中使用 Proc ???
 
 Finally, it's possible to associate +:if+ and +:unless+ with a +Proc+ object which will be called. Using a +Proc+ object gives you the ability to write an inline condition instead of a separate method. This option is best suited for one-liners.
 
