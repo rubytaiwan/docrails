@@ -11,17 +11,20 @@ h2. Active Record 的驗證 (Validations) 與回呼 (Callbacks)
 * 在物件生命週期期間，會發生一些事件，您將學會針對這些事件，撰寫回呼方法 (callback methods) 。
 * 在回呼 (callbacks) 之間，有些共通的行為，您將學會針對這些行為，撰寫特殊類別 (special classes) ，以封裝 (encapsulate) 它們。 
 * 有些事件 (events) ，並沒有定義在原來的類別中，您將學會針對這些事件，建立觀測器 (observers)，以便回應它們。
+
 endprologue.
 
 h3. 物件生命週期 (Object Life Cycle)
 
-Rails 正常操作下，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>object life cycle</em> 內的 hooks，讓您可以操控程式、操控資料。其中，驗證 (validations) 是用來確保只有有效的資料，被存到資料庫裡面。而回呼 (callbacks) 和觀測器 (observers) ，則是在物件狀態變化之前、或變化之後，觸發相關的邏輯。
+Rails 正常操作下，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>object life cycle</em> 內的 hooks，讓您可以操控程式、操控資料。
+
+其中，驗證 (validations) 是用來確保只有有效的資料，被存到資料庫裡面。而回呼 (callbacks) 和觀測器 (observers) ，則是在物件狀態變化之前、或變化之後，觸發相關的邏輯。
 
 h3. 驗證的概觀 (Validations Overview)
 
 深入 Rails 的驗證 (validations) 細節前，先了解一下驗證扮演的角色。
 
-h4. 為什麼要驗證 (Validations) ？
+h4. 為什麼要驗證 (Why Use Validations) ？
 
 驗證 (validations) 的用意，是要確保資料庫裡，只有有效資料 (valid data) 才存進去。比方說，您的應用程式，可能要確定每個使用者，都提供有效的電子郵件地址、和郵寄地址等。
 
@@ -32,7 +35,7 @@ h4. 為什麼要驗證 (Validations) ？
 * 控制器層級的驗證 (controller-level validations) ，也是可以用，但常常很笨重，不好測試跟維護。不管怎樣，"keep your controllers skinny":http://weblog.jamisbuck.org/2006/10/18/skinny-controller-fat-model 總是好的，長遠的說，可以讓程式用起來很愉快。
 * 模型層級的驗證 (model-level validations) ，是最佳作法。這種驗證方式，不用去管資料庫是哪個系統，也不會被使用者略過，測試起來很方便，也容易維護。為了方便大家使用 model 層級的驗證，Rails 針對常用功能，內建了輔助工具，當然，您也可以撰寫自己的驗證方法。
 
-h4. 什麼時候會發生驗證 (Validation) ？
+h4. 什麼時候會發生驗證 (When Does Validation Happen) ？
 
 Active Record 類別底下，有兩種物件：一種是跟某筆資料對應的，另一種是沒有跟資料對應的。當您用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別：
 
@@ -495,7 +498,6 @@ h4. +:on+ （在何時驗證）
 
 <ruby>
 class Person < ActiveRecord::Base
-
   # 在更新 email 資料的時候，輸入跟先前一樣的 email 值，是可以的
   validates_uniqueness_of :email, :on => :create
 
@@ -537,7 +539,7 @@ end
 
 h4. 在 +:if+ 和 +:unless+ 中使用 Proc ???
 
-Finally, it's possible to associate +:if+ and +:unless+ with a +Proc+ object which will be called. Using a +Proc+ object gives you the ability to write an inline condition instead of a separate method. This option is best suited for one-liners.
+最後一種條件式驗證，是呼叫 +Proc+ 物件來 associate +:if+ 和 +:unless+ 。使用 +Proc+ 物件，就可以直接撰寫條件式 (inline condition) ，而不需要另外寫一個方法 (separate method) 。這種作法對 one-liners 來說，再適合不過了。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -546,13 +548,13 @@ class Account < ActiveRecord::Base
 end
 </ruby>
 
-h3. Creating Custom Validation Methods
+h3. 撰寫自訂的驗證方法 (Creating Custom Validation Methods)
 
-When the built-in validation helpers are not enough for your needs, you can write your own validation methods.
+內建的驗證輔助工具不夠用的時候，您可以自己撰寫驗證方法。
 
-Simply create methods that verify the state of your models and add messages to the +errors+ collection when they are invalid. You must then register these methods by using one or more of the +validate+, +validate_on_create+ or +validate_on_update+ class methods, passing in the symbols for the validation methods' names.
+撰寫驗證方法很簡單：撰寫新的方法，在方法中確認模型 (models) 的狀態 (state) ，當模型無效 (invalid) 時，在 +errors+ 集合中加入錯誤訊息。然後，用 +validate+ 、 +validate_on_create+ 或 +validate_on_update+ 等類別方法 (class methods) ，將自訂方法的名稱，以符號/代號 (symbols) 的形式傳入，如此，便能註冊 (register) 您自訂的驗證方法了。
 
-You can pass more than one symbol for each class method and the respective validations will be run in the same order as they were registered.
+每個類別方法 (class method) 中，都可以傳入多個符號/代號 (symbol) ，與代號相對應的驗證方法，就會按照這個註冊順序，逐一的執行。
 
 <ruby>
 class Invoice < ActiveRecord::Base
@@ -571,7 +573,7 @@ class Invoice < ActiveRecord::Base
 end
 </ruby>
 
-You can even create your own validation helpers and reuse them in several different models. For example, an application that manages surveys may find it useful to express that a certain field corresponds to a set of choices:
+您還可以更進一步，撰寫自訂的驗證輔助工具，然後在幾個不同的模型之間重複使用。例如，某個管理問卷調查的應用程式，需要表達出一個欄位 (field) 對應到一整組選項的狀況：
 
 <ruby>
 ActiveRecord::Base.class_eval do
@@ -581,7 +583,7 @@ ActiveRecord::Base.class_eval do
 end
 </ruby>
 
-Simply reopen +ActiveRecord::Base+ and define a class method like that. You'd typically put this code somewhere in +config/initializers+. You can use this helper like this:
+像這樣，打開 +ActiveRecord::Base+ ，在裡面定義一個類別方法就可以了。通常這段程式碼，會放在 +config/initializers+ 裡面。這個驗證輔助工具，使用的方式就像這樣：
 
 <ruby>
 class Movie < ActiveRecord::Base
@@ -589,15 +591,15 @@ class Movie < ActiveRecord::Base
 end
 </ruby>
 
-h3. Working with Validation Errors
+h3. 處理驗證錯誤 (Working with Validation Errors)
 
-In addition to the +valid?+ and +invalid?+ methods covered earlier, Rails provides a number of methods for working with the +errors+ collection and inquiring about the validity of objects.
+除了前面提的 +valid?+ 和 +invalid?+ 方法之外， Rails 還提供許多其他方法來處理 +errors+ 集合，或者查詢物件的有效性。
 
-The following is a list of the most commonly used methods. Please refer to the +ActiveRecord::Errors+ documentation for a list of all the available methods.
+下面只列出最常用的方法，全部的方法清單，請參考 +ActiveRecord::Errors+ 的文件。
 
-h4(#working_with_validation_errors-errors). +errors+
+h4(#working_with_validation_errors-errors). +errors+ （列出全部錯誤訊息）
 
-Returns an OrderedHash with all errors. Each key is the attribute name and the value is an array of strings with all errors.
+把該物件的所有錯誤訊息，回傳為一個有序雜湊 (OrderedHash) 。雜湊的 key 是屬性的名稱 (attribute name) ，值 (value) 則是由字串所組成的陣列，裡面是該屬性的所有錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -615,9 +617,9 @@ person.valid? # => true
 person.errors # => []
 </ruby>
 
-h4(#working_with_validation_errors-errors-2). +errors[]+
+h4(#working_with_validation_errors-errors-2). +errors[]+ （列出某個屬性的全部錯誤訊息）
 
-+errors[]+ is used when you want to check the error messages for a specific attribute. It returns an array of strings with all error messages for the given attribute, each string with one error message. If there are no errors related to the attribute, it returns an empty array.
++errors[]+ 的用途是查看某特定屬性的錯誤訊息。它傳回字串陣列，每個字串就是一筆錯誤訊息。如果此屬性沒有任何錯誤，則傳回空的陣列。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -639,9 +641,9 @@ person.errors[:name]
  # => ["can't be blank", "is too short (minimum is 3 characters)"]
 </ruby>
 
-h4. +errors.add+
+h4. +errors.add+ （手動加入錯誤訊息）
 
-The +add+ method lets you manually add messages that are related to particular attributes. You can use the +errors.full_messages+ or +errors.to_a+ methods to view the messages in the form they might be displayed to a user. Those particular messages get the attribute name prepended (and capitalized). +add+ receives the name of the attribute you want to add the message to, and the message itself.
++add+ 方法可以在某個屬性底下，手動加入錯誤訊息。這些錯誤訊息，在使用者眼中大概會看到的樣子，可以用 +errors.full_messages+ 或 +errors.to_a+ 這兩種方法來預覽，它們會把屬性的名稱開頭變大寫後，顯示在錯誤訊息前面。 +add+ 方法接收兩樣東西：屬性名稱，和您想手動附上的錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -659,7 +661,7 @@ person.errors.full_messages
  # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-Another way to do this is using +[]=+ setter
+除了 +add+ 之外的另一個作法，是用 +[]=+ 這個 ??? 設定函式 (setter)
 
 <ruby>
   class Person < ActiveRecord::Base
@@ -677,7 +679,7 @@ Another way to do this is using +[]=+ setter
    # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-h4. +errors[:base]+
+h4. +errors[:base]+ （）
 
 You can add error messages that are related to the object's state as a whole, instead of being related to a specific attribute. You can use this method when you want to say that the object is invalid, no matter the values of its attributes. Since +errors[:base]+ is an array, you can simply add a string to the array and uses it as the error message.
 
