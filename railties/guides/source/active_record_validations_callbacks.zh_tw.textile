@@ -90,7 +90,7 @@ h4. 略過驗證 (Skipping Validations)
 
 * +save(:validate => false)+
 
-h4. +valid?+ 與 +invalid?+ （驗證後，是否有錯誤訊息存在）
+h4. +valid?+ 與 +invalid?+ 檢查是否有錯誤訊息
 
 Rails 在確認物件是否有效的時候，是用 +valid?+ 方法，您平常也可以自己把 +valid?+ 拿來用。它會觸發驗證，如果驗證完，沒有錯誤訊息附加到物件上的話，就傳回真值 (true) ，反之，有錯誤訊息的話，就是假值 (false) 。
 
@@ -105,7 +105,7 @@ Person.create(:name => nil).valid? # => false
 
 Active Record 在執行驗證的時候，任何的錯誤訊息，都可以用 +errors+ 這個實體方法 (instance method) 來存取 (accessed) 。驗證結束後，如果這個集合 (collection) 仍然是空的，那在定義上，這個物件就會被認為是有效的 (valid) 。
 
-用 +new+ 實體化 (instantiated) 出來的物件，即使它在技術上是無效的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
+用 +new+ 實體化 (instantiated) 出來的物件，即使它在技術上是無效 (invalid) 的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -139,11 +139,11 @@ end
 
 +invalid?+ 純粹是 +valid?+ 的相反， +invalid?+ 會觸發驗證，如果有任何錯誤訊息加到物件上，就傳回真值 (true) ， 反之則是假值 (false) 。
 
-h4(#validations_overview-errors). +errors[]+ （某個屬性內，錯誤訊息的陣列集合）
+h4(#validations_overview-errors). +errors[]+ 屬性內，錯誤訊息的陣列集合
 
 對於物件的某個屬性 (attribute) ，要確認是否有效 (valid) 的話，可以用 +errors[:attribute]+ ，它會傳回一個陣列 (array) ，裡面有這個屬性的全部的錯誤訊息 (attribute errors) 。如果，這個屬性沒有任何錯誤訊息，那就會傳回空的陣列。
 
-這個方法，要在驗證執行過 _之後_ 才能使用，因為，它只會檢查錯誤訊息的集合 (errors collection) ，而不會去觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為它不會去確認物件的有效性 (validity) as a whole，它只是去看這個物件的個別屬性，有沒有錯誤訊息在裡面而已。
+這個方法，要在驗證執行過 _之後_ 才能使用，因為，它只會檢查錯誤訊息的集合 (errors collection) ，而不會去觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為它不會去確認物件整體上的有效性 (validity) ，它只是去看這個物件的個別屬性，有沒有錯誤訊息在裡面而已。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -164,7 +164,7 @@ Active Record 預先定義好許多驗證輔助工具，您可以在類別定義
 
 輔助工具都可接收 +:on+ 跟 +:message+ 選項 (options) ，這些選項，會定義驗證該何時執行，以及，如果驗證失敗的話，該加什麼訊息到 +errors+ 集合中, respectively 。選項 +:on+ 的作用，是將一個值 +:save+ （預設），或者 +:create+ ，或者 +:update+ 。至於選項 +:message+ 的作用，則是自訂錯誤訊息，如果，沒有自訂 +:message+ ，就會採用預設的，反正，每個驗證輔助工具，都有預設的訊息可以用。底下讓我們一個一個來看。
 
-h4. +validates_acceptance_of+ （確定使用者已經接受）
+h4. +validates_acceptance_of+ 確定使用者已經接受
 
 當使用者送出表格 (form submitted) 時，針對使用者介面中的核取方塊 (checkbox) ，驗證它有沒有勾選。會用到的地方，通常是應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。這種驗證，幾乎都是網路應用程式 (web applications) 在用。這個 'acceptance （是否已接受）' 不用記在資料庫裡，所以，沒有對應的欄位 (field) 也沒關係，輔助工具會建立一個虛擬的屬性 (virtual attribute) 來應付。
 
@@ -184,7 +184,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-h4. +validates_associated+ （驗證其他有關連的模型）
+h4. +validates_associated+ 驗證其他有關連的模型
 
 如果您的 model ，跟其他 models 有關連 (associations) ，而這些相關的 models 也需要驗證，那麼，就需要使用這個輔助工具了。使用 +validates_associated+ 後，當您儲存物件時，每一個跟它相關的物件，都會呼叫 +valid?+ 方法。
 
@@ -201,7 +201,7 @@ CAUTION: 不要在一個資料庫關聯的兩端，同時使用 +validates_assoc
 
 +validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關連的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到對方的模型 (calling model) 裡面。
 
-h4. +validates_confirmation_of+ （檢查使用者的再次確認）
+h4. +validates_confirmation_of+ 檢查使用者的再次確認
 
 如果有兩個文字欄位 (text fields) ，必須收到一模一樣的內容，就會用到這個驗證，比方說，要使用者再確認一次 email address 或是 password 的時候。這個驗證功能，會建立一個虛擬屬性 (virtual attribute) ，虛擬屬性的名稱，就是把那個需要確認的欄位的名稱，尾巴後面再加上 "_confirmation" 。
 
@@ -229,7 +229,7 @@ end
 
 +validates_confirmation_of+ 預設的錯誤訊息是 "_doesn't match confirmation_" 。
 
-h4. +validates_exclusion_of+ （確定屬性的值不在其內）
+h4. +validates_exclusion_of+ 確定屬性的值不在指定清單內
 
 確認該屬性的值，沒有在指定的 set 中出現。這個 set ，可以是任何一個可逐一列舉的 (enumerable) 物件。
 
@@ -244,7 +244,7 @@ end
 
 +validates_exclusion_of+ 預設的錯誤訊息是 "_is reserved_" 。
 
-h4. +validates_format_of+ （檢查屬性值的格式）
+h4. +validates_format_of+ 檢查屬性值的格式
 
 這個工具，會測試屬性的值，是否符合 +:with+ 選項所指定的常規表示式 (regular expression) 。
 
@@ -257,7 +257,7 @@ end
 
 +validates_format_of+ 預設的錯誤訊息是 "_is invalid_" 。
 
-h4. +validates_inclusion_of+ （確定屬性的值有被包括在內）
+h4. +validates_inclusion_of+ 確定屬性的值在指定清單內
 
 確認該屬性的值，有被包括在指定的 set 裡面，這個 set 可以是任何 enumerable 物件。
 
@@ -272,7 +272,7 @@ end
 
 +validates_inclusion_of+ 預設的錯誤訊息是 "_is not included in the list_" 。
 
-h4. +validates_length_of+ （確定長度在指定範圍內）
+h4. +validates_length_of+ 確定長度在指定範圍內
 
 驗證屬性值的長度。這個工具有多種選項 (options) ，所以，您有許多方法，可以指定長度限制 (length constraints) ：
 
@@ -316,7 +316,7 @@ end
 
 +validates_length_of+ 輔助工具，別名叫做 +validates_size_of+ 。
 
-h4. +validates_numericality_of+ （確保屬性的值只包括數值）
+h4. +validates_numericality_of+ 確保屬性只包括數值
 
 驗證您的屬性只包含數字值 (numeric values) 。預設是符合 match an optional sign 後面接 followed by 一個整數 (integral) 或浮點數 (floating point number) 。如果只想允許整數，把 +:only_integer+ 設定為 true 就可以了。
 
@@ -349,7 +349,7 @@ end
 
 +validates_numericality_of+ 預設的錯誤訊息是 "_is not a number_" 。
 
-h4. +validates_presence_of+ （確定某個屬性有存在）
+h4. +validates_presence_of+ 確定屬性是存在的
 
 驗證指定的屬性不是空的。此工具使用 +blank?+ 方法，去檢查屬性值是否為 +nil+ 或者空字串 (blank string) ，所謂空字串指的是沒有內容 (empty) 、或者由空白 (whitespace) 組成的字串。
 
@@ -372,7 +372,7 @@ end
 
 +validates_presence_of+ 預設的錯誤訊息是 "_can't be empty_" 。
 
-h4. +validates_uniqueness_of+ （確保屬性值是唯一的）
+h4. +validates_uniqueness_of+ 確保屬性的值是唯一的
 
 在儲存物件的前一刻，驗證屬性的值，以確定它是唯一的。這個工具，並不會在資料庫中建立唯一限定 (uniqueness constraint) ，所以，可能會有兩個不同 database connections ，在同一個欄，存入了兩筆一樣的記錄 (records) 。要避免這個狀況，您必須為資料庫做一個 unique index 。
 
@@ -405,7 +405,7 @@ WARNING. 有些資料庫，??? 設定成不管怎樣，都會執行不分大小�
 
 +validates_uniqueness_of+ 預設的錯誤訊息是 "_has already been taken_" 。
 
-h4. +validates_with+ （用另外的類別來做驗證）
+h4. +validates_with+ 用另外的類別來做驗證
 
 把記錄 (record) 轉交給另一個獨立的類別 (separate class) 來驗證。
 
@@ -446,7 +446,7 @@ class GoodnessValidator < ActiveRecord::Validator
 end
 </ruby>
 
-h4. +validates_each+ （用區塊來做自訂的驗證）
+h4. +validates_each+ 用區塊進行自訂的驗證
 
 按照區塊 (block) 裡的程式碼，對屬性 (attributes) 做驗證。這個工具，沒有定義任何驗證功能，您要自己用區塊 (block) 來撰寫驗證，然後，每一個傳給 (passed to) +validates_each+ 的屬性，都會根據您的區塊內容來做測試。下面示範，希望 names 跟 surnames 不是小寫開頭：
 
@@ -464,7 +464,7 @@ h3. 共通的驗證選項 (Common Validation Options)
 
 有些共通的選項 (options) ，所有的驗證輔助工具都能用，下面介紹除了 +:if+ 跟 +:unless+ 之外的共通選項（這兩個選項，會另外在 "條件式驗證 (Conditional Validation)":#conditional-validation 的部份討論）。
 
-h4. +:allow_nil+ （允許 nil 值）
+h4. +:allow_nil+ 允許 nil 值
 
 +:allow_nil+ 選項，在被驗證的值是 +nil+ 的時候，會略過驗證。在 +validates_presence_of+ 工具裡面，使用 +:allow_nil+ 選項的話，就可以允許 +nil+ 值，不過，其他任何的 +blank?+ 值還是一樣會被拒絕 (rejected) 。
 
@@ -475,7 +475,7 @@ class Coffee < ActiveRecord::Base
 end
 </ruby>
 
-h4. +:allow_blank+ （允許 blank 值）
+h4. +:allow_blank+ 允許 blank 值
 
 +:allow_blank+ 有點類似 +:allow_nil+ ，但允許的範圍更廣。 +:allow_blank+ 會在屬性值是 +blank?+ 的時候，也讓驗證通過，像是 +nil+ 或是空字串 (empty string) 之類的。
 
@@ -488,11 +488,11 @@ Topic.create("title" => "").valid? # => true
 Topic.create("title" => nil).valid? # => true
 </ruby>
 
-h4. +:message+ （自訂錯誤訊息）
+h4. +:message+ 自訂錯誤訊息
 
 +:message+ 選項用來自訂訊息，此訊息會在驗證失敗的時候，加到 +errors+ 集合 (collection) 裡面。沒設定此選項時， Active Record 會採用驗證輔助工具 (validation helpers) 原本就有的、各自的預設錯誤訊息。
 
-h4. +:on+ （在何時驗證）
+h4. +:on+ 在特定的時候進行驗證
 
 +:on+ 選項可以設定驗證該在何時發生。所有內建的驗證輔助工具，預設的行為，是在儲存的時候，包括新增一筆記錄、以及更新記錄 (record) 時，都會執行驗證。您可以用 +:on => :create+ 指定只要在新增的時候驗證就好，或者，用 +:on => :update+ 設定只要在更新的時候驗證。
 
@@ -597,7 +597,7 @@ h3. 處理驗證錯誤 (Working with Validation Errors)
 
 下面只列出最常用的方法，全部的方法清單，請參考 +ActiveRecord::Errors+ 的文件。
 
-h4(#working_with_validation_errors-errors). +errors+ （列出全部錯誤訊息）
+h4(#working_with_validation_errors-errors). +errors+ 列出物件的錯誤訊息
 
 把該物件的所有錯誤訊息，回傳為一個有序雜湊 (OrderedHash) 。雜湊的 key 是屬性的名稱 (attribute name) ，值 (value) 則是由字串所組成的陣列，裡面是該屬性的所有錯誤訊息。
 
@@ -617,7 +617,7 @@ person.valid? # => true
 person.errors # => []
 </ruby>
 
-h4(#working_with_validation_errors-errors-2). +errors[]+ （列出某個屬性的全部錯誤訊息）
+h4(#working_with_validation_errors-errors-2). +errors[]+ 列出屬性的錯誤訊息
 
 +errors[]+ 的用途是查看某特定屬性的錯誤訊息。它傳回字串陣列，每個字串就是一筆錯誤訊息。如果此屬性沒有任何錯誤，則傳回空的陣列。
 
@@ -641,7 +641,7 @@ person.errors[:name]
  # => ["can't be blank", "is too short (minimum is 3 characters)"]
 </ruby>
 
-h4. +errors.add+ （手動加入錯誤訊息）
+h4. +errors.add+ 手動加入錯誤訊息
 
 +add+ 方法可以在某個屬性底下，手動加入錯誤訊息。這些錯誤訊息，在使用者眼中大概會看到的樣子，可以用 +errors.full_messages+ 或 +errors.to_a+ 這兩種方法來預覽，它們會把屬性的名稱開頭變大寫後，顯示在錯誤訊息前面。 +add+ 方法接收兩樣東西：屬性名稱，和您想手動附上的錯誤訊息。
 
@@ -661,7 +661,7 @@ person.errors.full_messages
  # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-除了 +add+ 之外的另一個作法，是用 +[]=+ 這個 ??? 設定函式 (setter)
+除了 +add+ 之外的另一個作法，是用 +[]=+ 這個 ??? 設定式 (setter)
 
 <ruby>
   class Person < ActiveRecord::Base
@@ -679,9 +679,9 @@ person.errors.full_messages
    # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-h4. +errors[:base]+ （）
+h4. +errors[:base]+ 關聯到物件整體的錯誤訊息
 
-You can add error messages that are related to the object's state as a whole, instead of being related to a specific attribute. You can use this method when you want to say that the object is invalid, no matter the values of its attributes. Since +errors[:base]+ is an array, you can simply add a string to the array and uses it as the error message.
+通常錯誤訊息是關連到屬性，不過，您也可以加入跟整個物件相關連的錯誤訊息。有時候，不需要管各個屬性的值是什麼，只要表示出這個物件沒有通過驗證就好，此時，就可以用 +errors[:base]+ ，它是一個陣列，只要在陣列中加入字串，這字串就可以拿來當物件的錯誤訊息了。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -691,11 +691,9 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
+h4. +errors.clear+ 清空錯誤訊息
 
-
-h4. +errors.clear+
-
-The +clear+ method is used when you intentionally want to clear all the messages in the +errors+ collection. Of course, calling +errors.clear+ upon an invalid object won't actually make it valid: the +errors+ collection will now be empty, but the next time you call +valid?+ or any method that tries to save this object to the database, the validations will run again. If any of the validations fail, the +errors+ collection will be filled again.
++clear+ 方法用來清空 +errors+ 集合裡的所有錯誤訊息。這個動作，不會讓無效物件變成有效，因為雖然錯誤訊息清空了，但下次呼叫 +valid?+ 方法時，或者想把物件寫入資料庫時，都會再一次的觸發驗證，一旦驗證失敗， +errors+ 集合就會再度填滿。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -717,9 +715,9 @@ p.errors[:name]
  # => ["can't be blank", "is too short (minimum is 3 characters)"]
 </ruby>
 
-h4. +errors.size+
+h4. +errors.size+ 物件的錯誤訊息總數
 
-The +size+ method returns the total number of error messages for the object.
++size+ 方法會傳回這個物件的所有錯誤訊息的總數。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -737,13 +735,13 @@ person.valid? # => true
 person.errors.size # => 0
 </ruby>
 
-h3. Displaying Validation Errors in the View
+h3. 在視圖中秀出驗證錯誤 (Displaying Validation Errors in the View)
 
-Rails provides built-in helpers to display the error messages of your models in your view templates.
+Rails 內建了輔助工具 (helpers) ，可以在視圖模板 (view templates) 中，顯示模型 (models) 的錯誤訊息 (error messages) 。
 
-h4. +error_messages+ and +error_messages_for+
+h4. +error_messages+ 以及 +error_messages_for+ 在視圖中呈現錯誤訊息
 
-When creating a form with the +form_for+ helper, you can use the +error_messages+ method on the form builder to render all failed validation messages for the current model instance.
+用 +form_for+ 輔助工具新增表格的時候，可以在 ??? 表格產生器 (form builder) 裡面用 +error_messages+ 方法，把目前的模型實體 (model instance) 的全部驗證訊息，演算呈現 (render) 出來。
 
 <ruby>
 class Product < ActiveRecord::Base
@@ -769,19 +767,19 @@ end
 <% end %>
 </erb>
 
-To get the idea, if you submit the form with empty fields you typically get this back, though styles are indeed missing by default:
+送出 (submit) 上述的表單時，如果表單內有空白欄位 (empty fields) ，就會得到如下圖般的回應。是說，預設狀況下是沒有套用樣式 (styles) 的就是了。
 
 !images/error_messages.png(Error messages)!
 
-You can also use the +error_messages_for+ helper to display the error messages of a model assigned to a view template. It's very similar to the previous example and will achieve exactly the same result.
+對於指定給視圖模板 (view template) 的模型 (model) ，要顯示它的錯誤訊息的話，也可以用 +error_messages_for+ 輔助工具來做。它跟上面的範例很像，最後結果也是一模一樣：
 
 <erb>
 <%= error_messages_for :product %>
 </erb>
 
-The displayed text for each error message will always be formed by the capitalized name of the attribute that holds the error, followed by the error message itself.
+呈現錯誤訊息的文字，格式是「大寫開頭的屬性名稱 + 錯誤訊息」。
 
-Both the +form.error_messages+ and the +error_messages_for+ helpers accept options that let you customize the +div+ element that holds the messages, changing the header text, the message below the header text and the tag used for the element that defines the header.
++form.error_messages+ 跟 +error_messages_for+ 這兩個輔助工具，都可以針對包裹著訊息文字的 +div+ 元素 (element) ，接收一些自訂的選項，用來自訂標題文字 (header text) 、標題文字下方的訊息、以及標題的元素標籤 (tag) 。
 
 <erb>
 <%= f.error_messages :header_message => "Invalid product!",
@@ -789,15 +787,15 @@ Both the +form.error_messages+ and the +error_messages_for+ helpers accept optio
   :header_tag => :h3 %>
 </erb>
 
-Which results in the following content:
+會產生以下內容：
 
 !images/customized_error_messages.png(Customized error messages)!
 
-If you pass +nil+ to any of these options, it will get rid of the respective section of the +div+.
+如果對任一個選項傳入 +nil+ 值，它會 ??? get rid of the respective section of the +div+.
 
-h4. Customizing the Error Messages CSS
+h4. 自訂錯誤訊息的串接樣式表 (CSS)
 
-The selectors to customize the style of error messages are:
+用來自訂錯誤訊息樣式的選擇器 (selectors) 包括：
 
 * +.field_with_errors+ - Style for the form fields and labels with errors.
 * +#errorExplanation+ - Style for the +div+ element with the error messages.
