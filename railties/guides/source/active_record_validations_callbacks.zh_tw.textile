@@ -797,26 +797,26 @@ h4. 自訂錯誤訊息的串接樣式表 (CSS)
 
 用來自訂錯誤訊息樣式的選擇器 (selectors) 包括：
 
-* +.field_with_errors+ - Style for the form fields and labels with errors.
-* +#errorExplanation+ - Style for the +div+ element with the error messages.
-* +#errorExplanation h2+ - Style for the header of the +div+ element.
-* +#errorExplanation p+ - Style for the paragraph that holds the message that appears right below the header of the +div+ element.
-* +#errorExplanation ul li+ - Style for the list items with individual error messages.
+* +.field_with_errors+ - 顯示錯誤訊息的表格欄位 (form fields) 與標籤 (labels) 的樣式 (style) 。
+* +#errorExplanation+ - 包覆著錯誤訊息的 +div+ 元素的樣式。
+* +#errorExplanation h2+ - +div+ 元素之內的標題 (header) 的樣式。
+* +#errorExplanation p+ - +div+ 元素之內，在標題 (header) 下方緊接著出現的段落文字 (paragraph) 的樣式。
+* +#errorExplanation ul li+ - 列出各個錯誤訊息的項目清單 (list items) 的樣式。
 
-Scaffolding for example generates +public/stylesheets/scaffold.css+, which defines the red-based style you saw above.
+??? 預設範例的鷹架 (scaffolding) 會產生出 +public/stylesheets/scaffold.css+ ，這個樣式表 (CSS) 定義了如上圖這般的紅色系樣式。
 
-The name of the class and the id can be changed with the +:class+ and +:id+ options, accepted by both helpers.
+要修改樣式表裡面所設定的 class 跟 id 的名稱，可以用 +:class+ 跟 +:id+ 這兩個選項，這在 +form_for+ 和 +error_messages_for+ 兩種輔助工具中，都是可以用的。
 
-h4. Customizing the Error Messages HTML
+h4. 自訂錯誤訊息的 HTML
 
-By default, form fields with errors are displayed enclosed by a +div+ element with the +field_with_errors+ CSS class. However, it's possible to override that.
+按照預設，錯誤訊息的表單欄位 (form fields) 是包在一個 +div+ 元素裡面，而這個 +div+ 元素的 CSS class 是 +field_with_errors+ 。不過這個樣式設定，是可以覆寫 (override) 過去的。
 
-The way form fields with errors are treated is defined by +ActionView::Base.field_error_proc+. This is a +Proc+ that receives two parameters:
+要如何處理錯誤訊息的表單欄位，是定義在 +ActionView::Base.field_error_proc+ 裡面的，它是一個 +Proc+ ，可以接收兩個參數 (parameters) ：
 
-* A string with the HTML tag
-* An instance of +ActionView::Helpers::InstanceTag+.
+* 帶有 HTML 標籤 (tag) 的字串 (string) 。
+* +ActionView::Helpers::InstanceTag+ 類別的實體 (instance) 。
 
-Here is a simple example where we change the Rails behaviour to always display the error messages in front of each of the form fields with errors. The error messages will be enclosed by a +span+ element with a +validation-error+ CSS class. There will be no +div+ element enclosing the +input+ element, so we get rid of that red border around the text field. You can use the +validation-error+ CSS class to style it anyway you want.
+這裡簡單示範，把 Rails 的行為改成「總是把錯誤訊息顯示在表單欄位的前面」，錯誤訊息用 +span+ 元素包起來，元素的 CSS class 是 +validation-error+ 。由於 +input+ 元素外層沒有 +div+ 元素包著，所以文字欄位的周圍就不會有那個紅色邊框了。不管您想要什麼樣式，都可以用 +validation-error+ 這個 CSS class 來做設定。
 
 <ruby>
 ActionView::Base.field_error_proc = Proc.new do |html_tag, instance|
@@ -830,15 +830,15 @@ ActionView::Base.field_error_proc = Proc.new do |html_tag, instance|
 end
 </ruby>
 
-This will result in something like the following:
+這段程式碼會產生如下圖的結果：
 
 !images/validation_error_messages.png(Validation error messages)!
 
-h3. Callbacks Overview
+h3. 回呼的概觀 (Callbacks Overview)
 
-Callbacks are methods that get called at certain moments of an object's life cycle. With callbacks it's possible to write code that will run whenever an Active Record object is created, saved, updated, deleted, validated, or loaded from the database.
+回呼 (callbacks) 是在物件生命週期裡的特定時刻，所被呼叫的方法。有了它，就可以在 Active Record 物件新增、儲存、更新、刪除、驗證、或者從資料庫讀出時，執行我們自己撰寫的程式碼。
 
-h4. Callback Registration
+h4. 註冊回呼 (Callback Registration)
 
 In order to use the available callbacks, you need to register them. You can do that by implementing them as ordinary methods, and then using a macro-style class method to register them as callbacks.
 
