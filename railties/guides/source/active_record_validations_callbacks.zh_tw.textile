@@ -767,7 +767,7 @@ end
 <% end %>
 </erb>
 
-送出 (submit) 上述的表單時，如果表單內有空白欄位 (empty fields) ，就會得到如下圖般的回應。是說，預設狀況下是沒有套用樣式 (styles) 的就是了。
+送出 (submit) 上述的表單時，如果表單內有空白欄位 (empty fields) ，就會得到如下圖般的回應。預設狀況下，是沒有套用樣式 (styles) 的。
 
 !images/error_messages.png(Error messages)!
 
@@ -840,7 +840,7 @@ h3. 回呼的概觀 (Callbacks Overview)
 
 h4. 註冊回呼 (Callback Registration)
 
-In order to use the available callbacks, you need to register them. You can do that by implementing them as ordinary methods, and then using a macro-style class method to register them as callbacks.
+要使用回呼 (callback) 之前，必須先註冊 (register) 它。要註冊回呼，可以先將這些回呼實作成一般的方法 (methods) ，然後，用一個 ??? 巨集式的類別方法 (macro-style class method) ，將它們註冊成回呼。
 
 <ruby>
 class User < ActiveRecord::Base
@@ -857,7 +857,7 @@ class User < ActiveRecord::Base
 end
 </ruby>
 
-The macro-style class methods can also receive a block. Consider using this style if the code inside your block is so short that it fits in just one line.
+macro-style class methods 也可以接收程式區塊 (block) ，如果區塊內的程式碼很短，短到可以一行之內寫完，那麼就可以考慮用區塊的方式來註冊回呼。
 
 <ruby>
 class User < ActiveRecord::Base
@@ -868,13 +868,13 @@ class User < ActiveRecord::Base
 end
 </ruby>
 
-It's considered good practice to declare callback methods as being protected or private. If left public, they can be called from outside of the model and violate the principle of object encapsulation.
+預設的狀況下，回呼方法 (callback methods) 是 public 的。但比較好的作法，是將它宣告為 protected 或 private ，因為，這樣做的話，在模型 (model) 之外的地方，就無法呼叫這些方法，也就不會侵犯到物件封裝 (object encapsulation) 的原則了。
 
-h3. Available Callbacks
+h3. 可以用哪些回呼方法 (Available Callbacks)
 
-Here is a list with all the available Active Record callbacks, listed in the same order in which they will get called during the respective operations:
+這裡列出 Active Record 的回呼方法 (callbacks) ，列出的順序，即是這些方法在建立、更新、銷毀等對應的操作 (operations) 裡面，被呼叫的順序。
 
-h4. Creating an Object
+h4. 建立物件 (Creating an Object)
 
 * +before_validation+
 * +after_validation+
@@ -884,7 +884,7 @@ h4. Creating an Object
 * +around_create+
 * +after_create+
 
-h4. Updating an Object
+h4. 更新物件 (Updating an Object)
 
 * +before_validation+
 * +after_validation+
@@ -894,21 +894,21 @@ h4. Updating an Object
 * +around_update+
 * +after_update+
 
-h4. Destroying an Object
+h4. 銷毀物件 (Destroying an Object)
 
 * +before_destroy+
 * +after_destroy+
 * +around_destroy+
 
-WARNING. +after_save+ runs both on create and update, but always _after_ the more specific callbacks +after_create+ and +after_update+, no matter the order in which the macro calls were executed.
+WARNING. +after_save+ 在建立、更新時，都可以運作，但是，不管 ??? 巨集請求 (macro calls) 執行的順序如何，+after_save+ 永遠是在 +after_create+ 跟 +after_update+ 的 _之後_ 才會運作。
 
-h4. +after_initialize+ and +after_find+
+h4. +after_initialize+ 與 +after_find+
 
-The +after_initialize+ callback will be called whenever an Active Record object is instantiated, either by directly using +new+ or when a record is loaded from the database. It can be useful to avoid the need to directly override your Active Record +initialize+ method.
+Active Record 物件初始化的時候，不管是直接用 +new+ 初始化，或是從資料庫中載入一筆記錄 (record) ，都會呼叫 +after_initialize+ 這個回呼 (callback) 。它的好處是，可以避免直接覆蓋 (override) 掉 Active Record 原本的 +initialize+ 方法。
 
-The +after_find+ callback will be called whenever Active Record loads a record from the database. +after_find+ is called before +after_initialize+ if both are defined.
+Active Record 從資料庫中載入一筆記錄 (record) 時，都會呼叫 +after_find+ 這個回呼 (callback) 。如果 +after_find+ 和 +after_initialize+ 兩者都有定義的話，則會先呼叫 +after_find+ 。
 
-The +after_initialize+ and +after_find+ callbacks are a bit different from the others. They have no +before_*+ counterparts, and the only way to register them is by defining them as regular methods. If you try to register +after_initialize+ or +after_find+ using macro-style class methods, they will just be ignored. This behaviour is due to performance reasons, since +after_initialize+ and +after_find+ will both be called for each record found in the database, significantly slowing down the queries.
++after_initialize+ 和 +after_find+ 跟其他的回呼 (callbacks) 有點不一樣。它們沒有相對的 +before_*+ 回呼，而它們註冊的方式，只有一種，就是將它們定義為一般的方法 (regular methods) 。如果，用巨集式的類別方法 (macro-style class methods) 來註冊 +after_initialize+ 或 +after_find+ ，那它們會直接的被忽略掉。設計這樣的行為，是為了效能 (performance) 上的考量，因為，在資料庫中每找到一筆記錄，都會呼叫 +after_initialize+ 和 +after_find+ ，而明顯的拖慢查詢的速度。
 
 <ruby>
 class User < ActiveRecord::Base
@@ -931,10 +931,9 @@ You have initialized an object!
 => #<User id: 1>
 </ruby>
 
-h3. Running Callbacks
+h3. 執行回呼 (Running Callbacks)
 
-The following methods trigger callbacks:
-
+以下這些方法，會觸發 (trigger) 回呼：
 
 * +create+
 * +create!+
@@ -952,7 +951,7 @@ The following methods trigger callbacks:
 * +update_attributes!+
 * +valid?+
 
-Additionally, the +after_find+ callback is triggered by the following finder methods:
+另外，以下這些 ??? 查找器方法 (finder methods) ，會觸發 +after_find+ 這個回呼：
 
 * +all+
 * +first+
@@ -962,11 +961,11 @@ Additionally, the +after_find+ callback is triggered by the following finder met
 * +find_by_<em>attribute</em>!+
 * +last+
 
-The +after_initialize+ callback is triggered every time a new object of the class is initialized.
+而 +after_initialize+ 回呼被觸發的時機，則是在該類別 (class) 每次初始化 (initialized) 一個新物件的時候。
 
-h3. Skipping Callbacks
+h3. 略過回呼 (Skipping Callbacks)
 
-Just as with validations, it's also possible to skip callbacks. These methods should be used with caution, however, because important business rules and application logic may be kept in callbacks. Bypassing them without understanding the potential implications may lead to invalid data.
+回呼 (callbacks) 是可以略過的，這一點就跟驗證 (validations) 一樣。不過，用這些略過回呼的方法時，必須很小心，因為可能會有一些重要的商業規則 (business rules) 跟應用程式邏輯 (application logic) 是放在回呼裡面的，如果不清楚所造成的影響，就略過回呼的話，可能會導致無效資料 (invalid data) 的產生。
 
 * +decrement+
 * +decrement_counter+
@@ -979,7 +978,7 @@ Just as with validations, it's also possible to skip callbacks. These methods sh
 * +update_all+
 * +update_counters+
 
-h3. Halting Execution
+h3. 中止執行鏈 (Halting Execution)
 
 As you start registering new callbacks for your models, they will be queued for execution. This queue will include all your model's validations, the registered callbacks, and the database operation to be executed.
 
