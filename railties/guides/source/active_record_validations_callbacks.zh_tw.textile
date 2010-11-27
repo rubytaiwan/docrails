@@ -166,7 +166,7 @@ Active Record 預先定義好許多驗證輔助工具，您可以在類別定義
 
 h4. +validates_acceptance_of+ 確定使用者已經接受
 
-當使用者送出表格 (form submitted) 時，針對使用者介面中的核取方塊 (checkbox) ，驗證它有沒有勾選。會用到的地方，通常是應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。這種驗證，幾乎都是網路應用程式 (web applications) 在用。這個 'acceptance （是否已接受）' 不用記在資料庫裡，所以，沒有對應的欄位 (field) 也沒關係，輔助工具會建立一個虛擬的屬性 (virtual attribute) 來應付。
+當使用者送出表單 (form submitted) 時，針對使用者介面中的核取方塊 (checkbox) ，驗證它有沒有勾選。會用到的地方，通常是應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。這種驗證，幾乎都是網路應用程式 (web applications) 在用。這個 'acceptance （是否已接受）' 不用記在資料庫裡，所以，沒有對應的欄位 (field) 也沒關係，輔助工具會建立一個虛擬的屬性 (virtual attribute) 來應付。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -186,7 +186,7 @@ end
 
 h4. +validates_associated+ 驗證其他有關連的模型
 
-如果您的 model ，跟其他 models 有關連 (associations) ，而這些相關的 models 也需要驗證，那麼，就需要使用這個輔助工具了。使用 +validates_associated+ 後，當您儲存物件時，每一個跟它相關的物件，都會呼叫 +valid?+ 方法。
+如果您的 model ，跟其他 models 有關聯 (associations) ，而這些相關的 models 也需要驗證，那麼，就需要使用這個輔助工具了。使用 +validates_associated+ 後，當您儲存物件時，每一個跟它相關的物件，都會呼叫 +valid?+ 方法。
 
 <ruby>
 class Library < ActiveRecord::Base
@@ -199,7 +199,7 @@ end
 
 CAUTION: 不要在一個資料庫關聯的兩端，同時使用 +validates_associated+ ，因為，它們會一直互相呼叫，最後沒完沒了，停不下來。
 
-+validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關連的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到對方的模型 (calling model) 裡面。
++validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關聯的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到對方的模型 (calling model) 裡面。
 
 h4. +validates_confirmation_of+ 檢查使用者的再次確認
 
@@ -980,15 +980,15 @@ h3. 略過回呼 (Skipping Callbacks)
 
 h3. 中止執行鏈 (Halting Execution)
 
-As you start registering new callbacks for your models, they will be queued for execution. This queue will include all your model's validations, the registered callbacks, and the database operation to be executed.
+為模型註冊新的回呼 (callbacks) 時，這些回呼，會 queued 等待執行。queue 裡面包含：該模型全部的驗證 (validations) 、要註冊的回呼、以及要執行的資料庫操作 (database operation) 。
 
-The whole callback chain is wrapped in a transaction. If any <em>before</em> callback method returns exactly +false+ or raises an exception the execution chain gets halted and a ROLLBACK is issued; <em>after</em> callbacks can only accomplish that by raising an exception.
+這一整個回呼鏈 (callback chain) ，是包裹在交易功能 (transaction) 裡面的。如果有任何  <em>before</em> 回呼方法傳回了 +false+ ，或者是丟出了例外 (raises an exception) ，整個執行鏈 (execution chain) 就會中途停止，且必須 issued 滾回 (ROLLBACK) 。??? 至於 <em>after</em> 回呼方法，則是只有在丟出例外 (raising an exception) 的時候，才會中止執行鏈。
 
-WARNING. Raising an arbitrary exception may break code that expects +save+ and friends not to fail like that. The +ActiveRecord::Rollback+ exception is thought precisely to tell Active Record a rollback is going on. That one is internally captured but not reraised.
+WARNING. 預期會有 +save+ 動作的程式碼，以及 ??? 的程式碼，一旦遇到任何的例外 (exception) ，都可能會被打斷。 Raising an arbitrary exception may break code that expects +save+ and friends not to fail like that. 進行滾回 (rollback) 的時候， +ActiveRecord::Rollback+ 這個例外，會精確的告訴 Active Record 有個滾回正在進行。這個例外，會由內部捕捉 (internally captured) ，但不會被 ??? 再次丟出 (reraised) 。
 
-h3. Relational Callbacks
+h3. 關聯性回呼 (Relational Callbacks)
 
-Callbacks work through model relationships, and can even be defined by them. Let's take an example where a user has many posts. In our example, a user's posts should be destroyed if the user is destroyed. So, we'll add an +after_destroy+ callback to the +User+ model by way of its relationship to the +Post+ model.
+回呼 (callbacks) 能夠針對模型的關聯 (model relationships) 運作，甚至可以用它來定義。如果有個使用者，同時有許多篇發表的文章，而我們希望使用者帳號銷毀時，文章也跟著銷毀。於是，我們在 +User+ 模型中，針對 +User+ 模型跟 +Post+ 模型之間的關聯，加入 +after_destroy+ 回呼。範例如下：
 
 <ruby>
 class User < ActiveRecord::Base
@@ -1012,13 +1012,13 @@ Post destroyed
 => #<User id: 1>
 </ruby>
 
-h3. Conditional Callbacks
+h3. 條件式回呼 (Conditional Callbacks)
 
-Like in validations, we can also make our callbacks conditional, calling them only when a given predicate is satisfied. You can do that by using the +:if+ and +:unless+ options, which can take a symbol, a string or a +Proc+. You may use the +:if+ option when you want to specify when the callback *should* get called. If you want to specify when the callback *should not* be called, then you may use the +:unless+ option.
+回呼 (callbacks) 也可以寫成條件式的 (conditional) ，在某個先決條件成立時，才呼叫它們，就像本文前幾節在驗證 (validations) 中所做的一樣。要做條件判斷，可以用 +:if+ 跟 +:unless+ 選項 (options) ，這些選項可以接收符號 (symbol) 、字串 (string) 或是 +Proc+ 。定義條件時，若是在某狀況下 *必須* 呼叫回呼，可以用 +:if+ 選項；相反地，在某狀況下 *必須不* 呼叫回呼，則是用 +:unless+ 選項。
 
-h4. Using +:if+ and +:unless+ with a Symbol
+h4. 在 +:if+ 與 +:unless+ 中使用符號 (Symbol)
 
-You can associate the +:if+ and +:unless+ options with a symbol corresponding to the name of a method that will get called right before the callback. When using the +:if+ option, the callback won't be executed if the method returns false; when using the +:unless+ option, the callback won't be executed if the method returns true. This is the most common option. Using this form of registration it's also possible to register several different methods that should be called to check if the callback should be executed.
++:if+ 與 +:unless+ 可以用符號 (symbol) 來 associate ，這個符號 (symbol) ，是對應到回呼 (callback) 執行前一刻所呼叫的方法 (method) 的名稱。使用 +:if+ 選項 (option) 時，若這個方法傳回假值 (false) ，回呼就不會執行；相反地，使用 +:unless+ 選項的話，若這個方法傳回真值，回呼就不會執行。以上是最常用到的選項，用這種格式 (form) 註冊回呼的話，還可以針對回呼是否執行的判斷，註冊數個不同的方法。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -1026,9 +1026,9 @@ class Order < ActiveRecord::Base
 end
 </ruby>
 
-h4. Using +:if+ and +:unless+ with a String
+h4. 在 +:if+ 與 +:unless+ 中使用字串 (String)
 
-You can also use a string that will be evaluated using +eval+ and needs to contain valid Ruby code. You should use this option only when the string represents a really short condition.
+條件式裡面也可以放字串 (string) ，這個字串會用 +eval+ evaluated，字串內容必須是一段有效的 Ruby 程式碼。只有真的很簡短的條件式，才適合用字串形式放在選項 (options) 裡面。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -1036,9 +1036,9 @@ class Order < ActiveRecord::Base
 end
 </ruby>
 
-h4. Using +:if+ and +:unless+ with a Proc
+h4. 在 +:if+ 與 +:unless+ 中使用程式碼物件 (Proc)
 
-Finally, it's possible to associate +:if+ and +:unless+ with a +Proc+ object. This option is best suited when writing short validation methods, usually one-liners.
+最後， +:if+ 跟 +:unless+ 還可以用 +Proc+ 物件來 associate 。這種作法，尤其適合用來撰寫簡短的驗證方法，通常是一行以內的 (ne-liners) 。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -1047,9 +1047,9 @@ class Order < ActiveRecord::Base
 end
 </ruby>
 
-h4. Multiple Conditions for Callbacks
+h4. 回呼的多重條件 (Multiple Conditions for Callbacks)
 
-When writing conditional callbacks, it's possible to mix both +:if+ and +:unless+ in the same callback declaration.
+撰寫條件式回呼 (conditional callbacks) 時，可以在同一個回呼宣告 (callback declaration) 裡面，同時混用 +:if+ 跟 +:unless+ 。
 
 <ruby>
 class Comment < ActiveRecord::Base
@@ -1058,11 +1058,11 @@ class Comment < ActiveRecord::Base
 end
 </ruby>
 
-h3. Callback Classes
+h3. 回呼類別 (Callback Classes)
 
-Sometimes the callback methods that you'll write will be useful enough to be reused by other models. Active Record makes it possible to create classes that encapsulate the callback methods, so it becomes very easy to reuse them.
+有時候，某模型的回呼方法 (callback methods) ，在其他的模型中也能重複使用。 Active Record 讓我們能夠建立回呼類別 (callback classes) ，來封裝 (encapsulate) 這些回呼方法，如此一來，就可以很容易的重複利用它們。
 
-Here's an example where we create a class with an +after_destroy+ callback for a +PictureFile+ model.
+底下範例，針對 +PictureFile+ 模型 (model) ，建立了一個內含 +after_destroy+ 回呼的類別 (class) 。
 
 <ruby>
 class PictureFileCallbacks
@@ -1073,7 +1073,7 @@ class PictureFileCallbacks
 end
 </ruby>
 
-When declared inside a class the callback method will receive the model object as a parameter. We can now use it this way:
+在類別內部宣告 (declare) 回呼方法 (callback methods) 的時候，回呼方法會接收模型物件 (model object) 做為參數 (parameter) ，用法如下：
 
 <ruby>
 class PictureFile < ActiveRecord::Base
@@ -1081,7 +1081,7 @@ class PictureFile < ActiveRecord::Base
 end
 </ruby>
 
-Note that we needed to instantiate a new +PictureFileCallbacks+ object, since we declared our callback as an instance method. Sometimes it will make more sense to have it as a class method.
+由於將回呼 (callback) 宣告為實體方法 (instance method) ，所以使用回呼時，必須先實體化 (instantiate) 新的 +PictureFileCallbacks+ 物件。有些時候，把回呼宣告為類別方法 (class method) 會比較合理些。
 
 <ruby>
 class PictureFileCallbacks
@@ -1092,7 +1092,7 @@ class PictureFileCallbacks
 end
 </ruby>
 
-If the callback method is declared this way, it won't be necessary to instantiate a +PictureFileCallbacks+ object.
+這種宣告方式，就不需要把 +PictureFileCallbacks+ 物件實體化 (instantiate) 了。
 
 <ruby>
 class PictureFile < ActiveRecord::Base
@@ -1100,15 +1100,15 @@ class PictureFile < ActiveRecord::Base
 end
 </ruby>
 
-You can declare as many callbacks as you want inside your callback classes.
+回呼類別 (callback classes) 內，可宣告的回呼數量沒有限制，要多少個都可以。
 
-h3. Observers
+h3. 觀測器 (Observers)
 
-Observers are similar to callbacks, but with important differences. Whereas callbacks can pollute a model with code that isn't directly related to its purpose, observers allow you to add the same functionality outside of a model. For example, it could be argued that a +User+ model should not include code to send registration confirmation emails. Whenever you use callbacks with code that isn't directly related to your model, you may want to consider creating an observer instead.
+觀測器 (observers) 跟回呼 (callbacks) 很像，但是有個重大的差別，差別在於，回呼的程式碼會污染 (pollute) 模型，而這些程式碼，往往與模型 (model) 本身的用途，並沒有直接的關係；但是，觀測器 (observers) 卻可以在模型的外部，以不會污染到模型的方式，做到跟回呼一樣的功能。像是 +User+ 模型裡面，其實不該有送出註冊確認信 (registration confirmation emails) 的程式碼，這種時候，回呼內的程式碼跟模型本身沒有直接關係，就可以考慮用觀測器 (observer) 來代替回呼 (callbacks) 。
 
-h4. Creating Observers
+h4. 建立觀測器 (Creating Observers)
 
-For example, imagine a +User+ model where we want to send an email every time a new user is created. Because sending emails is not directly related to our model's purpose, we could create an observer to contain this functionality.
+假設有個 +User+ 模型，希望每次它新增使用者的時候，系統都送出一封確認 email 。由於寄信並不是 +User+ 模型存在的目的，所以，我們可以用觀測器 (observer) 來加入這個功能。
 
 <shell>
 rails generate observer User
@@ -1122,22 +1122,22 @@ class UserObserver < ActiveRecord::Observer
 end
 </ruby>
 
-As with callback classes, the observer's methods receive the observed model as a parameter.
+觀測器的方法 (methods) ，將它所觀測的模型接收為一個參數 (parameter) ，這一點，就跟回呼類別 (callback classes) 是一樣的。
 
-h4. Registering Observers
+h4. 註冊觀測器 (Registering Observers)
 
-Observers are conventionally placed inside of your +app/models+ directory and registered in your application's +config/environment.rb+ file. For example, the +UserObserver+ above would be saved as +app/models/user_observer.rb+ and registered in +config/environment.rb+ this way:
+依照慣例，觀測器是放在 +app/models+ 目錄裡面，並且註冊在應用程式的 +config/environment.rb+ 檔案中。像是上面提到的 +UserObserver+ ，就會儲存成 +app/models/user_observer.rb+ ，然後在 +config/environment.rb+ 中註冊，像這樣子：
 
 <ruby>
 # Activate observers that should always be running
 config.active_record.observers = :user_observer
 </ruby>
 
-As usual, settings in +config/environments+ take precedence over those in +config/environment.rb+. So, if you prefer that an observer doesn't run in all environments, you can simply register it in a specific environment instead.
+相較於 +config/environment.rb+ ，+config/environments+ 內的設定，優先權 (precedence) 是比較高的。因此，如果某個觀測器 (observer) 並不需要在所有的環境 (environments) 內執行，那麼可以單純的在某個特定的環境 (environment) 內註冊就好。
 
-h4. Sharing Observers
+h4. 共享觀測器 (Sharing Observers)
 
-By default, Rails will simply strip "Observer" from an observer's name to find the model it should observe. However, observers can also be used to add behaviour to more than one model, and so it's possible to manually specify the models that our observer should observe.
+預設之下， Rails 會單純的把觀測器 (observer) 的名稱，除掉 "Observer" 這幾個字後，去尋找相同名稱的模型 (model) ，做為觀測的對象。不過，觀測器 (observer) 其實可以對上多個模型 (model) ，而我們可以手動的指定這些模型。
 
 <ruby>
 class MailerObserver < ActiveRecord::Observer
@@ -1149,14 +1149,14 @@ class MailerObserver < ActiveRecord::Observer
 end
 </ruby>
 
-In this example, the +after_create+ method would be called whenever a +Registration+ or +User+ was created. Note that this new +MailerObserver+ would also need to be registered in +config/environment.rb+ in order to take effect.
+這個範例中，在 +Registration+ 或 +User+ 新建立的時候，都會呼叫 +after_create+ 方法 (method) 。這個新出現的 +MailerObserver+ 也需要在 +config/environment.rb+ 中註冊，才會產生作用。
 
 <ruby>
 # Activate observers that should always be running
 config.active_record.observers = :mailer_observer
 </ruby>
 
-h3. Changelog
+h3. 文件修改記錄 (Changelog)
 
 "Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213/tickets/26-active-record-validations-and-callbacks
 
@@ -1167,3 +1167,15 @@ h3. Changelog
 * February 10, 2009: Observers revision by Trevor Turk
 * February 5, 2009: Initial revision by Trevor Turk
 * January 9, 2009: Initial version by "Cássio Marques":credits.html#cmarques
+
+h3. 關於譯者
+
+* 譯者：藍一婷 (a.k.a. "ETBlue":http://etblue.blogspot.com/) 
+* 編輯：張文鈿 (a.k.a. "ihower":http://ihower.tw/blog/)
+* 意見回饋：高見龍 (a.k.a. "Eddie Kao":http://blog.eddie.com.tw/)
+* 翻譯的原始碼位於 "http://github.com/ihower/docrails":http://github.com/ihower/docrails
+
+h3. 翻譯詞彙
+
+本文翻譯自 "http://edgeguides.rubyonrails.org/active_record_validations_callbacks.html":http://edgeguides.rubyonrails.org/active_record_validations_callbacks.html 。英文與繁體中文的對照詞彙，請見 "rails-guide-glossary-list-zh_tw":https://spreadsheets.google.com/ccc?key=0AkNsS2a-Qx8ZdDJzTUlNeVlvRy1BYnZDUnRjZUpWWGc&hl=en
+部份翻譯詞彙參考自「Ruby Programming－向Ruby之父學程式設計」以及「松本行弘的程式世界：成為一流程式設計師的14種思考術」二書，皆為博碩出版。
