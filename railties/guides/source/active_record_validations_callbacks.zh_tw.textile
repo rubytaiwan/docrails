@@ -1,43 +1,43 @@
 h2. Active Record 的驗證 (Validations) 與回呼 (Callbacks)
 
-這一章說明如何 ??? hook into ??? Active Record 物件的生命週期：在物件進入資料庫之前驗證它的狀態，以及，在物件生命週期的特定時間點，執行自訂的操作。
+這一章說明如何 ??? hook into ??? Active Record 物件的生命週期：在物件進入資料庫之前，驗證它的狀態，以及，在物件生命週期的特定時間點，執行自訂的操作。
 
 讀完本篇，您會：
 
 * 了解 Active Record 物件的生命週期 (life cycle)
 * 使用內建的 Active Record 驗證輔助工具 (validation helpers)
-* 打造您自訂的驗證方法
-* 處理驗證過程中所產生的錯誤訊息
-* 在物件生命週期期間，會發生一些事件，您將學會針對這些事件，撰寫回呼方法 (callback methods) 。
-* 在回呼 (callbacks) 之間，有些共通的行為，您將學會針對這些行為，撰寫特殊類別 (special classes) ，以封裝 (encapsulate) 它們。 
-* 有些事件 (events) ，並沒有定義在原來的類別中，您將學會針對這些事件，建立觀測器 (observers)，以便回應它們。
+* 打造您自訂的驗證方法 (validation methods)
+* 處理驗證過程中所產生的錯誤訊息 (error messages)
+* 撰寫回呼方法 (callback methods) ，以便回應物件生命週期中所發生的事件 (events)
+* 撰寫特殊類別 (special classes) ，以便封裝 (encapsulate) 回呼之間的共通行為 (common behavior)
+* 建立觀測器 (observers)，以便在原始類別 (original class) 的外部，回應物件生命週期中所發生的的事件 (events)
 
 endprologue.
 
 h3. 物件生命週期 (Object Life Cycle)
 
-Rails 正常操作下，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>object life cycle</em> 內的 hooks，讓您可以操控程式、操控資料。
+Rails 正常操作的期間，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>object life cycle</em> 內的 ??? hooks，讓您可以操控程式、操控資料。
 
-其中，驗證 (validations) 是用來確保只有有效的資料，被存到資料庫裡面。而回呼 (callbacks) 和觀測器 (observers) ，則是在物件狀態變化之前、或變化之後，觸發相關的邏輯。
+驗證 (validations) 的功用，是確保只有有效的資料，存到資料庫裡面。而回呼 (callbacks) 和觀測器 (observers) 的功用，則是在物件狀態變化 (alteration) 之前、或變化之後，觸發相關的邏輯 (logic) 。
 
 h3. 驗證的概觀 (Validations Overview)
 
-深入 Rails 的驗證 (validations) 細節前，先了解一下驗證扮演的角色。
+深入 Rails 的驗證 (validations) 細節前，先來了解一下驗證所扮演的角色。
 
 h4. 為什麼要驗證 (Why Use Validations) ？
 
-驗證 (validations) 的用意，是要確保資料庫裡，只有有效資料 (valid data) 才存進去。比方說，您的應用程式，可能要確定每個使用者，都提供有效的電子郵件地址、和郵寄地址等。
+驗證 (validations) 的作用，是確保資料庫裡，只有有效資料 (valid data) 才會儲存進去。比方說，您的應用程式可能要確定每個使用者，都提供有效的電子郵件地址、和郵寄地址等。
 
-在資料存進資料庫前，有幾個驗證的方法，包括：原生的資料庫約束 (native database constraints) 、客戶端驗證 (client-side validations) 、控制器層級的驗證 (controller-level validations) 、以及模型層級的驗證 (model-level validations)。
+資料存進資料庫前，有幾個驗證的方法，包括：原生的資料庫約束 (native database constraints) 、客戶端驗證 (client-side validations) 、控制器層級的驗證 (controller-level validations) 、以及 model 層級的驗證 (model-level validations)。
 
-* 資料庫約束 (database constraints) 或者是預存程序 (stored procedures) ，這些驗證機制，要依賴特定的資料庫系統，所以測試和維護會比較難。不過，如果資料庫會去給別的應用程式用，那在資料庫層做約束可能就是不錯的作法。另外，資料庫層級的驗證可以很安全的處理一些事情，像是在重度使用的資料表中，確保唯一值 (uniqueness) 之類的。這些事情，如果用其他的方法，會比較難實作。
-* 客戶端的驗證 (client-side validations) 雖然可以用，但單單用這個的話通常不太可靠。如果用 JavaScript 來做，要是使用者的瀏覽器把 JavaScript 關掉，那驗證就被略過了。不過畢竟，客戶端驗證可以給使用者很即時的回饋，所以，要是能跟其他驗證手法併用，那倒是挺方便的。
-* 控制器層級的驗證 (controller-level validations) ，也是可以用，但常常很笨重，不好測試跟維護。不管怎樣，"keep your controllers skinny":http://weblog.jamisbuck.org/2006/10/18/skinny-controller-fat-model 總是好的，長遠的說，可以讓程式用起來很愉快。
-* 模型層級的驗證 (model-level validations) ，是最佳作法。這種驗證方式，不用去管資料庫是哪個系統，也不會被使用者略過，測試起來很方便，也容易維護。為了方便大家使用 model 層級的驗證，Rails 針對常用功能，內建了輔助工具，當然，您也可以撰寫自己的驗證方法。
+* 資料庫約束 (database constraints) 也稱作預存程序 (stored procedures) ，這些驗證機制，要依賴特定的資料庫系統，所以測試和維護會比較難。不過，如果資料庫也要讓別的應用程式使用，那在資料庫層做約束可能就是不錯的主意。另外，資料庫層級的驗證可以很安全的處理一些事情，像是在重度使用的資料表中，確保唯一值 (uniqueness) 之類的。這些事情，如果用其他的方法，會比較難實作。
+* 客戶端的驗證 (client-side validations) 雖然可以用，但單單用它的話通常不太可靠。如果用 JavaScript 來實作，要是使用者的瀏覽器把 JavaScript 關掉，那驗證就被跳過了。不過畢竟，客戶端驗證可以給使用者很即時的回饋，所以，要是能跟其他驗證手法併用，那倒是挺方便的。
+* 控制器層級的驗證 (controller-level validations) ，也可以用用看，但它常常會變得很笨重，不好測試跟維護。不管怎樣，"keep your controllers skinny":http://weblog.jamisbuck.org/2006/10/18/skinny-controller-fat-model 總是好的，長遠的說，可以讓程式用起來很愉快。
+* model 層級的驗證 (model-level validations) 是最佳的作法。這種驗證方式，不用受制於特定的資料庫系統，也不會被使用者跳過，測試起來很方便，也容易維護。為了方便大家使用 model 層級的驗證，Rails 針對常見的驗證需求，內建了輔助工具，當然，您也可以撰寫自己的驗證方法。
 
 h4. 什麼時候會發生驗證 (When Does Validation Happen) ？
 
-Active Record 類別底下，有兩種物件：一種是跟某筆資料對應的，另一種是沒有跟資料對應的。當您用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別：
+Active Record 類別底下，有兩種物件：一種是跟資料庫中的某一行對應的，另一種則是沒有跟資料對應的。當您用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -57,9 +57,9 @@ end
 => false
 </shell>
 
-一筆新記錄 (record) 的新增與儲存，會對資料庫送出一個 SQL 的 +INSERT+ 操作 (operation) 。現有記錄的更新則送出 +UPDATE+ 操作。通常送命令到資料庫前，會先做驗證，任一個驗證失敗的話，這個物件就標記為無效 (marked as invalid) ，於是 Active Record 不會執行 +INSERT+ 或 +UPDATE+ ，無效的物件也就不會存進資料庫。您也可以針對物件新增、儲存、更新，自訂專屬的驗證功能。
+一筆新記錄 (record) 的新增與儲存，會對資料庫送出一個 SQL 的 +INSERT+ 操作 (operation) 。現有記錄的更新，則會送出 +UPDATE+ 操作。通常，在這些命令送到資料庫之前，會進行驗證，如果有任一個驗證失敗的話，這個物件就標記為無效 (marked as invalid) ，於是 Active Record 就不會執行 +INSERT+ 或 +UPDATE+ ，所以，無效的物件也就不會存進資料庫。您可以針對物件的新增、儲存、更新，自訂專屬的驗證功能。
 
-CAUTION: 在資料庫裡面，要改變物件的狀態 (state) ，有很多種方法都能做到，這些方法中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
+CAUTION: 在資料庫裡面，有很多種方法，都能改變物件的狀態 (state) 。這些方法中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
 
 下面列出的方法，會觸發驗證，只有驗證合格的物件才會存入資料庫：
 
@@ -86,13 +86,13 @@ h4. 略過驗證 (Skipping Validations)
 * +update_attribute+
 * +update_counters+
 
-對了，如果把 +:validate => false+ 當作引數 (argument) 傳入的話， +save+ 也是可以略過驗證的。這個技巧也是要小心使用。
+如果，把 +:validate => false+ 當作引數 (argument) 傳入的話， +save+ 也是可以略過驗證的。這個技巧也是要小心使用。
 
 * +save(:validate => false)+
 
 h4. +valid?+ 與 +invalid?+ 檢查是否有錯誤訊息
 
-Rails 在確認物件是否有效的時候，是用 +valid?+ 方法，您平常也可以自己把 +valid?+ 拿來用。它會觸發驗證，如果驗證完，沒有錯誤訊息附加到物件上的話，就傳回真值 (true) ，反之，有錯誤訊息的話，就是假值 (false) 。
+Rails 用 +valid?+ 方法，來確認物件是否有效，而您也可以自己使用它。 +valid?+ 會觸發驗證，如果驗證完，沒有錯誤訊息附加到物件上的話，就傳回真值 (true) ，反之，有錯誤訊息的話，就是假值 (false) 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -105,7 +105,7 @@ Person.create(:name => nil).valid? # => false
 
 Active Record 在執行驗證的時候，任何的錯誤訊息，都可以用 +errors+ 這個實體方法 (instance method) 來存取 (accessed) 。驗證結束後，如果這個集合 (collection) 仍然是空的，那在定義上，這個物件就會被認為是有效的 (valid) 。
 
-用 +new+ 實體化 (instantiated) 出來的物件，即使它在技術上是無效 (invalid) 的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
+要注意的是，用 +new+ 實體化 (instantiated) 出來的物件，即使它在技術上是無效 (invalid) 的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -184,7 +184,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-h4. +validates_associated+ 驗證其他有關連的模型
+h4. +validates_associated+ 驗證其他有關連的 models
 
 如果您的 model ，跟其他 models 有關聯 (associations) ，而這些相關的 models 也需要驗證，那麼，就需要使用這個輔助工具了。使用 +validates_associated+ 後，當您儲存物件時，每一個跟它相關的物件，都會呼叫 +valid?+ 方法。
 
@@ -199,7 +199,7 @@ end
 
 CAUTION: 不要在一個資料庫關聯的兩端，同時使用 +validates_associated+ ，因為，它們會一直互相呼叫，最後沒完沒了，停不下來。
 
-+validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關聯的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到對方的模型 (calling model) 裡面。
++validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關聯的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，不會跑到呼叫方的 model (calling model) 裡面。
 
 h4. +validates_confirmation_of+ 檢查使用者的再次確認
 
@@ -218,7 +218,7 @@ end
 <%= text_field :person, :email_confirmation %>
 </erb>
 
-上面的檢查，只有在 +email_confirmation+ 不是空值 +nil+ 的時候，才會執行，所以，要 require confirmation 的話，要事先確認驗證屬性 (confirmation attribute) 是不是存在 (presence check) 。關於這點，後面會在 +validates_presence_of+ 講到。
+上面的檢查，只有在 +email_confirmation+ 不是空值 +nil+ 的時候，才會執行，所以，要檢查這個欄位的話，要事先確定 +email_confirmation+ 這個屬性是否存在 。關於這點，後面會在 +validates_presence_of+ 講到。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -231,7 +231,7 @@ end
 
 h4. +validates_exclusion_of+ 確定屬性的值不在指定清單內
 
-確認該屬性的值，沒有在指定的 set 中出現。這個 set ，可以是任何一個可逐一列舉的 (enumerable) 物件。
+確認該屬性的值，沒有在指定的集合 (set) 中出現。這個集合，可以是任何一個內部資料可逐一列舉的 (enumerable) 物件。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -292,7 +292,7 @@ end
 * +:in+ (or +:within+) - 屬性的值的長度，要在某個區間 (interval) 之內。所以，這個選項的值，必須是一個範圍 (range) 。
 * +:is+ - 屬性的值的長度，要跟指定的長度相等。
 
-不同類型的長度驗證，預設的錯誤訊息，也各自不同。要自訂錯誤訊息，可以用 +:wrong_length+ 、 +:too_long+ 、+:too_short+ 選項，搭配 <tt>%{count}</tt> 做為 placeholder ，留給跟長度限制有關的數字。同樣的，您可以用 +:message+ 選項來自訂錯誤訊息。
+不同類型的長度驗證，預設的錯誤訊息，也各自不同。要自訂錯誤訊息，可以用 +:wrong_length+ 、 +:too_long+ 、+:too_short+ 選項，搭配 <tt>%{count}</tt> 做為佔位符 (placeholder) ，留給跟長度限制有關的數字。同樣的，您可以用 +:message+ 選項來自訂錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -301,7 +301,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-預設狀態下，此工具會計算字元 (characters) ，不過，要用別的方式 split the value 的話，您可以用 +:tokenizer+ 選項：
+預設狀態下，此工具會計算字元 (characters) ，不過，要用別的方式計算的話，您可以用 +:tokenizer+ 選項：
 
 <ruby>
 class Essay < ActiveRecord::Base
@@ -318,7 +318,7 @@ end
 
 h4. +validates_numericality_of+ 確保屬性只包括數值
 
-驗證您的屬性只包含數字值 (numeric values) 。預設是符合 match an optional sign 後面接 followed by 一個整數 (integral) 或浮點數 (floating point number) 。如果只想允許整數，把 +:only_integer+ 設定為 true 就可以了。
+驗證您的屬性只包含數值 (numeric values) 。所謂的數值，要符合這樣的格式：一個可有可無的記號 (sign) 後面接一個整數 (integral) 或浮點數 (floating point number) 。如果只想允許整數，把 +:only_integer+ 設定為 true 就可以了。
 
 如果 +:only_integer+ 設為 +true+ ，會用這個常規表示式
 
@@ -328,7 +328,7 @@ h4. +validates_numericality_of+ 確保屬性只包括數值
 
 來驗證屬性的值。反之，如果沒設定，則會嘗試用 +Float+ 來把值轉換成數字。
 
-WARNING. 上面的常規表示式，允許 ??? 字元 (trailing newline character) 。
+WARNING. 上面的常規表示式，允許換行字元 (trailing newline character) 。
 
 <ruby>
 class Player < ActiveRecord::Base
@@ -344,14 +344,14 @@ end
 * +:equal_to+ - 必須等於這個值。預設的錯誤訊息是 "_must be equal to %{count}_" 。
 * +:less_than+ - 必須小於這個值。預設的錯誤訊息是 "_must be less than %{count}_" 。
 * +:less_than_or_equal_to+ - 必須小於或等於這個值。預設的錯誤訊息是 "_must be less than or equal to %{count}_" 。
-* +:odd+ - 如果設定為 true ，則被驗證的值必須是奇數???。預設的錯誤訊息是 "_must be odd_" 。
-* +:even+ - 如果設定為 true ，則被驗證的值必須是偶數???。預設的錯誤訊息是 "_must be even_" 。
+* +:odd+ - 如果設定為 true ，則被驗證的值必須是奇數。預設的錯誤訊息是 "_must be odd_" 。
+* +:even+ - 如果設定為 true ，則被驗證的值必須是偶數。預設的錯誤訊息是 "_must be even_" 。
 
 +validates_numericality_of+ 預設的錯誤訊息是 "_is not a number_" 。
 
 h4. +validates_presence_of+ 確定屬性是存在的
 
-驗證指定的屬性不是空的。此工具使用 +blank?+ 方法，去檢查屬性值是否為 +nil+ 或者空字串 (blank string) ，所謂空字串指的是沒有內容 (empty) 、或者由空白 (whitespace) 組成的字串。
+驗證指定的屬性不是空的。此工具使用 +blank?+ 方法，去檢查屬性值是否為 +nil+ 或者空字串 (blank string) ，所謂空字串指的是沒有內容的 (empty) 、或者由空白字元 (whitespace) 組成的字串。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -359,7 +359,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-如果，要確認資料庫關聯 (association) 的存在，那要測試的，是存不存在 map the association 的外部鍵 (foreign key) ，而不是相關連的物件 (associated object) 本身。
+如果，要確認資料庫關聯 (association) 的存在，那要測試的，是存不存在和資料庫關聯相對應的外部鍵 (foreign key) ，而不是相關聯的物件 (associated object) 本身。
 
 <ruby>
 class LineItem < ActiveRecord::Base
@@ -368,13 +368,13 @@ class LineItem < ActiveRecord::Base
 end
 </ruby>
 
-??? 由於 +false.blank?+ 是 true ，Since +false.blank?+ is true, ??? 要驗證布林欄位 (boolean field) 的存在，必須寫成 +validates_inclusion_of :field_name, :in => [true, false]+ 。
+由於 +false.blank?+ 的結果是 true ，要驗證布林欄位 (boolean field) 的存在，必須寫成 +validates_inclusion_of :field_name, :in => [true, false]+ 。
 
 +validates_presence_of+ 預設的錯誤訊息是 "_can't be empty_" 。
 
 h4. +validates_uniqueness_of+ 確保屬性的值是唯一的
 
-在儲存物件的前一刻，驗證屬性的值，以確定它是唯一的。這個工具，並不會在資料庫中建立唯一限定 (uniqueness constraint) ，所以，可能會有兩個不同 database connections ，在同一個欄，存入了兩筆一樣的記錄 (records) 。要避免這個狀況，您必須為資料庫做一個 unique index 。
+在儲存物件的前一刻，驗證屬性的值，以確定它是唯一的。這個工具，並不會在資料庫中建立唯一值約束 (uniqueness constraint) ，所以，可能會有兩個不同資料庫連結 (database connections) ，在同一個欄，存入了兩筆一樣的記錄 (records) 。要避免這個狀況，您必須為資料庫做一個 ??? 唯一索引 (unique index) 。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -401,7 +401,7 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-WARNING. 有些資料庫，??? 設定成不管怎樣，都會執行不分大小寫的搜尋 are configured to perform case-insensitive searches anyway.
+WARNING. 有些資料庫，設定成不論如何都會執行不分大小寫 (case-insensitive) 的搜尋。
 
 +validates_uniqueness_of+ 預設的錯誤訊息是 "_has already been taken_" 。
 
@@ -430,7 +430,7 @@ validator 類別預設有兩個屬性：
 * +record+ - 要驗證的那筆記錄 (record)
 * +options+ - 已傳給 +validates_with+ 的額外選項 (extra options)
 
-??? +validates_with+ 有 +:if+ 、+:unless+ 、+:on+ 這三個選項可用，這一點，就跟其他驗證方式一樣。如果有傳入其他選項，則會以 +options+ 的方式，送到 validator 類別去：???
++validates_with+ 有 +:if+ 、+:unless+ 、+:on+ 這三個選項可用，這一點，就跟其他驗證方式一樣。如果有傳入其他選項，則會以 +options+ 的方式，送到 validator 類別去：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -448,7 +448,7 @@ end
 
 h4. +validates_each+ 用區塊進行自訂的驗證
 
-按照區塊 (block) 裡的程式碼，對屬性 (attributes) 做驗證。這個工具，沒有定義任何驗證功能，您要自己用區塊 (block) 來撰寫驗證，然後，每一個傳給 (passed to) +validates_each+ 的屬性，都會根據您的區塊內容來做測試。下面示範，希望 names 跟 surnames 不是小寫開頭：
+按照區塊 (block) 裡的程式碼，對屬性 (attributes) 做驗證。這個工具，沒有定義任何驗證功能，您要自己用區塊來撰寫驗證，然後，每一個傳給 +validates_each+ 的屬性，都會根據您的區塊內容來做測試。下面示範，希望 names 跟 surnames 不是小寫開頭：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -458,11 +458,11 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-區塊接收了三樣東西：模型、屬性名稱、屬性的值。在區塊內，可以做任何您想做的驗證。要是驗證失敗，可以在 model 裡加入錯誤訊息，讓它變成無效的 (invalid) 。
+區塊接收了三樣東西：model 、屬性名稱、屬性的值。在區塊內，可以做任何您想做的驗證。要是驗證失敗，可以在 model 裡加入錯誤訊息，讓它變成無效的 (invalid) 。
 
 h3. 共通的驗證選項 (Common Validation Options)
 
-有些共通的選項 (options) ，所有的驗證輔助工具都能用，下面介紹除了 +:if+ 跟 +:unless+ 之外的共通選項（這兩個選項，會另外在 "條件式驗證 (Conditional Validation)":#conditional-validation 的部份討論）。
+有些共通的選項 (options) ，所有的驗證輔助工具都能用，下面介紹除了 +:if+ 跟 +:unless+ 之外的共通選項。至於 +:if+ 跟 +:unless+ 會另外在 "條件式驗證 (Conditional Validation)":#conditional-validation 的部份討論。
 
 h4. +:allow_nil+ 允許 nil 值
 
@@ -490,11 +490,11 @@ Topic.create("title" => nil).valid? # => true
 
 h4. +:message+ 自訂錯誤訊息
 
-+:message+ 選項用來自訂訊息，此訊息會在驗證失敗的時候，加到 +errors+ 集合 (collection) 裡面。沒設定此選項時， Active Record 會採用驗證輔助工具 (validation helpers) 原本就有的、各自的預設錯誤訊息。
++:message+ 選項用來自訂訊息，此訊息會在驗證失敗的時候，加到 +errors+ 集合 (collection) 裡面。沒設定此選項時， Active Record 會採用驗證輔助工具 (validation helpers) 原本內建的錯誤訊息。
 
 h4. +:on+ 在特定的時候進行驗證
 
-+:on+ 選項可以設定驗證該在何時發生。所有內建的驗證輔助工具，預設的行為，是在儲存的時候，包括新增一筆記錄、以及更新記錄 (record) 時，都會執行驗證。您可以用 +:on => :create+ 指定只要在新增的時候驗證就好，或者，用 +:on => :update+ 設定只要在更新的時候驗證。
++:on+ 選項指定驗證該在何時發生。內建的驗證輔助工具，預設的行為是在儲存的時候，包括新增一筆記錄、以及更新記錄 (record) 時，都會執行驗證。您可以用 +:on => :create+ 指定只要在新增的時候驗證就好，或者，用 +:on => :update+ 設定只要在更新的時候驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -511,11 +511,11 @@ end
 
 h3. 條件式驗證 (Conditional Validation)
 
-有時候，需要在滿足某些陳述 (predicate) 的狀況下，才對物件做驗證。此時，就要用到 +:if+ 跟 +:unless+ 選項，選項內容可以是符號 (symbol) 、字串 (string) 、或 +Proc+ ???。 +:if+ 選項用來指定驗證何時 *應該* 發生，而 +:unless+ 選項則指定驗證何時 *不應該* 發生。
+有時候，需要在滿足某些 ???先決條件？陳述？ (predicate) 的狀況下，才對物件做驗證。此時，就要用到 +:if+ 跟 +:unless+ 選項，選項內容可以是 ???符號/代號 (symbol) 、字串 (string) 、或 +Proc+ 。 +:if+ 選項用來指定驗證何時 *應該* 發生，而 +:unless+ 選項則指定驗證何時 *不應該* 發生。
 
-h4. 在 +:if+ 和 +:unless+ 中使用符號/代號 (Symbol)
+h4. 在 +:if+ 和 +:unless+ 中使用 ???符號/代號 (Symbol)
 
-條件式驗證時，常常要在驗證前，先呼叫某個方法，來判斷驗證條件是否成立。這個方法的名稱，可以當作符號 (symbol) ，來 associate the +:if+ 跟 +:unless+ 選項。這是最常見的一種用法。
+條件式驗證時，常常要在驗證前，先呼叫某個方法，來判斷驗證條件是否成立。這個方法的名稱，可以當作 ???符號/代號 (symbol) ，以便放入 (associate) +:if+ 跟 +:unless+ 選項中。這是最常見的一種用法。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -537,9 +537,9 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-h4. 在 +:if+ 和 +:unless+ 中使用 Proc ???
+h4. 在 +:if+ 和 +:unless+ 中使用 Proc ???<--這啥
 
-最後一種條件式驗證，是呼叫 +Proc+ 物件來 associate +:if+ 和 +:unless+ 。使用 +Proc+ 物件，就可以直接撰寫條件式 (inline condition) ，而不需要另外寫一個方法 (separate method) 。這種作法對 one-liners 來說，再適合不過了。
+最後一種條件式驗證，是呼叫 +Proc+ 物件來放入 (associate) +:if+ 和 +:unless+ 。使用 +Proc+ 物件，就可以直接撰寫條件式 (inline condition) ，而不需要另外寫一個方法 (separate method) 。這種作法對僅僅一行的程式碼 (one-liners) 來說，再適合不過了。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -552,7 +552,7 @@ h3. 撰寫自訂的驗證方法 (Creating Custom Validation Methods)
 
 內建的驗證輔助工具不夠用的時候，您可以自己撰寫驗證方法。
 
-撰寫驗證方法很簡單：撰寫新的方法，在方法中確認模型 (models) 的狀態 (state) ，當模型無效 (invalid) 時，在 +errors+ 集合中加入錯誤訊息。然後，用 +validate+ 、 +validate_on_create+ 或 +validate_on_update+ 等類別方法 (class methods) ，將自訂方法的名稱，以符號/代號 (symbols) 的形式傳入，如此，便能註冊 (register) 您自訂的驗證方法了。
+撰寫驗證方法很簡單：撰寫新的方法，在方法中確認 models 的狀態 (state) ，當 model 無效 (invalid) 時，在 +errors+ 集合中加入錯誤訊息。然後，用 +validate+ 、 +validate_on_create+ 或 +validate_on_update+ 等類別方法 (class methods) ，將自訂方法的名稱，以符號/代號 (symbols) 的形式傳入，如此，便能註冊 (register) 您自訂的驗證方法了。
 
 每個類別方法 (class method) 中，都可以傳入多個符號/代號 (symbol) ，與代號相對應的驗證方法，就會按照這個註冊順序，逐一的執行。
 
@@ -573,7 +573,7 @@ class Invoice < ActiveRecord::Base
 end
 </ruby>
 
-您還可以更進一步，撰寫自訂的驗證輔助工具，然後在幾個不同的模型之間重複使用。例如，某個管理問卷調查的應用程式，需要表達出一個欄位 (field) 對應到一整組選項的狀況：
+您還可以更進一步，撰寫自訂的驗證輔助工具，然後在幾個不同的 model 之間重複使用。例如，某個管理問卷調查的應用程式，需要表達出一個欄位 (field) 對應到一整組選項的狀況：
 
 <ruby>
 ActiveRecord::Base.class_eval do
@@ -593,13 +593,13 @@ end
 
 h3. 處理驗證錯誤 (Working with Validation Errors)
 
-除了前面提的 +valid?+ 和 +invalid?+ 方法之外， Rails 還提供許多其他方法來處理 +errors+ 集合，或者查詢物件的有效性。
+除了前面提的 +valid?+ 和 +invalid?+ 方法之外， Rails 還提供許多其他方法，來處理 +errors+ 集合，或者查詢物件的有效性。
 
-下面只列出最常用的方法，全部的方法清單，請參考 +ActiveRecord::Errors+ 的文件。
+下面只列出最常用的方法，至於完整的方法清單，請參考 +ActiveRecord::Errors+ 的文件。
 
 h4(#working_with_validation_errors-errors). +errors+ 列出物件的錯誤訊息
 
-把該物件的所有錯誤訊息，回傳為一個有序雜湊 (OrderedHash) 。雜湊的 key 是屬性的名稱 (attribute name) ，值 (value) 則是由字串所組成的陣列，裡面是該屬性的所有錯誤訊息。
+把該物件的所有錯誤訊息，回傳為一個有序雜湊 (OrderedHash) 。雜湊的鍵 (key) 是屬性的名稱 (attribute name) ，值 (value) 則是一個陣列，陣列由字串所組成，這些字串，即是該屬性的所有錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -619,7 +619,7 @@ person.errors # => []
 
 h4(#working_with_validation_errors-errors-2). +errors[]+ 列出屬性的錯誤訊息
 
-+errors[]+ 的用途是查看某特定屬性的錯誤訊息。它傳回字串陣列，每個字串就是一筆錯誤訊息。如果此屬性沒有任何錯誤，則傳回空的陣列。
++errors[]+ 的用途是查看某個屬性的錯誤訊息。它會傳回陣列，這個陣列是由字串組成的，每個字串就是一筆錯誤訊息。如果這個屬性並沒有任何的錯誤訊息，則會傳回一個空的陣列。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -643,7 +643,7 @@ person.errors[:name]
 
 h4. +errors.add+ 手動加入錯誤訊息
 
-+add+ 方法可以在某個屬性底下，手動加入錯誤訊息。這些錯誤訊息，在使用者眼中大概會看到的樣子，可以用 +errors.full_messages+ 或 +errors.to_a+ 這兩種方法來預覽，它們會把屬性的名稱開頭變大寫後，顯示在錯誤訊息前面。 +add+ 方法接收兩樣東西：屬性名稱，和您想手動附上的錯誤訊息。
++add+ 方法可以針對某個屬性，用手動的方式，加入錯誤訊息。這些錯誤訊息，在使用者眼中大概會看到的樣子，可以用 +errors.full_messages+ 或 +errors.to_a+ 這兩種方法來預覽，它們會把屬性的名稱，開頭變大寫後，顯示在錯誤訊息前面。 +add+ 方法接收兩樣東西：一是屬性名稱，二是您想手動附上的錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -679,9 +679,9 @@ person.errors.full_messages
    # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-h4. +errors[:base]+ 關聯到物件整體的錯誤訊息
+h4. +errors[:base]+ 關連到物件整體的錯誤訊息
 
-通常錯誤訊息是關連到屬性，不過，您也可以加入跟整個物件相關連的錯誤訊息。有時候，不需要管各個屬性的值是什麼，只要表示出這個物件沒有通過驗證就好，此時，就可以用 +errors[:base]+ ，它是一個陣列，只要在陣列中加入字串，這字串就可以拿來當物件的錯誤訊息了。
+通常，錯誤訊息是關連到物件裡的某一個屬性，不過，您也可以加入跟整個物件相關連的錯誤訊息。有時候，我們不需詳細列出物件裡的各個屬性的值，只要表示出這個物件沒有通過驗證就好，此時，就可以用 +errors[:base]+ ，它是一個陣列，只要在陣列中加入字串，這字串就可以拿來當物件的錯誤訊息了。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -693,7 +693,7 @@ end
 
 h4. +errors.clear+ 清空錯誤訊息
 
-+clear+ 方法用來清空 +errors+ 集合裡的所有錯誤訊息。這個動作，不會讓無效物件變成有效，因為雖然錯誤訊息清空了，但下次呼叫 +valid?+ 方法時，或者想把物件寫入資料庫時，都會再一次的觸發驗證，一旦驗證失敗， +errors+ 集合就會再度填滿。
++clear+ 方法用來清空 +errors+ 集合裡的所有錯誤訊息。清空錯誤訊息，並不會讓原本無效的物件變成有效的物件，因為，雖然錯誤訊息清空了，但下次呼叫 +valid?+ 方法時，或者想把物件寫入資料庫時，都會再一次的觸發驗證，一旦驗證失敗， +errors+ 集合就會再度的被填滿。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -737,11 +737,11 @@ person.errors.size # => 0
 
 h3. 在視圖中秀出驗證錯誤 (Displaying Validation Errors in the View)
 
-Rails 內建了輔助工具 (helpers) ，可以在視圖模板 (view templates) 中，顯示模型 (models) 的錯誤訊息 (error messages) 。
+Rails 內建了輔助工具 (helpers) ，可以在視圖模板 (view templates) 中，顯示 models 的錯誤訊息 (error messages) 。
 
 h4. +error_messages+ 以及 +error_messages_for+ 在視圖中呈現錯誤訊息
 
-用 +form_for+ 輔助工具新增表格的時候，可以在 ??? 表格產生器 (form builder) 裡面用 +error_messages+ 方法，把目前的模型實體 (model instance) 的全部驗證訊息，演算呈現 (render) 出來。
+用 +form_for+ 輔助工具新增表格的時候，可以在 ??? 表格產生器 (form builder) 裡面，用 +error_messages+ 方法，把目前的 model 實體 (instance) 的全部驗證訊息，演算呈現 (render) 出來。
 
 <ruby>
 class Product < ActiveRecord::Base
@@ -767,11 +767,11 @@ end
 <% end %>
 </erb>
 
-送出 (submit) 上述的表單時，如果表單內有空白欄位 (empty fields) ，就會得到如下圖般的回應。預設狀況下，是沒有套用樣式 (styles) 的。
+送出 (submit) 上述的表單時，如果表單內有空白欄位 (empty fields) ，就會得到如下圖般的回應。預設狀況下，這個回應的頁面是沒有套用樣式 (styles) 的。
 
 !images/error_messages.png(Error messages)!
 
-對於指定給視圖模板 (view template) 的模型 (model) ，要顯示它的錯誤訊息的話，也可以用 +error_messages_for+ 輔助工具來做。它跟上面的範例很像，最後結果也是一模一樣：
+對於指定給視圖模板 (view template) 的 model ，要顯示它的錯誤訊息的話，也可以用 +error_messages_for+ 輔助工具來做。它跟上面的範例很像，最後結果也是一模一樣：
 
 <erb>
 <%= error_messages_for :product %>
@@ -779,7 +779,7 @@ end
 
 呈現錯誤訊息的文字，格式是「大寫開頭的屬性名稱 + 錯誤訊息」。
 
-+form.error_messages+ 跟 +error_messages_for+ 這兩個輔助工具，都可以針對包裹著訊息文字的 +div+ 元素 (element) ，接收一些自訂的選項，用來自訂標題文字 (header text) 、標題文字下方的訊息、以及標題的元素標籤 (tag) 。
++form.error_messages+ 跟 +error_messages_for+ 這兩個輔助工具，都可以針對包裹著訊息文字的 +div+ 元素 (element) ，接收一些自訂的選項，用來自訂標題文字 (header text) 、標題文字下方的訊息、以及標題元素的標籤 (tag) 。
 
 <erb>
 <%= f.error_messages :header_message => "Invalid product!",
@@ -791,11 +791,11 @@ end
 
 !images/customized_error_messages.png(Customized error messages)!
 
-如果對任一個選項傳入 +nil+ 值，它會 ??? get rid of the respective section of the +div+.
+如果對任一個選項傳入 +nil+ 值，它會 ??? 從原本所在的 +div+ 區段 (section) 中，跳脫出來。 get rid of the respective section of the +div+.
 
 h4. 自訂錯誤訊息的串接樣式表 (CSS)
 
-用來自訂錯誤訊息樣式的選擇器 (selectors) 包括：
+用來自訂錯誤訊息樣式 (styles) 的選擇器 (selectors) 包括：
 
 * +.field_with_errors+ - 顯示錯誤訊息的表格欄位 (form fields) 與標籤 (labels) 的樣式 (style) 。
 * +#errorExplanation+ - 包覆著錯誤訊息的 +div+ 元素的樣式。
@@ -803,9 +803,9 @@ h4. 自訂錯誤訊息的串接樣式表 (CSS)
 * +#errorExplanation p+ - +div+ 元素之內，在標題 (header) 下方緊接著出現的段落文字 (paragraph) 的樣式。
 * +#errorExplanation ul li+ - 列出各個錯誤訊息的項目清單 (list items) 的樣式。
 
-??? 預設範例的鷹架 (scaffolding) 會產生出 +public/stylesheets/scaffold.css+ ，這個樣式表 (CSS) 定義了如上圖這般的紅色系樣式。
+??? Rails 內建的範例的鷹架 (scaffolding) 會產生出 +public/stylesheets/scaffold.css+ 樣式表 (CSS) ，這個樣式表定義了如上圖這般的紅色系樣式。
 
-要修改樣式表裡面所設定的 class 跟 id 的名稱，可以用 +:class+ 跟 +:id+ 這兩個選項，這在 +form_for+ 和 +error_messages_for+ 兩種輔助工具中，都是可以用的。
+要修改樣式表 (CSS) 裡面所設定的 class 跟 id 的名稱，可以用 +:class+ 跟 +:id+ 兩個選項，這二個選項在 +form_for+ 和 +error_messages_for+ 兩種輔助工具中，都是可以用的。
 
 h4. 自訂錯誤訊息的 HTML
 
@@ -836,7 +836,7 @@ end
 
 h3. 回呼的概觀 (Callbacks Overview)
 
-回呼 (callbacks) 是在物件生命週期裡的特定時刻，所被呼叫的方法。有了它，就可以在 Active Record 物件新增、儲存、更新、刪除、驗證、或者從資料庫讀出時，執行我們自己撰寫的程式碼。
+回呼 (callbacks) 是在物件生命週期裡的特定時刻，所被呼叫的方法。有了它，就可以在 Active Record 物件新增、儲存、更新、刪除、驗證、或者從資料庫載入時，執行我們自己撰寫的程式碼。
 
 h4. 註冊回呼 (Callback Registration)
 
@@ -857,7 +857,7 @@ class User < ActiveRecord::Base
 end
 </ruby>
 
-macro-style class methods 也可以接收程式區塊 (block) ，如果區塊內的程式碼很短，短到可以一行之內寫完，那麼就可以考慮用區塊的方式來註冊回呼。
+??? 巨集式的類別方法 macro-style class methods 也可以接收程式區塊 (block) ，如果區塊內的程式碼很短，短到可以一行之內寫完，那麼就可以考慮用區塊的方式來註冊回呼。
 
 <ruby>
 class User < ActiveRecord::Base
@@ -868,7 +868,7 @@ class User < ActiveRecord::Base
 end
 </ruby>
 
-預設的狀況下，回呼方法 (callback methods) 是 public 的。但比較好的作法，是將它宣告為 protected 或 private ，因為，這樣做的話，在模型 (model) 之外的地方，就無法呼叫這些方法，也就不會侵犯到物件封裝 (object encapsulation) 的原則了。
+預設的狀況下，回呼方法 (callback methods) 是 public 的。但比較好的作法，是將它宣告為 protected 或 private ，因為，這樣做的話，在 model 之外的地方，就無法呼叫這些方法，也就不會侵犯到物件封裝 (object encapsulation) 的原則了。
 
 h3. 可以用哪些回呼方法 (Available Callbacks)
 
@@ -904,9 +904,9 @@ WARNING. +after_save+ 在建立、更新時，都可以運作，但是，不管 
 
 h4. +after_initialize+ 與 +after_find+
 
-Active Record 物件初始化的時候，不管是直接用 +new+ 初始化，或是從資料庫中載入一筆記錄 (record) ，都會呼叫 +after_initialize+ 這個回呼 (callback) 。它的好處是，可以避免直接覆蓋 (override) 掉 Active Record 原本的 +initialize+ 方法。
+Active Record 物件初始化的時候，不管是直接用 +new+ 初始化，或是從資料庫中載入一筆記錄 (record) 來初始化，都會呼叫 +after_initialize+ 這個回呼 (callback) 。使用回呼的好處是，可以避免直接覆蓋 (override) 掉 Active Record 原本的 +initialize+ 方法。
 
-Active Record 從資料庫中載入一筆記錄 (record) 時，都會呼叫 +after_find+ 這個回呼 (callback) 。如果 +after_find+ 和 +after_initialize+ 兩者都有定義的話，則會先呼叫 +after_find+ 。
+Active Record 每一次從資料庫中載入一筆記錄 (record) 時，除了 +after_initialize+ 之外，還會多呼叫 +after_find+ 這個回呼 (callback) 。如果 +after_find+ 和 +after_initialize+ 兩者都有定義的話，則會先呼叫 +after_find+ 。
 
 +after_initialize+ 和 +after_find+ 跟其他的回呼 (callbacks) 有點不一樣。它們沒有相對的 +before_*+ 回呼，而它們註冊的方式，只有一種，就是將它們定義為一般的方法 (regular methods) 。如果，用巨集式的類別方法 (macro-style class methods) 來註冊 +after_initialize+ 或 +after_find+ ，那它們會直接的被忽略掉。設計這樣的行為，是為了效能 (performance) 上的考量，因為，在資料庫中每找到一筆記錄，都會呼叫 +after_initialize+ 和 +after_find+ ，而明顯的拖慢查詢的速度。
 
@@ -980,15 +980,15 @@ h3. 略過回呼 (Skipping Callbacks)
 
 h3. 中止執行鏈 (Halting Execution)
 
-為模型註冊新的回呼 (callbacks) 時，這些回呼，會 queued 等待執行。queue 裡面包含：該模型全部的驗證 (validations) 、要註冊的回呼、以及要執行的資料庫操作 (database operation) 。
+為 model 註冊新的回呼 (callbacks) 時，這些回呼，會加入佇列 (queued) 等待執行。佇列 (queue) 裡面包含：該 model 全部的驗證 (validations) 、要註冊的回呼、以及要執行的資料庫操作 (database operation) 。
 
-這一整個回呼鏈 (callback chain) ，是包裹在交易功能 (transaction) 裡面的。如果有任何  <em>before</em> 回呼方法傳回了 +false+ ，或者是丟出了例外 (raises an exception) ，整個執行鏈 (execution chain) 就會中途停止，且必須 issued 滾回 (ROLLBACK) 。??? 至於 <em>after</em> 回呼方法，則是只有在丟出例外 (raising an exception) 的時候，才會中止執行鏈。
+這一整個回呼鏈 (callback chain) ，是包裹在交易功能 (transaction) 裡面的。過程中，如果有任何  <em>before</em> 回呼方法傳回了 +false+ ，或者是丟出了例外 (raises an exception) ，整個執行鏈 (execution chain) 就會中途停止，且必須訴諸 (issued) 滾回 (ROLLBACK) 。至於 <em>after</em> 回呼方法，則是只有在丟出例外 (raising an exception) 的時候，才會導致執行鏈的中止。
 
-WARNING. 預期會有 +save+ 動作的程式碼，以及 ??? 的程式碼，一旦遇到任何的例外 (exception) ，都可能會被打斷。 Raising an arbitrary exception may break code that expects +save+ and friends not to fail like that. 進行滾回 (rollback) 的時候， +ActiveRecord::Rollback+ 這個例外，會精確的告訴 Active Record 有個滾回正在進行。這個例外，會由內部捕捉 (internally captured) ，但不會被 ??? 再次丟出 (reraised) 。
+WARNING. 一旦丟出任何的例外 (exception) ，若有某段程式碼，預期要執行 +save+ 等 ??? 不該出現例外的動作的話，就有可能因此而被打斷。 Raising an arbitrary exception may break code that expects +save+ and friends not to fail like that. 進行滾回 (rollback) 的時候， +ActiveRecord::Rollback+ 這個例外，會精確的告訴 Active Record 有個滾回正在進行。這個例外，會由 ??? 內部捕捉 (internally captured) ，但不會被 ??? 再次丟出 (reraised) 。
 
-h3. 關聯性回呼 (Relational Callbacks)
+h3. 關連性回呼 (Relational Callbacks)
 
-回呼 (callbacks) 能夠針對模型的關聯 (model relationships) 運作，甚至可以用它來定義。如果有個使用者，同時有許多篇發表的文章，而我們希望使用者帳號銷毀時，文章也跟著銷毀。於是，我們在 +User+ 模型中，針對 +User+ 模型跟 +Post+ 模型之間的關聯，加入 +after_destroy+ 回呼。範例如下：
+回呼 (callbacks) 能夠針對 model 和其他 model 間的關連 (relationships) 運作，甚至可以用回呼來定義 model 間的關連。如果有個使用者，同時有許多篇發表的文章，而我們希望使用者帳號銷毀時，文章也跟著銷毀。於是，我們在 +User+ model 中，針對 +User+ model 跟 +Post+ model 之間的關連，加入 +after_destroy+ 回呼。範例如下：
 
 <ruby>
 class User < ActiveRecord::Base
@@ -1014,11 +1014,11 @@ Post destroyed
 
 h3. 條件式回呼 (Conditional Callbacks)
 
-回呼 (callbacks) 也可以寫成條件式的 (conditional) ，在某個先決條件成立時，才呼叫它們，就像本文前幾節在驗證 (validations) 中所做的一樣。要做條件判斷，可以用 +:if+ 跟 +:unless+ 選項 (options) ，這些選項可以接收符號 (symbol) 、字串 (string) 或是 +Proc+ 。定義條件時，若是在某狀況下 *必須* 呼叫回呼，可以用 +:if+ 選項；相反地，在某狀況下 *必須不* 呼叫回呼，則是用 +:unless+ 選項。
+回呼 (callbacks) 也可以寫成條件式的 (conditional) ，在某個先決條件成立時，才呼叫它們，撰寫條件式回呼的方式，就像本文前幾節在驗證 (validations) 中所做的一樣。要做條件判斷，可以用 +:if+ 跟 +:unless+ 選項 (options) ，這些選項可以接收符號/代號 (symbol) 、字串 (string) 或是 +Proc+ 。定義條件時，若是在某狀況下 *必須* 呼叫回呼，可以用 +:if+ 選項；相反地，在某狀況下 *必須不* 呼叫回呼，則是用 +:unless+ 選項。
 
-h4. 在 +:if+ 與 +:unless+ 中使用符號 (Symbol)
+h4. 在 +:if+ 與 +:unless+ 中使用符號/代號 (Symbol)
 
-+:if+ 與 +:unless+ 可以用符號 (symbol) 來 associate ，這個符號 (symbol) ，是對應到回呼 (callback) 執行前一刻所呼叫的方法 (method) 的名稱。使用 +:if+ 選項 (option) 時，若這個方法傳回假值 (false) ，回呼就不會執行；相反地，使用 +:unless+ 選項的話，若這個方法傳回真值，回呼就不會執行。以上是最常用到的選項，用這種格式 (form) 註冊回呼的話，還可以針對回呼是否執行的判斷，註冊數個不同的方法。
++:if+ 與 +:unless+ 可以用符號/代號 (symbol) 來放入其中 (associate) ，這個符號 (symbol) ，是對應到回呼 (callback) 執行前一刻所呼叫的方法 (method) 的名稱。使用 +:if+ 選項 (option) 時，若這個方法傳回假值 (false) ，回呼就不會執行；相反地，使用 +:unless+ 選項的話，若這個方法傳回真值，回呼就不會執行。以上是最常用到的選項，用這種格式 (form) 註冊回呼的話，還可以針對回呼是否執行的判斷，註冊數個不同的方法。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -1028,7 +1028,7 @@ end
 
 h4. 在 +:if+ 與 +:unless+ 中使用字串 (String)
 
-條件式裡面也可以放字串 (string) ，這個字串會用 +eval+ evaluated，字串內容必須是一段有效的 Ruby 程式碼。只有真的很簡短的條件式，才適合用字串形式放在選項 (options) 裡面。
+條件式裡面也可以放字串 (string) ，這個字串會用 +eval+ 來求值 (evaluated)，字串內容必須是一段有效的 Ruby 程式碼。只有真的很簡短的條件式，才適合用字串形式放在選項 (options) 裡面。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -1036,9 +1036,9 @@ class Order < ActiveRecord::Base
 end
 </ruby>
 
-h4. 在 +:if+ 與 +:unless+ 中使用程式碼物件 (Proc)
+h4. 在 +:if+ 與 +:unless+ 中使用 ??? 程式碼物件 (Proc)
 
-最後， +:if+ 跟 +:unless+ 還可以用 +Proc+ 物件來 associate 。這種作法，尤其適合用來撰寫簡短的驗證方法，通常是一行以內的 (ne-liners) 。
+最後， +:if+ 跟 +:unless+ 還可以放入 +Proc+ 物件。這種作法，尤其適合用來撰寫簡短的驗證方法，通常是一行以內的 (one-liners) 。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -1060,9 +1060,9 @@ end
 
 h3. 回呼類別 (Callback Classes)
 
-有時候，某模型的回呼方法 (callback methods) ，在其他的模型中也能重複使用。 Active Record 讓我們能夠建立回呼類別 (callback classes) ，來封裝 (encapsulate) 這些回呼方法，如此一來，就可以很容易的重複利用它們。
+有時候，某 model 的回呼方法 (callback methods) ，在其他的 model 中也能重複使用。 Active Record 讓我們能夠建立回呼類別 (callback classes) ，來封裝 (encapsulate) 這些回呼方法，如此一來，就可以很容易的重複利用它們。
 
-底下範例，針對 +PictureFile+ 模型 (model) ，建立了一個內含 +after_destroy+ 回呼的類別 (class) 。
+底下範例，針對 +PictureFile+ model ，建立了一個內含 +after_destroy+ 回呼的類別 (class) 。
 
 <ruby>
 class PictureFileCallbacks
@@ -1073,7 +1073,7 @@ class PictureFileCallbacks
 end
 </ruby>
 
-在類別內部宣告 (declare) 回呼方法 (callback methods) 的時候，回呼方法會接收模型物件 (model object) 做為參數 (parameter) ，用法如下：
+在類別內部宣告 (declare) 回呼方法 (callback methods) 的時候，回呼方法會接收 model 物件做為參數 (parameter) ，用法如下：
 
 <ruby>
 class PictureFile < ActiveRecord::Base
@@ -1100,15 +1100,15 @@ class PictureFile < ActiveRecord::Base
 end
 </ruby>
 
-回呼類別 (callback classes) 內，可宣告的回呼數量沒有限制，要多少個都可以。
+回呼類別 (callback classes) 裡面，可以宣告的回呼在數量上並沒有限制，要宣告多少個都可以。
 
 h3. 觀測器 (Observers)
 
-觀測器 (observers) 跟回呼 (callbacks) 很像，但是有個重大的差別，差別在於，回呼的程式碼會污染 (pollute) 模型，而這些程式碼，往往與模型 (model) 本身的用途，並沒有直接的關係；但是，觀測器 (observers) 卻可以在模型的外部，以不會污染到模型的方式，做到跟回呼一樣的功能。像是 +User+ 模型裡面，其實不該有送出註冊確認信 (registration confirmation emails) 的程式碼，這種時候，回呼內的程式碼跟模型本身沒有直接關係，就可以考慮用觀測器 (observer) 來代替回呼 (callbacks) 。
+觀測器 (observers) 跟回呼 (callbacks) 很像，但是有個重大的差別，差別在於，回呼的程式碼會污染 (pollute) model ，而這些程式碼，往往與 model 本身的用途，並沒有直接的關係；但是，觀測器 (observers) 卻可以在 model 的外部，以不會污染到 model 的方式，做到跟回呼一樣的功能。像是 +User+ model 裡面，其實不該有送出註冊確認信 (registration confirmation emails) 的程式碼，這種時候，回呼內的程式碼跟 model 本身沒有直接關係，就可以考慮用觀測器 (observer) 來代替回呼 (callbacks) 。
 
 h4. 建立觀測器 (Creating Observers)
 
-假設有個 +User+ 模型，希望每次它新增使用者的時候，系統都送出一封確認 email 。由於寄信並不是 +User+ 模型存在的目的，所以，我們可以用觀測器 (observer) 來加入這個功能。
+假設有個 +User+ model ，希望每次它新增使用者的時候，系統都送出一封確認 email 。由於寄信並不是 +User+ model 存在的目的，所以，我們可以用觀測器 (observer) 來加入這個功能。
 
 <shell>
 rails generate observer User
@@ -1122,7 +1122,7 @@ class UserObserver < ActiveRecord::Observer
 end
 </ruby>
 
-觀測器的方法 (methods) ，將它所觀測的模型接收為一個參數 (parameter) ，這一點，就跟回呼類別 (callback classes) 是一樣的。
+觀測器的方法 (methods) ，是將它所觀測的 model 接收為一個參數 (parameter) ，這一點，就跟回呼類別 (callback classes) 是一樣的。
 
 h4. 註冊觀測器 (Registering Observers)
 
@@ -1137,7 +1137,7 @@ config.active_record.observers = :user_observer
 
 h4. 共享觀測器 (Sharing Observers)
 
-預設之下， Rails 會單純的把觀測器 (observer) 的名稱，除掉 "Observer" 這幾個字後，去尋找相同名稱的模型 (model) ，做為觀測的對象。不過，觀測器 (observer) 其實可以對上多個模型 (model) ，而我們可以手動的指定這些模型。
+預設之下， Rails 會單純的把觀測器 (observer) 的名稱，除掉 "Observer" 這幾個字後，去尋找相同名稱的 model ，做為觀測的對象。不過，觀測器 (observer) 其實可以對上多個 model ，而我們可以手動的指定這些 model 。
 
 <ruby>
 class MailerObserver < ActiveRecord::Observer
@@ -1178,4 +1178,4 @@ h3. 關於譯者
 h3. 翻譯詞彙
 
 本文翻譯自 "http://edgeguides.rubyonrails.org/active_record_validations_callbacks.html":http://edgeguides.rubyonrails.org/active_record_validations_callbacks.html 。英文與繁體中文的對照詞彙，請見 "rails-guide-glossary-list-zh_tw":https://spreadsheets.google.com/ccc?key=0AkNsS2a-Qx8ZdDJzTUlNeVlvRy1BYnZDUnRjZUpWWGc&hl=en
-部份翻譯詞彙參考自「Ruby Programming－向Ruby之父學程式設計」以及「松本行弘的程式世界：成為一流程式設計師的14種思考術」二書，皆為博碩出版。
+部份翻譯詞彙參考自「"Ruby Programming－向Ruby之父學程式設計":http://anobii.com/books/Ruby_Programming/9789575279776/018bca897e4b3aafa8/」以及「"松本行弘的程式世界：成為一流程式設計師的14種思考術":http://anobii.com/books/%E6%9D%BE%E6%9C%AC%E8%A1%8C%E5%BC%98%E7%9A%84%E7%A8%8B%E5%BC%8F%E4%B8%96%E7%95%8C/9789862013571/017262b33d6647d8f3/」二書，皆為博碩出版。
