@@ -141,9 +141,9 @@ end
 
 h4(#validations_overview-errors). +errors[]+ 屬性內，錯誤訊息的陣列集合
 
-對於物件的某個屬性 (attribute) ，要確認是否有效 (valid) 的話，可以用 +errors[:attribute]+ ，它會傳回一個陣列 (array) ，裡面有這個屬性的全部的錯誤訊息 (attribute errors) 。如果，這個屬性沒有任何錯誤訊息，那就會傳回空的陣列。
+對於物件的某個屬性 (attribute) ，要確認是否有效 (valid) ，可以用 +errors[:attribute]+ ，它會傳回一個陣列 (array) ，裡面有該屬性全部的錯誤訊息 (attribute errors) 。如果，此屬性沒有任何錯誤訊息，那就會傳回空的陣列。
 
-這個方法，要在驗證執行過 _之後_ 才能使用，因為，它只會檢查錯誤訊息的集合 (errors collection) ，而不會去觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為它不會去確認物件整體上的有效性 (validity) ，它只是去看這個物件的個別屬性，有沒有錯誤訊息在裡面而已。
+這個方法，要在驗證執行過 _之後_ 才能使用，因為，它只會檢查錯誤訊息的集合 (errors collection) ，而不會觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為 +errors[:attribute]+ 不會確認物件整體上的有效性 (validity) ，它只是檢查這個物件的某個屬性，有沒有錯誤訊息而已。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -158,7 +158,7 @@ end
 
 h3. 驗證輔助工具 (Validation Helpers)
 
-Active Record 預先定義好許多驗證輔助工具，您可以在類別定義 (class definition) 裡面，直接使用它們。這些輔助工具，有共通的驗證規則，每次，一個驗證失敗時，就會在該物件的 +errors+ 集合中，加入一條錯誤訊息，這個訊息，則會跟當時正在驗證的欄位 (field) 相關連。
+Active Record 預先定義了許多驗證輔助工具，可以在類別定義 (class definition) 中直接使用。這些輔助工具有共通的驗證規則，每當一個驗證失敗，就會在該物件的 +errors+ 集合中，加入一條錯誤訊息，此訊息，跟這個驗證失敗的欄位 (field) 相關連 (associated) 。
 
 每個輔助工具，可以接收 (accepts) 多個屬性名稱 (attribute names) ，要幾個都可以。所以，只要用一行程式碼，就可以把同一種驗證方式，套用到好幾個不同的屬性上面。
 
