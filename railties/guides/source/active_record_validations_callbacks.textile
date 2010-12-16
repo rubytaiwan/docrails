@@ -937,6 +937,7 @@ h3. Running Callbacks
 
 The following methods trigger callbacks:
 
+
 * +create+
 * +create!+
 * +decrement!+

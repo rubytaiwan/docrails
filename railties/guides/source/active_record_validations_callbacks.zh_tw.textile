@@ -158,11 +158,11 @@ end
 
 h3. 驗證輔助工具 (Validation Helpers)
 
-Active Record 預先定義了許多驗證輔助工具，可以在類別定義 (class definition) 中直接使用。這些輔助工具有共通的驗證規則，每當一個驗證失敗，就會在該物件的 +errors+ 集合中，加入一條錯誤訊息，此訊息，跟這個驗證失敗的欄位 (field) 相關連 (associated) 。
+Active Record 提供許多預先定義 (pre-defined) 的驗證輔助工具，您可以在類別定義 (class definitions) 中，直接使用它們。這些輔助工具有共通的驗證規則，每當一個驗證失敗，就會在該物件的 +errors+ 集合中，加入一條錯誤訊息，此訊息，跟這個驗證失敗的欄位 (field) 相關連 (associated) 。
 
-每個輔助工具，可以接收 (accepts) 多個屬性名稱 (attribute names) ，要幾個都可以。所以，只要用一行程式碼，就可以把同一種驗證方式，套用到好幾個不同的屬性上面。
+每個輔助工具，可以接收 (accepts) 任意數量的屬性名稱 (attribute names) 。所以，只要用一行程式碼，就可以把同一種驗證方式，套用到好幾個不同的屬性上面。
 
-輔助工具都可接收 +:on+ 跟 +:message+ 選項 (options) ，這些選項，會定義驗證該何時執行，以及，如果驗證失敗的話，該加什麼訊息到 +errors+ 集合中, respectively 。選項 +:on+ 的作用，是將一個值 +:save+ （預設），或者 +:create+ ，或者 +:update+ 。至於選項 +:message+ 的作用，則是自訂錯誤訊息，如果，沒有自訂 +:message+ ，就會採用預設的，反正，每個驗證輔助工具，都有預設的訊息可以用。底下讓我們一個一個來看。
+所有輔助工具都會接收 +:on+ 跟 +:message+ 選項 (options) ，這些選項，會定義驗證該何時執行，以及，如果驗證失敗的話，該加什麼訊息到 +errors+ 集合中, respectively 。選項 +:on+ 的作用，是將一個值 +:save+ （預設），或者 +:create+ ，或者 +:update+ 。至於選項 +:message+ 的作用，則是自訂錯誤訊息，如果，沒有自訂 +:message+ ，就會採用預設的，反正，每個驗證輔助工具，都有預設的訊息可以用。底下讓我們一個一個來看。
 
 h4. +validates_acceptance_of+ 確定使用者已經接受
 
