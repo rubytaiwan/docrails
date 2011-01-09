@@ -368,13 +368,13 @@ class LineItem < ActiveRecord::Base
 end
 </ruby>
 
-由於 +false.blank?+ 的結果是 true ，要驗證布林欄位 (boolean field) 是否存在的話，必須寫成 +validates_inclusion_of :field_name, :in => [true, false]+ 。
+由於 +false.blank?+ 的結果是 true ，也就是說， false 值會被 +blank?+ 方法視為是空的值，所以，若要驗證一個布林欄位 (boolean field) 是否存在的話，必須寫成 +validates_inclusion_of :field_name, :in => [true, false]+ 。
 
 +validates_presence_of+ 預設的錯誤訊息是 "_can't be empty_" 。
 
 h4. +validates_uniqueness_of+ 確保屬性的值是唯一的
 
-在儲存物件的前一刻，驗證屬性的值，以確定它是唯一的。這個工具，並不會在資料庫中建立唯一值約束 (uniqueness constraint) ，所以，可能會有兩個不同資料庫連結 (database connections) ，在同一個欄，存入了兩筆一樣的記錄 (records) 。要避免這個狀況，您必須為資料庫做一個 ??? 唯一索引 (unique index) 。
+在儲存物件的前一刻，驗證屬性的值，以確定它是唯一的。這個工具，並不會在資料庫中建立唯一值約束 (uniqueness constraint) ，所以，可能會發生兩個不同資料庫連結 (database connections) 在同一個欄存入了兩筆一樣的記錄 (records) 的狀況。要避免這個狀況，您必須在資料庫內製作唯一索引 (unique index) 。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -382,9 +382,9 @@ class Account < ActiveRecord::Base
 end
 </ruby>
 
-這個驗證的運作方式，是在 model 的資料表內，執行一個 SQL 查詢 (query) 。如此，會在現有的記錄 (record) 裡面，針對指定的屬性，搜尋相同的值。
+這個驗證的運作方式，是在 model 的資料表內，針對指定的屬性，執行 SQL 查詢 (query) ，在現有的記錄 (record) 中搜尋相同的值。
 
-要把唯一值檢查 (uniqueness check) 加上其他檢查條件的話，需要用到一些額外的屬性。這些屬性，可以用 +:scope+ 選項來指定：
+要利用別的屬性，來限制某個屬性的唯一值檢查 (uniqueness check) 的話，可以用 +:scope+ 選項來指定：
 
 <ruby>
 class Holiday < ActiveRecord::Base
@@ -393,7 +393,7 @@ class Holiday < ActiveRecord::Base
 end
 </ruby>
 
-另外，還有個 +:case_sensitive+ 選項，可以設定唯一值的檢查是否要分大小寫 (case sensitive) 。預設是 true 。
+此外還有 +:case_sensitive+ 選項，可以設定唯一值的檢查是否要區分大小寫 (case sensitive) 。預設是 true 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -401,13 +401,13 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-WARNING. 有些資料庫，設定成不論如何都會執行不分大小寫 (case-insensitive) 的搜尋。
+WARNING. 有的資料庫系統，設定成不論如何都會執行不分大小寫 (case-insensitive) 的搜尋。
 
 +validates_uniqueness_of+ 預設的錯誤訊息是 "_has already been taken_" 。
 
 h4. +validates_with+ 用另外的類別來做驗證
 
-把記錄 (record) 轉交給另一個獨立的類別 (separate class) 來驗證。
+把記錄 (record) 轉交給另一個獨立的類別 (separate class) 來進行驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -423,14 +423,14 @@ class GoodnessValidator < ActiveRecord::Validator
 end
 </ruby>
 
-+validates_with+ 會用一個或多個類別，來進行驗證。它沒有預設的錯誤訊息，所以，必須用手動 (manual) 的方式，在 validator 類別的定義裡面，把錯誤訊息加入該筆記錄 (record) 的錯誤訊息集合 (errors collection) 中。
++validates_with+ 可以用一或多個類別進行驗證。它沒有預設的錯誤訊息，所以，必須手動 (manual) 在 validator 類別裡面，把錯誤訊息加入該筆記錄 (record) 的錯誤訊息集合 (errors collection) 中。
 
 validator 類別預設有兩個屬性：
 
 * +record+ - 要驗證的那筆記錄 (record)
-* +options+ - 已傳給 +validates_with+ 的額外選項 (extra options)
+* +options+ - 傳遞給 +validates_with+ 的額外選項 (extra options)
 
-+validates_with+ 有 +:if+ 、+:unless+ 、+:on+ 這三個選項可用，這一點，就跟其他驗證方式一樣。如果有傳入其他選項，則會以 +options+ 的方式，送到 validator 類別去：
++validates_with+ 跟其他驗證方式一樣，有 +:if+ 、+:unless+ 、+:on+ 這三個選項。如果傳入其他選項，則會做為 +options+ 傳送到 validator 類別去：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -448,7 +448,7 @@ end
 
 h4. +validates_each+ 用區塊進行自訂的驗證
 
-按照區塊 (block) 裡的程式碼，對屬性 (attributes) 做驗證。這個工具，沒有定義任何驗證功能，您要自己用區塊來撰寫驗證，然後，每一個傳給 +validates_each+ 的屬性，都會根據您的區塊內容來做測試。下面示範，希望 names 跟 surnames 不是小寫開頭：
+用程式碼區塊 (block) 驗證屬性 (attributes) 。這個工具，沒有預先定義好的驗證功能，要自己用區塊撰寫，之後，傳給 +validates_each+ 的屬性會用區塊來做測試。下面的範例中，我們希望 names 跟 surnames 不要有小寫開頭：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -458,15 +458,15 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-區塊接收了三樣東西：model 、屬性名稱、屬性的值。在區塊內，可以做任何您想做的驗證。要是驗證失敗，可以在 model 裡加入錯誤訊息，讓它變成無效的 (invalid) 。
+區塊接收了三樣東西：model 、屬性的名稱、屬性的值。在區塊內，可以做任何想做的驗證，驗證失敗的話，可以在 model 裡加入錯誤訊息，將它標記為無效 (invalid) 。
 
 h3. 共通的驗證選項 (Common Validation Options)
 
-有些共通的選項 (options) ，所有的驗證輔助工具都能用，下面介紹除了 +:if+ 跟 +:unless+ 之外的共通選項。至於 +:if+ 跟 +:unless+ 會另外在 "條件式驗證 (Conditional Validation)":#conditional-validation 的部份討論。
+有些共通的選項 (options) 是在所有驗證輔助工具中都能使用的，下面介紹除了 +:if+ 跟 +:unless+ 之外的共通選項。 +:if+ 跟 +:unless+ 會另外在 "條件式驗證 (Conditional Validation)":#conditional-validation 的部份討論。
 
 h4. +:allow_nil+ 允許 nil 值
 
-+:allow_nil+ 選項，在被驗證的值是 +nil+ 的時候，會略過驗證。在 +validates_presence_of+ 工具裡面，使用 +:allow_nil+ 選項的話，就可以允許 +nil+ 值，不過，其他任何的 +blank?+ 值還是一樣會被拒絕 (rejected) 。
++:allow_nil+ 選項，在被驗證的值是 +nil+ 時略過驗證。在 +validates_presence_of+ 工具裡使用 +:allow_nil+ 選項的話，就可以允許 +nil+ 值，不過，其他的 +blank?+ 值仍然會被拒絕 (rejected) 。
 
 <ruby>
 class Coffee < ActiveRecord::Base
