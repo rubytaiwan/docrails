@@ -7,7 +7,7 @@ h2. Active Record 的驗證 (Validations) 與回呼 (Callbacks)
 * 了解 Active Record 物件的生命週期 (life cycle)
 * 使用內建的 Active Record 驗證輔助工具 (validation helpers)
 * 打造您自訂的驗證方法 (validation methods)
-* 處理驗證過程中，所產生的錯誤訊息 (error messages)
+* 處理驗證流程所產生的錯誤訊息 (error messages)
 * 撰寫回呼方法 (callback methods) ，以便回應物件生命週期中，所發生的事件 (events)
 * 撰寫特殊類別 (special classes) ，以便封裝 (encapsulate) 回呼之間的共通行為 (common behavior)
 * 建立觀測器 (observers)，以便在原始類別 (original class) 的外部，回應物件生命週期中所發生的的事件 (events)
@@ -16,7 +16,7 @@ endprologue.
 
 h3. 物件生命週期 (Object Life Cycle)
 
-Rails 正常操作的期間，會產生一些物件，也會更新、銷毀它們。為此，Active Record 提供了 <em>物件生命週期</em> 內的 hooks，讓您可以操控程式、操控資料。
+Rails 正常操作的期間，會產生一些物件，也會更新、銷毀它們。為了方便您操控應用程式、操控資料，Active Record 提供了 <em>物件生命週期</em> 內的 hooks 。
 
 其中，驗證 (validations) 的功用，是確保只有有效的資料，儲存到資料庫裡面。而回呼 (callbacks) 和觀測器 (observers) 的功用，則是在物件狀態變化 (alteration) 之前或之後，觸發相關的邏輯 (logic) 。
 
@@ -28,7 +28,7 @@ h4. 為什麼要驗證 (Why Use Validations) ？
 
 驗證 (validations) 的作用，是確保資料庫裡，只有有效資料 (valid data) 才會儲存進去。比方說，您的應用程式可能要確定每個使用者，都提供有效的電子郵件地址、和郵寄地址等。
 
-資料存入前，有幾個驗證的方法，包括：原生的資料庫約束 (native database constraints) 、客戶端驗證 (client-side validations) 、控制器層級的驗證 (controller-level validations) 、以及 model 層級的驗證 (model-level validations)。
+資料存入前，有幾種驗證的方法，包括：原生的資料庫約束 (native database constraints) 、客戶端驗證 (client-side validations) 、控制器層級的驗證 (controller-level validations) 、以及 model 層級的驗證 (model-level validations)。
 
 * 資料庫約束 (database constraints) 也稱作預存程序 (stored procedures) ，這些驗證機制，要依賴特定的資料庫系統，所以測試和維護會比較難。不過，如果資料庫也要讓別的應用程式使用，那在資料庫層做約束可能就是不錯的主意。另外，資料庫層級的驗證可以很安全的處理一些事情，像是在重度使用的資料表中，確保唯一值 (uniqueness) 之類的。這些事情，如果用其他的方法，會比較難實作。
 * 客戶端的驗證 (client-side validations) 雖然可以用，但單單用它的話通常不太可靠。如果用 JavaScript 來實作，要是使用者的瀏覽器把 JavaScript 關掉，那驗證就被跳過了。不過畢竟，客戶端驗證可以給使用者很即時的回饋，所以，要是能跟其他驗證手法併用，那倒是挺方便的。
@@ -37,7 +37,7 @@ h4. 為什麼要驗證 (Why Use Validations) ？
 
 h4. 什麼時候會發生驗證 (When Does Validation Happen) ？
 
-Active Record 類別底下，有兩種物件：一種是跟資料庫中的某筆資料對應的，另一種則是沒有跟資料對應的。當您用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於物件目前是否已存入資料庫，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。簡單舉例，這裡有個 Active Record 底下的類別：
+Active Record 物件有兩種：對應到資料庫中某筆資料的物件，以及沒有跟資料對應的物件。當您用 +new+ 之類的方法，建立了一個新物件，此時，它還不屬於資料庫。等到您呼叫那個物件的 +save+ 方法，它才會被存入適當的資料表中。至於物件是否已儲存，則是用 Active Record 的實體方法 (instance method) +new_record?+ 來確認。以這個簡單的 Active Record 類別為例：
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -57,11 +57,11 @@ end
 => false
 </shell>
 
-新記錄 (record) 的新增與儲存，會對資料庫送出一個 SQL 的 +INSERT+ 操作 (operation) 。現有記錄的更新，則會送出 +UPDATE+ 操作。通常，在這些命令送到資料庫之前，會進行驗證，如果任一個驗證失敗的話，這個物件就標記為無效 (marked as invalid) ，於是 Active Record 就不會執行 +INSERT+ 或 +UPDATE+ ，所以，無效的物件也就不會存進資料庫。您可以針對物件的新增、儲存、更新，自訂專屬的驗證功能。
+新記錄 (record) 的新增與儲存，會對資料庫送出 SQL 的 +INSERT+ 操作 (operation) 。現有記錄的更新，則會送出 +UPDATE+ 操作。通常，在這些命令送到資料庫之前，會進行驗證，如果任一個驗證失敗的話，這個物件就標記為無效 (marked as invalid) ，於是 Active Record 就不會執行 +INSERT+ 或 +UPDATE+ ，所以，無效的物件也就不會存進資料庫。您也可以針對物件的新增、儲存、更新，指派某幾個特定的驗證。
 
-CAUTION: 在資料庫裡面，有很多種方法，都能改變物件的狀態 (state) 。這些方法中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
+CAUTION: 資料庫裡面，有很多方式，都能改變物件的狀態 (state) 。其中，有些會觸發驗證機制，有些則不會。也就是說，不注意的話，是有可能把無效狀態 (invalid state) 的物件，存到資料庫裡去的。
 
-下面列出的方法，會觸發驗證，只有驗證合格的物件才會存入資料庫：
+下面列出的方法，會觸發驗證，驗證合格的物件才會存入資料庫：
 
 * +create+
 * +create!+
@@ -71,7 +71,7 @@ CAUTION: 在資料庫裡面，有很多種方法，都能改變物件的狀態 (
 * +update_attributes+
 * +update_attributes!+
 
-上述方法中。尾巴附有一個驚嘆號的版本 (bang versions) 像是 +save!+ ，會在這筆紀錄 invalid 的時候丟出例外 (raise an exception) 。沒有驚嘆號的 (non-bang versions) 則不會丟出例外。其中， +save+ 跟 +update_attributes+ 會傳回 +false+ ，而 +create+ 跟 +update+ 則單純的傳回物件本身。
+其中，方法名稱附有驚嘆號的 (bang versions) 像是 +save!+ ，會在這筆紀錄 invalid 的時候丟出例外 (raise an exception) 。至於名稱中沒有驚嘆號的 (non-bang versions) ，則不會丟出例外，像是 +save+ 跟 +update_attributes+ 會傳回 +false+ ，而 +create+ 跟 +update+ 則單純的傳回物件本身。
 
 h4. 略過驗證 (Skipping Validations)
 
