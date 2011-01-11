@@ -92,7 +92,7 @@ h4. 略過驗證 (Skipping Validations)
 
 h4. +valid?+ 與 +invalid?+ 檢查是否有錯誤訊息
 
-Rails 是用 +valid?+ 方法，來確認物件是否有效，而您也可以自己把 +valid?+ 拿來用。 +valid?+ 會觸發驗證，驗證完，沒有錯誤訊息附加到物件上的話，就傳回真值 (true) ，反之，有錯誤訊息的話，就是假值 (false) 。
+Rails 使用 +valid?+ 方法，來確認物件是否有效，您也可以如法炮製。 +valid?+ 會觸發驗證，沒有錯誤訊息附加到物件上的話，就傳回真值 (true) ，反之，有錯誤訊息的話，就是假值 (false) 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -103,9 +103,9 @@ Person.create(:name => "John Doe").valid? # => true
 Person.create(:name => nil).valid? # => false
 </ruby>
 
-Active Record 執行驗證時，任何錯誤訊息，都可以用 +errors+ 這個實體方法 (instance method) 來存取 (accessed) 。驗證結束後，如果錯誤訊息的集合 (collection) 仍然是空的，那在定義上，這個物件就會被認為是有效 (valid) 。
+當 Active Record 執行驗證時，所找到的驗證錯誤，可以用 +errors+ 實體方法 (instance method) 來存取 (accessed) 。驗證結束後，如果錯誤訊息的集合 (collection) 仍是空的，在定義上，這個物件就認定為有效 (valid) 。
 
-要注意的是，用 +new+ 方法實體化 (instantiated) 出來的物件，即使它在技術上是無效 (invalid) 的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
+要注意的是，用 +new+ 方法實體化 (instantiated) 出來的物件，即使在技術上是無效 (invalid) 的，也不會回報錯誤訊息，因為，執行 +new+ 的時候，並不會進行驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -137,13 +137,13 @@ end
 => ActiveRecord::RecordInvalid: Validation failed: Name can't be blank
 </ruby>
 
-+invalid?+ 純粹是 +valid?+ 的相反， +invalid?+ 方法也會觸發驗證，有任何錯誤訊息加到物件上的話，就傳回真值 (true) ， 反之則是假值 (false) 。
++invalid?+ 純粹是 +valid?+ 的相反。 +invalid?+ 也會觸發驗證，有錯誤訊息加到物件上的話，就傳回真值 (true) ， 反之則是假值 (false) 。
 
 h4(#validations_overview-errors). +errors[]+ 屬性內，錯誤訊息的陣列集合
 
-要確認物件的某個屬性 (attribute) 是否有效 (valid) ，可以用 +errors[:attribute]+ 方法，它會傳回一個陣列 (array) ，裡面有該屬性全部的錯誤訊息 (attribute errors) 。如果，此屬性沒有任何錯誤訊息，那就會傳回空的陣列。
+要確認物件的某個屬性 (attribute) 是否有效，可以用 +errors[:attribute]+ 方法，此方法會傳回一個陣列 (array) ，內有該屬性的全部錯誤訊息 (attribute errors) 。如果沒有錯誤訊息，則傳回空的陣列。
 
-這個方法，要在驗證執行過 _之後_ 才能使用，因為，它只會檢查錯誤訊息的集合 (errors collection) ，而不會觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為 +errors[:attribute]+ 不會確認整體物件有效與否 (validity) ，它只是檢查這個物件的某個屬性，有沒有錯誤訊息而已。
++errors[:attribute]+ 要在驗證執行過 _之後_ 才能使用，因為，它只檢查錯誤訊息的集合 (errors collection) ，而不會觸發驗證本身。這跟上面提過的 +ActiveRecord::Base#invalid?+ 方法，是不一樣的，因為 +errors[:attribute]+ 不會確認整個物件是否有效，它只是檢查這個物件的某個屬性，有沒有錯誤訊息而已。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -154,19 +154,19 @@ end
 >> Person.create.errors[:name].any? # => true
 </ruby>
 
-關於驗證的錯誤訊息 (validation errors) ，之後的 "Working with Validation Errors":#working-with-validation-errors 章節會再深入解釋。現在，讓我們回頭看看 Rails 內建的驗證輔助工具 (validation helpers) 。
+關於驗證所產生的錯誤 (validation errors) ，之後的 "Working with Validation Errors":#working-with-validation-errors 章節會深入解釋。現在，讓我們回頭看看 Rails 內建的驗證輔助工具 (validation helpers) 。
 
 h3. 驗證輔助工具 (Validation Helpers)
 
-Active Record 提供許多預先定義好的 (pre-defined) 驗證輔助工具，您可以在類別定義 (class definitions) 中，直接使用它們。這些輔助工具有共通的驗證規則，每當一個驗證失敗，就會在該物件的 +errors+ 集合中，加入一條錯誤訊息，此訊息，跟這個驗證失敗的欄位 (field) 相關連 (associated) 。
+Active Record 預先定義好 (pre-defined) 許多驗證輔助工具，讓我們在類別定義 (class definitions) 中，直接使用。它們擁有共通的驗證規則，當驗證失敗，就在該物件的 +errors+ 集合中，加入一條錯誤訊息，此訊息跟驗證失敗的欄位 (field) 相關連 (associated) 。
 
-每個輔助工具，可以接收 (accepts) 任意數量的屬性名稱 (attribute names) 。所以，只要用一行程式碼，就可以把同一種驗證方式，套用到好幾個不同的屬性上面。
+一個輔助工具可以接收 (accepts) 多個屬性名稱 (attribute names) ，數量不拘。所以，只要用一行程式碼，就可以把同一種驗證方式，套用到好幾個不同的屬性上面。
 
-所有輔助工具都會接收 +:on+ 跟 +:message+ 這二個選項 (options) ，這些選項，會定義驗證該何時執行，以及如果驗證失敗的話，該加什麼訊息到各自的 +errors+ 集合中。選項 +:on+ 的值會是 +:save+ （預設）、+:create+ 、+:update+ 的其中之一。至於選項 +:message+ 的值，則是自訂的錯誤訊息。每個驗證輔助工具都有預設的錯誤訊息，沒有自訂 +:message+ 選項的話，就會採用預設的。接下來就逐一討論這些輔助工具。
+全體輔助工具都會接收 +:on+ 跟 +:message+ 選項 (options) ，它們定義了驗證執行的時機，以及驗證失敗時，該加什麼訊息到各自的 +errors+ 集合中。選項 +:on+ 的值，是 +:save+ （預設）、+:create+ 、+:update+ 的其中之一。而選項 +:message+ 的值，則是自訂的錯誤訊息。每個驗證輔助工具，都擁有預設的錯誤訊息，沒有自訂 +:message+ 選項的話，就會採用預設。接下來，會逐一討論這些輔助工具。
 
 h4. +validates_acceptance_of+ 確定使用者已經接受
 
-當使用者送出表單 (form submitted) 時，驗證使用者介面 (user interface) 中的核取方塊 (checkbox) 有被勾選起來。這項驗證，通常用在應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。這項驗證幾乎都是網路應用程式 (web applications) 在使用的，而這個 'acceptance （是否已接受）' 不須記錄在資料庫內，若資料表中沒有對應的欄位 (field) ，那麼 +validates_acceptance_of+ 輔助工具僅會建立一個虛擬的屬性 (virtual attribute) 。
+當使用者送出表單 (form submitted) 時，驗證使用者介面 (user interface) 中的核取方塊 (checkbox) 有被勾選起來。這項驗證，一般用在應用程式的服務條款 (terms of service) ，要使用者確認「我同意」、「我已閱讀」之類的。此驗證是專為網路應用程式 (web applications) 而設計的，這個 'acceptance （是否已接受）' 不須記錄在資料庫內，若資料表中沒有對應的欄位 (field) 也無妨， +validates_acceptance_of+ 輔助工具會建立一個虛擬的屬性 (virtual attribute) 。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -186,7 +186,7 @@ end
 
 h4. +validates_associated+ 驗證其他有關連的 models
 
-如果您的 model 跟其他 models 有關聯 (associations) ，而這些相關的 models 也需要驗證，那麼，就需要使用這個輔助工具了。當您儲存物件的同時，會針對每一個跟它相關聯的物件，呼叫 +valid?+ 方法。
+當某個 model 跟其他 models 有關聯 (associations) ，而相關的 models 也需要驗證，那麼，就需要使用這個輔助工具，在物件儲存前，對每個相關聯的物件，呼叫 +valid?+ 方法。
 
 <ruby>
 class Library < ActiveRecord::Base
@@ -195,11 +195,11 @@ class Library < ActiveRecord::Base
 end
 </ruby>
 
-所有類型的資料庫關聯 (association types) ，都可以使用這個驗證。
+所有的資料庫關聯類型 (association types) ，都可以使用這個驗證。
 
-CAUTION: 不要在一個資料庫關聯的兩端，同時使用 +validates_associated+ ，因為，它們會一直互相呼叫，最後變成無窮迴圈。
+CAUTION: 不要在資料庫關聯的兩端，同時使用 +validates_associated+ ，因為，它們會互相呼叫，最後變成無窮迴圈。
 
-+validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關聯的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，而不會跑到呼叫方的模型 (calling model) 裡面去。
++validates_associated+ 預設的錯誤訊息是 "_is invalid_" 。每個相關聯的物件 (associated object) 都有自己的 +errors+ 集合，自己的錯誤訊息，只會出現在自己的集合裡面，而不會出現在呼叫方的模型 (calling model) 中。
 
 h4. +validates_confirmation_of+ 檢查使用者的再次確認
 
