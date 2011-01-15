@@ -490,18 +490,18 @@ Topic.create("title" => nil).valid? # => true
 
 h4. +:message+ 自訂錯誤訊息
 
-驗證失敗時，在 +errors+ 集合 (collection) 裡面，採用 +:message+ 選項所指定的自訂錯誤訊息。沒有設定此選項的話， Active Record 會採用該驗證輔助工具 (validation helpers) 原本內建的錯誤訊息。
++:message+ 選項用來自訂錯誤訊息，以便在驗證失敗時，將自訂的訊息加入 +errors+ 集合 (collection) 裡面。沒有設定此選項的話， Active Record 會採用該驗證輔助工具 (validation helpers) 原本內建的錯誤訊息。
 
 h4. +:on+ 在特定的時候進行驗證
 
-+:on+ 選項指定驗證發生的時機。內建的驗證輔助工具，預設行為是在儲存時執行驗證，包括新增一筆記錄、以及更新記錄 (record) 的時候。您可以用 +:on => :create+ 指定只要在新增的時候驗證，或者用 +:on => :update+ 設定只要在更新的時候驗證。
++:on+ 選項指定驗證發生的時機。內建的驗證輔助工具，預設的行為是在儲存的時候執行驗證，包括新增記錄、以及更新記錄。您可以用 +:on => :create+ 指定只要在新增的時候驗證，或者用 +:on => :update+ 設定只要在更新的時候驗證。
 
 <ruby>
 class Person < ActiveRecord::Base
-  # 在更新 email 資料的時候，輸入跟先前一樣的 email 值，是可以的
+  # 允許在更新 email 資料的時候，輸入跟先前一樣的 email 值
   validates_uniqueness_of :email, :on => :create
 
-  # 在新增年齡資料的時候，輸入不是數字 (non-numerical) 的值，是可以的
+  # 允許在新增年齡資料的時候，輸入不是數字 (non-numerical) 的值
   validates_numericality_of :age, :on => :update
 
   # 預設的狀況（新增、更新，兩種狀況都驗證）
@@ -511,11 +511,11 @@ end
 
 h3. 條件式驗證 (Conditional Validation)
 
-有時候，在某些先決條件 (predicate) 之下，才需要驗證物件，此時就可以用 +:if+ 跟 +:unless+ 選項，選項內容可以是符號 (symbol) 、字串 (string) 、或 +Proc+ 。 +:if+ 選項用來指定驗證何時 *應該* 發生，而 +:unless+ 選項則指定驗證何時 *不應該* 發生。
+有時候，在某些先決條件 (predicate) 之下，才需要驗證物件，此時就可以用 +:if+ 跟 +:unless+ 選項，選項內容可以是符號 (symbol) 、字串 (string) 、或 +Proc+ 程式物件。 +:if+ 選項用來指定驗證何時 *應該* 發生，而 +:unless+ 選項則指定驗證何時 *不應該* 發生。
 
 h4. 在 +:if+ 和 +:unless+ 中使用符號 (Symbol)
 
-要呼叫某個方法，來判斷是否要執行驗證的話，可以把這個方法的名稱，做為符號 (symbol) 放入 (associate) +:if+ 跟 +:unless+ 選項內。這是最常見的一種用法。
+把某個方法的名稱，以符號的形式，放入 (associate) +:if+ 跟 +:unless+ 選項內，就可以在驗證前呼叫這個方法，來判斷是否要執行驗證。這是最常見的一種條件式寫法。
 
 <ruby>
 class Order < ActiveRecord::Base
@@ -529,7 +529,7 @@ end
 
 h4. 在 +:if+ 和 +:unless+ 中使用字串 (String)
 
-把一段有效的 Ruby 程式碼，以字串的形式，放在條件式中，讓它被丟去給 +eval+ 求值。這個方法，只適合在字串條件式很短的時候使用。
+把一段有效的 Ruby 程式碼，以字串的形式，放入條件式選項內，就可以將它丟去給 +eval+ 求值，來判斷是否要執行驗證。這種寫法，只適合在字串條件式很短的時候使用。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -539,7 +539,7 @@ end
 
 h4. 在 +:if+ 和 +:unless+ 中使用 Proc 物件
 
-最後，可以把 +Proc+ 物件放入 (associate) +:if+ 和 +:unless+ 裡面，以便呼叫它來執行條件判斷。使用 +Proc+ 物件，就可以直接撰寫判斷式 (inline condition) ，而不需要另闢一個獨立的方法 (separate method) 了。這對僅有一行的程式 (one-liners) 來說，再適合不過。
+最後，把 +Proc+ 物件放入 +:if+ 跟 +:unless+ 選項內，就可以呼叫這個物件，來判斷是否要執行驗證。使用 +Proc+ 物件，就可以直接撰寫判斷式 (inline condition) ，而不需要另闢一個獨立的方法 (separate method) 。這種寫法，非常適合僅有一行的程式 (one-liners) 。
 
 <ruby>
 class Account < ActiveRecord::Base
@@ -548,9 +548,9 @@ class Account < ActiveRecord::Base
 end
 </ruby>
 
-h3. 自訂驗證方法 (Creating Custom Validation Methods)
+h3. 打造自訂的驗證方法 (Creating Custom Validation Methods)
 
-覺得內建的工具不夠用的話，您可以自己撰寫驗證方法。
+內建的工具不夠用的話，您可以自己撰寫驗證方法。
 
 步驟很簡單，先建立方法 (methods) ，來確認 models 的狀態 (state) ，並在 model 無效 (invalid) 時，把錯誤訊息加入 +errors+ 集合。然後，將自訂方法的名稱，以符號 (symbols) 的形式，傳入 +validate+ 、 +validate_on_create+ 或 +validate_on_update+ 等類別方法 (class methods) 中，以便註冊 (register) 自訂方法。
 
@@ -583,7 +583,7 @@ ActiveRecord::Base.class_eval do
 end
 </ruby>
 
-重新打開 +ActiveRecord::Base+ ，在裡面定義一個像這樣的類別方法。通常，這段程式碼會放在 +config/initializers+ 裡面。要使用這個自訂的驗證輔助工具，可以這樣：
+???(為啥要重開?意思是要重新啟動嗎?囧)重新打開 +ActiveRecord::Base+ ，定義如上述的類別方法，自訂的輔助工具就完成了。通常，這段程式碼會放在 +config/initializers+ 裡面。而它的用法，就像這樣：
 
 <ruby>
 class Movie < ActiveRecord::Base
@@ -593,13 +593,13 @@ end
 
 h3. 處理驗證錯誤 (Working with Validation Errors)
 
-除了前面提的 +valid?+ 和 +invalid?+ 方法之外， Rails 還提供許多其他方法，來處理 +errors+ 集合，或者查詢物件的有效性 (validity) 。
+除了前面提過的 +valid?+ 和 +invalid?+ 方法之外， Rails 還提供許多其他方法，來處理 +errors+ 集合，或者查詢物件的有效性 (validity) 。
 
-下面只列出最常用的方法，至於完整的方法清單，請參考 +ActiveRecord::Errors+ 的文件。
+下面只列出最常用的方法，至於完整的方法列表，請參考 +ActiveRecord::Errors+ 的文件。
 
 h4(#working_with_validation_errors-errors). +errors+ 列出物件的錯誤訊息
 
-把所有錯誤訊息，回傳為一個有序雜湊 (OrderedHash) 。雜湊的鍵 (key) 是屬性的名稱 (attribute name) ，值 (value) 則是一個陣列，陣列由字串組成，內有該屬性的所有錯誤訊息。
+把某個物件的所有錯誤訊息，回傳為一個有序雜湊 (OrderedHash) 。雜湊的鍵 (key) 是屬性的名稱 (attribute name) ，值 (value) 則是一個陣列，陣列由字串組成，內有該屬性的所有錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -619,7 +619,7 @@ person.errors # => []
 
 h4(#working_with_validation_errors-errors-2). +errors[]+ 列出屬性的錯誤訊息
 
-+errors[]+ 用來查看特定屬性的錯誤訊息。它會傳回陣列，內有該屬性的全部錯誤訊息。陣列由字串組成，每個字串是一筆錯誤訊息。如果這個屬性沒有錯誤訊息，則會傳回一個空的陣列。
+把某個特定屬性的錯誤訊息，回傳為一個陣列 (array) ，陣列由字串組成，每個字串是一筆錯誤訊息。如果這個屬性沒有錯誤訊息，則會傳回一個空的陣列。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -643,7 +643,7 @@ person.errors[:name]
 
 h4. +errors.add+ 手動加入錯誤訊息
 
-+add+ 方法可以用手動方式，加入某屬性的錯誤訊息。這些訊息在使用者眼中的樣子，可以用 +errors.full_messages+ 或 +errors.to_a+ 這兩種方法來預覽，屬性名稱的開頭會變大寫，並附加在訊息的前面。 +add+ 方法接收兩樣東西：一是屬性名稱，二是您想手動附上的錯誤訊息。
++add+ 方法可以針對某個特定屬性，用手動的方式，加入錯誤訊息。這些訊息在使用者眼中的樣子，可以用 +errors.full_messages+ 或 +errors.to_a+ 這兩種方法來預覽，預覽時可以看到屬性名稱的開頭變成了大寫，並附加在錯誤訊息的前面。 +add+ 方法接收兩樣東西：一是屬性名稱，二是您想手動附上的錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -661,7 +661,7 @@ person.errors.full_messages
  # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-除了 +add+ 之外，還可以用 +[]=+ 設定式 (setter) ：
+手動加入訊息的方式，除了 +add+ 之外，還可以用 +[]=+ 設定式 (setter) ：
 
 <ruby>
   class Person < ActiveRecord::Base
@@ -679,9 +679,9 @@ person.errors.full_messages
    # => ["Name cannot contain the characters !@#%*()_-+="]
 </ruby>
 
-h4. +errors[:base]+ 關連到物件整體的錯誤訊息
+h4. +errors[:base]+ 針對整個物件的錯誤訊息
 
-通常，錯誤訊息是關連到某一屬性，不過，也可以加入跟整個物件的狀態相關連的錯誤訊息。有時候，不管各個屬性的值為何，只要表示出這個物件沒有通過驗證就好了，此時，就可以用 +errors[:base]+ ，它是一個陣列，只要在陣列中加入字串，這字串就可以拿來當物件的錯誤訊息。
+一般的錯誤訊息是關連 (related) 到某一屬性，不過，也可以加入關連到整個物件狀態 (object's state) 的錯誤訊息。有時，不需知道各屬性的細節，只需表示出這個物件是無效的，這時候就可以用 +errors[:base]+ ，它是一個陣列，只要在陣列中加入字串，就可以將字串拿來當做物件的錯誤訊息。
 
 <ruby>
 class Person < ActiveRecord::Base
@@ -737,11 +737,11 @@ person.errors.size # => 0
 
 h3. 在視圖中秀出驗證錯誤 (Displaying Validation Errors in the View)
 
-Rails 內建了輔助工具 (helpers) ，可以在視圖模板 (view templates) 中，顯示 models 的錯誤訊息 (error messages) 。
+Rails 內建一些輔助工具，可以在視圖模板 (view templates) 中，顯示 models 的錯誤訊息 (error messages) 。
 
-h4. +error_messages+ 以及 +error_messages_for+ 在視圖中呈現錯誤訊息
+h4. +error_messages+ 與 +error_messages_for+ 在視圖中呈現錯誤訊息
 
-用 +form_for+ 輔助工具新增表格的時候，可以在表格產生器 (form builder) 裡，用 +error_messages+ 方法，把目前這個 model 實體 (instance) 全部的驗證失敗訊息，演算呈現 (render) 出來。
+用 +form_for+ 輔助工具新增表單的時候，可以在表單產生器 (form builder) 裡，用 +error_messages+ 方法，把目前這個 model 實體 (instance) 全部的驗證失敗訊息，演算呈現 (render) 出來。
 
 <ruby>
 class Product < ActiveRecord::Base
