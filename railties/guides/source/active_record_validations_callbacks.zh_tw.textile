@@ -902,7 +902,7 @@ h4. 銷毀物件時 (Destroying an Object)
 * +after_destroy+
 * +around_destroy+
 
-WARNING. +after_save+ 在建立、更新時，都可以運作，但是，不論 ???巨集請求 (macro calls) 執行的順序為何，+after_save+ 永遠是在更特定的 +after_create+ 跟 +after_update+ 的 _之後_ 才會運作。
+WARNING. +after_save+ 在建立、更新時，都會運作，但是，不論宣告的順序為何，+after_save+ 永遠在更特定的 +after_create+ 跟 +after_update+ 的 _之後_ 才會執行。
 
 h4. +after_initialize+ 與 +after_find+
 
@@ -982,11 +982,11 @@ h3. 略過回呼 (Skipping Callbacks)
 
 h3. 中止執行鏈 (Halting Execution)
 
-為 models 註冊了新的回呼後，它們會被加入佇列 (queued) 以等候執行。佇列 (queue) 裡面包含：該 model 全部的驗證 (validations) 、已註冊的回呼、以及即將執行的資料庫操作 (database operation) 。
+為 models 註冊了新的回呼後，它們會被加入佇列 (queued) 以等候執行。佇列 (queue) 裡面包含：該 model 全部的驗證、已註冊的回呼、以及即將執行的資料庫操作 (database operation) 。
 
-整個回呼鏈 (callback chain) 會被打包在一個交易功能 (transaction) 中，如果任一個  <em>before</em> 回呼方法傳回了 +false+ ，或者丟出了例外 (raises an exception) ，整個執行鏈 (execution chain) 就會中途停止 (halted) ，且會 ???訴諸 (issued) 滾回 (ROLLBACK) 。至於 <em>after</em> 回呼方法，則是只有在丟出例外的時候，才會導致執行鏈的中止。
+整個回呼鏈 (callback chain) 會被打包在一個交易功能 (transaction) 中，如果任一個  <em>before</em> 回呼方法傳回了 +false+ ，或者丟出了例外 (raises an exception) ，整個執行鏈 (execution chain) 就會中途停止 (halted) ，且會發送出一個資料庫  ROLLBACK。至於 <em>after</em> 回呼方法，則是只有在丟出例外的時候，才會導致執行鏈的中止。
 
-WARNING. 丟出任何例外 (exception) ，都可能打斷預期要執行 +save+ 的程式碼，???或其他類似的程式碼。至於 +ActiveRecord::Rollback+ 例外，???僅僅是在進行滾回 (rollback) 時告訴 Active Record 有個滾回正在進行，因此，僅會由 ???內部捕捉 (internally captured) ，但不會被 ???再次丟出 (reraised) 。<---整段都看不太懂 orz
+WARNING. 丟出任何例外 (exception) 都會破壞 save 和回呼鏈的執行。除了 +ActiveRecord::Rollback+ 這個例外之外，它會精確地時告訴 Active Record 只進行滾回(rollback)動作。這個例外(exception) 會被 ActiveRecord 內部所捕捉而不會繼續往外丟出。
 
 h3. 關連性回呼 (Relational Callbacks)
 
@@ -1038,7 +1038,7 @@ class Order < ActiveRecord::Base
 end
 </ruby>
 
-h4. 在 +:if+ 與 +:unless+ 中使用 ???程式碼物件 (Proc)
+h4. 在 +:if+ 與 +:unless+ 中使用 Proc 物件
 
 最後， +:if+ 跟 +:unless+ 還可以放入 +Proc+ 物件。這種作法，特別適合簡短的驗證方法，通常是一行以內的 (one-liners) 。
 
