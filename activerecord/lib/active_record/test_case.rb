@@ -3,6 +3,16 @@ module ActiveRecord
   #
   # Defines some test assertions to test against SQL queries.
   class TestCase < ActiveSupport::TestCase #:nodoc:
+    setup :cleanup_identity_map
+
+    def setup
+      cleanup_identity_map
+    end
+
+    def cleanup_identity_map
+      ActiveRecord::IdentityMap.clear
+    end
+
     def assert_date_from_db(expected, actual, message = nil)
       # SybaseAdapter doesn't have a separate column type just for dates,
       # so the time is in the string and incorrectly formatted
@@ -34,21 +44,6 @@ module ActiveRecord
 
     def assert_no_queries(&block)
       assert_queries(0, &block)
-    end
-
-    def self.use_concurrent_connections
-      setup :connection_allow_concurrency_setup
-      teardown :connection_allow_concurrency_teardown
-    end
-
-    def connection_allow_concurrency_setup
-      @connection = ActiveRecord::Base.remove_connection
-      ActiveRecord::Base.establish_connection(@connection.merge({:allow_concurrency => true}))
-    end
-
-    def connection_allow_concurrency_teardown
-      ActiveRecord::Base.clear_all_connections!
-      ActiveRecord::Base.establish_connection(@connection)
     end
 
     def with_kcode(kcode)

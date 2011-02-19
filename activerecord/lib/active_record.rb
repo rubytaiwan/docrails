@@ -33,12 +33,12 @@ require 'active_support/i18n'
 require 'active_model'
 require 'arel'
 
+require 'active_record/version'
+
 module ActiveRecord
   extend ActiveSupport::Autoload
 
   eager_autoload do
-    autoload :VERSION
-
     autoload :ActiveRecordError, 'active_record/errors'
     autoload :ConnectionNotEstablished, 'active_record/errors'
 
@@ -79,6 +79,11 @@ module ActiveRecord
     autoload :Timestamp
     autoload :Transactions
     autoload :Validations
+    autoload :IdentityMap
+  end
+
+  module Coders
+    autoload :YAMLColumn, 'active_record/coders/yaml_column'
   end
 
   module AttributeMethods
@@ -118,7 +123,7 @@ module ActiveRecord
 end
 
 ActiveSupport.on_load(:active_record) do
-  Arel::Table.engine = Arel::Sql::Engine.new(self)
+  Arel::Table.engine = self
 end
 
 I18n.load_path << File.dirname(__FILE__) + '/active_record/locale/en.yml'

@@ -25,9 +25,13 @@ module ActiveRecord
   # Check out <tt>ActiveRecord::Transactions</tt> for more details about <tt>after_commit</tt> and
   # <tt>after_rollback</tt>.
   #
-  # That's a total of ten callbacks, which gives you immense power to react and prepare for each state in the
+  # Lastly an <tt>after_find</tt> and <tt>after_initialize</tt> callback is triggered for each object that 
+  # is found and instantiated by a finder, with <tt>after_initialize</tt> being triggered after new objects
+  # are instantiated as well.
+  #
+  # That's a total of twelve callbacks, which gives you immense power to react and prepare for each state in the
   # Active Record life cycle. The sequence for calling <tt>Base#save</tt> for an existing record is similar,
-  # except that each <tt>_on_create</tt> callback is replaced by the corresponding <tt>_on_update</tt> callback.
+  # except that each <tt>_create</tt> callback is replaced by the corresponding <tt>_update</tt> callback.
   #
   # Examples:
   #   class CreditCard < ActiveRecord::Base
@@ -185,14 +189,6 @@ module ActiveRecord
   #                    'puts "Evaluated after parents are destroyed"'
   #   end
   #
-  # == The +after_find+ and +after_initialize+ exceptions
-  #
-  # Because +after_find+ and +after_initialize+ are called for each object found and instantiated by a finder,
-  # such as <tt>Base.find(:all)</tt>, we've had to implement a simple performance constraint (50% more speed
-  # on a simple test case). Unlike all the other callbacks, +after_find+ and +after_initialize+ will only be
-  # run if an explicit implementation is defined (<tt>def after_find</tt>). In that case, all of the
-  # callback types will be called.
-  #
   # == <tt>before_validation*</tt> returning statements
   #
   # If the returning value of a +before_validation+ callback can be evaluated to +false+, the process will be
@@ -218,16 +214,6 @@ module ActiveRecord
   # needs to be aware of it because an ordinary +save+ will raise such exception
   # instead of quietly returning +false+.
   #
-  # == Debugging callbacks
-  #
-  # To list the methods and procs registered with a particular callback, append <tt>_callback_chain</tt> to
-  # the callback name that you wish to list and send that to your class from the Rails console:
-  #
-  #   >> Topic.after_save_callback_chain
-  #   => [#<ActiveSupport::Callbacks::Callback:0x3f6a448
-  #       @method=#<Proc:0x03f9a42c@/Users/foo/bar/app/models/topic.rb:43>, kind:after_save, identifiernil,
-  #       options{}]
-  #
   module Callbacks
     extend ActiveSupport::Concern
 
@@ -246,43 +232,26 @@ module ActiveRecord
       define_model_callbacks :save, :create, :update, :destroy
     end
 
-    module ClassMethods
-      def method_added(meth)
-        super
-        if CALLBACKS.include?(meth.to_sym)
-          ActiveSupport::Deprecation.warn("Base##{meth} has been deprecated, please use Base.#{meth} :method instead", caller[0,1])
-          send(meth.to_sym, meth.to_sym)
-        end
-      end
-    end
-
     def destroy #:nodoc:
-      _run_destroy_callbacks { super }
+      run_callbacks(:destroy) { super }
     end
 
     def touch(*) #:nodoc:
-      _run_touch_callbacks { super }
-    end
-
-    def deprecated_callback_method(symbol) #:nodoc:
-      if respond_to?(symbol, true)
-        ActiveSupport::Deprecation.warn("Overwriting #{symbol} in your models has been deprecated, please use Base##{symbol} :method_name instead")
-        send(symbol)
-      end
+      run_callbacks(:touch) { super }
     end
 
   private
 
     def create_or_update #:nodoc:
-      _run_save_callbacks { super }
+      run_callbacks(:save) { super }
     end
 
     def create #:nodoc:
-      _run_create_callbacks { super }
+      run_callbacks(:create) { super }
     end
 
     def update(*) #:nodoc:
-      _run_update_callbacks { super }
+      run_callbacks(:update) { super }
     end
   end
 end

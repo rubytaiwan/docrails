@@ -166,7 +166,7 @@ end
 The section about session fixation introduced the problem of maintained sessions. An attacker maintaining a session every five minutes can keep the session alive forever, although you are expiring sessions. A simple solution for this would be to add a created_at column to the sessions table. Now you can delete sessions that were created a long time ago. Use this line in the sweep method above:
 
 <ruby>
-delete_all "updated_at < '#{time.to_s(:db)}' OR
+delete_all "updated_at < '#{time.ago.to_s(:db)}' OR
   created_at < '#{2.days.ago.to_s(:db)}'"
 </ruby>
 
@@ -524,10 +524,10 @@ h4. Logging
 
 -- _Tell Rails not to put passwords in the log files._
 
-By default, Rails logs all requests being made to the web application. But log files can be a huge security issue, as they may contain login credentials, credit card numbers et cetera. When designing a web application security concept, you should also think about what will happen if an attacker got (full) access to the web server. Encrypting secrets and passwords in the database will be quite useless, if the log files list them in clear text. You can _(highlight)filter certain request parameters from your log files_ by the filter_parameter_logging method in a controller. These parameters will be marked [FILTERED] in the log.
+By default, Rails logs all requests being made to the web application. But log files can be a huge security issue, as they may contain login credentials, credit card numbers et cetera. When designing a web application security concept, you should also think about what will happen if an attacker got (full) access to the web server. Encrypting secrets and passwords in the database will be quite useless, if the log files list them in clear text. You can _(highlight)filter certain request parameters from your log files_ by appending them to <tt>config.filter_parameters</tt> in the application configuration. These parameters will be marked [FILTERED] in the log.
 
 <ruby>
-filter_parameter_logging :password
+config.filter_parameters << :password
 </ruby>
 
 h4. Good Passwords
@@ -550,7 +550,7 @@ Ruby uses a slightly different approach than many other languages to match the e
 
 <ruby>
 class File < ActiveRecord::Base
-  validates_format_of :name, :with => /^[\w\.\-\+]+$/
+  validates :name, :format => /^[\w\.\-\+]+$/
 end
 </ruby>
 
@@ -616,7 +616,7 @@ h5(#sql-injection-introduction). Introduction
 SQL injection attacks aim at influencing database queries by manipulating web application parameters. A popular goal of SQL injection attacks is to bypass authorization. Another goal is to carry out data manipulation or reading arbitrary data. Here is an example of how not to use user input data in a query:
 
 <ruby>
-Project.find(:all, :conditions => "name = '#{params[:name]}'")
+Project.all(:conditions => "name = '#{params[:name]}'")
 </ruby>
 
 This could be in a search action and the user may enter a project's name that he wants to find. If a malicious user enters ' OR 1 --, the resulting SQL query will be:
@@ -632,7 +632,7 @@ h5. Bypassing Authorization
 Usually a web application includes access control. The user enters his login credentials, the web application tries to find the matching record in the users table. The application grants access when it finds a record. However, an attacker may possibly bypass this check with SQL injection. The following shows a typical database query in Rails to find the first record in the users table which matches the login credentials parameters supplied by the user.
 
 <ruby>
-User.find(:first, "login = '#{params[:name]}' AND password = '#{params[:password]}'")
+User.first("login = '#{params[:name]}' AND password = '#{params[:password]}'")
 </ruby>
 
 If an attacker enters ' OR '1'='1 as the name, and ' OR '2'>'1 as the password, the resulting SQL query will be:
@@ -648,7 +648,7 @@ h5. Unauthorized Reading
 The UNION statement connects two SQL queries and returns the data in one set. An attacker can use it to read arbitrary data from the database. Let's take the example from above:
 
 <ruby>
-Project.find(:all, :conditions => "name = '#{params[:name]}'")
+Project.all(:conditions => "name = '#{params[:name]}'")
 </ruby>
 
 And now let's inject another query using the UNION statement:
@@ -675,13 +675,13 @@ Ruby on Rails has a built-in filter for special SQL characters, which will escap
 Instead of passing a string to the conditions option, you can pass an array to sanitize tainted strings like this:
 
 <ruby>
-Model.find(:first, :conditions => ["login = ? AND password = ?", entered_user_name, entered_password])
+Model.first(:conditions => ["login = ? AND password = ?", entered_user_name, entered_password])
 </ruby>
 
 As you can see, the first part of the array is an SQL fragment with question marks. The sanitized versions of the variables in the second part of the array replace the question marks. Or you can pass a hash for the same result:
 
 <ruby>
-Model.find(:first, :conditions => {:login => entered_user_name, :password => entered_password})
+Model.first(:conditions => {:login => entered_user_name, :password => entered_password})
 </ruby>
 
 The array or hash form is only available in model instances. You can try +sanitize_sql()+ elsewhere. _(highlight)Make it a habit to think about the security consequences when using an external string in SQL_.
@@ -978,7 +978,5 @@ The security landscape shifts and it is important to keep up to date, because mi
 * A "good security blog":http://ha.ckers.org/blog/ including the "Cross-Site scripting Cheat Sheet":http://ha.ckers.org/xss.html
 
 h3. Changelog
-
-"Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213-rails-guides/tickets/7
 
 * November 1, 2008: First approved version by Heiko Webers

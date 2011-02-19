@@ -13,7 +13,7 @@ module ActiveResource
     # or not (by passing true)
     def from_array(messages, save_cache = false)
       clear unless save_cache
-      humanized_attributes = @base.attributes.keys.inject({}) { |h, attr_name| h.update(attr_name.humanize => attr_name) }
+      humanized_attributes = Hash[@base.attributes.keys.map { |attr_name| [attr_name.humanize, attr_name] }]
       messages.each do |message|
         attr_message = humanized_attributes.keys.detect do |attr_name|
           if message[0, attr_name.size + 1] == "#{attr_name} "
@@ -68,16 +68,8 @@ module ActiveResource
 
     # Validate a resource and save (POST) it to the remote web service.
     # If any local validations fail - the save (POST) will not be attempted.
-    def save_with_validation(options=nil)
-      perform_validation = case options
-        when Hash
-          options[:validate] != false
-        when NilClass
-          true
-        else
-          ActiveSupport::Deprecation.warn "save(#{options}) is deprecated, please give save(:validate => #{options}) instead", caller
-          options
-      end
+    def save_with_validation(options={})
+      perform_validation = options[:validate] != false
 
       # clear the remote validations so they don't interfere with the local
       # ones. Otherwise we get an endless loop and can never change the

@@ -1,5 +1,5 @@
 require 'set'
-require 'active_support/core_ext/class/inheritable_attributes'
+require 'active_support/core_ext/class/attribute'
 
 module HTML
   class Sanitizer
@@ -60,7 +60,7 @@ module HTML
   class WhiteListSanitizer < Sanitizer
     [:protocol_separator, :uri_attributes, :allowed_attributes, :allowed_tags, :allowed_protocols, :bad_tags,
      :allowed_css_properties, :allowed_css_keywords, :shorthand_css_properties].each do |attr|
-      class_inheritable_accessor attr, :instance_writer => false
+      class_attribute attr, :instance_writer => false
     end
 
     # A regular expression of the valid characters used to separate protocols like
@@ -170,7 +170,7 @@ module HTML
 
     def contains_bad_protocols?(attr_name, value)
       uri_attributes.include?(attr_name) &&
-      (value =~ /(^[^\/:]*):|(&#0*58)|(&#x70)|(%|&#37;)3A/ && !allowed_protocols.include?(value.split(protocol_separator).first))
+      (value =~ /(^[^\/:]*):|(&#0*58)|(&#x70)|(%|&#37;)3A/ && !allowed_protocols.include?(value.split(protocol_separator).first.downcase))
     end
   end
 end

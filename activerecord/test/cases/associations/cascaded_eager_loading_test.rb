@@ -3,20 +3,22 @@ require 'models/post'
 require 'models/comment'
 require 'models/author'
 require 'models/categorization'
+require 'models/category'
 require 'models/company'
 require 'models/topic'
 require 'models/reply'
 require 'models/person'
 
 class CascadedEagerLoadingTest < ActiveRecord::TestCase
-  fixtures :authors, :mixins, :companies, :posts, :topics, :accounts, :comments, :categorizations, :people
+  fixtures :authors, :mixins, :companies, :posts, :topics, :accounts, :comments,
+           :categorizations, :people, :categories
 
   def test_eager_association_loading_with_cascaded_two_levels
     authors = Author.find(:all, :include=>{:posts=>:comments}, :order=>"authors.id")
     assert_equal 2, authors.size
     assert_equal 5, authors[0].posts.size
     assert_equal 1, authors[1].posts.size
-    assert_equal 9, authors[0].posts.collect{|post| post.comments.size }.inject(0){|sum,i| sum+i}
+    assert_equal 10, authors[0].posts.collect{|post| post.comments.size }.inject(0){|sum,i| sum+i}
   end
 
   def test_eager_association_loading_with_cascaded_two_levels_and_one_level
@@ -24,7 +26,7 @@ class CascadedEagerLoadingTest < ActiveRecord::TestCase
     assert_equal 2, authors.size
     assert_equal 5, authors[0].posts.size
     assert_equal 1, authors[1].posts.size
-    assert_equal 9, authors[0].posts.collect{|post| post.comments.size }.inject(0){|sum,i| sum+i}
+    assert_equal 10, authors[0].posts.collect{|post| post.comments.size }.inject(0){|sum,i| sum+i}
     assert_equal 1, authors[0].categorizations.size
     assert_equal 2, authors[1].categorizations.size
   end
@@ -35,7 +37,7 @@ class CascadedEagerLoadingTest < ActiveRecord::TestCase
     end
     authors = Author.joins(:posts).eager_load(:comments).where(:posts => {:taggings_count => 1}).all
     assert_equal 1, assert_no_queries { authors.size }
-    assert_equal 9, assert_no_queries { authors[0].comments.size }
+    assert_equal 10, assert_no_queries { authors[0].comments.size }
   end
 
   def test_eager_association_loading_grafts_stashed_associations_to_correct_parent
@@ -43,6 +45,31 @@ class CascadedEagerLoadingTest < ActiveRecord::TestCase
       Person.eager_load(:primary_contact => :primary_contact).where('primary_contacts_people_2.first_name = ?', 'Susan').order('people.id').all
     end
     assert_equal people(:michael), Person.eager_load(:primary_contact => :primary_contact).where('primary_contacts_people_2.first_name = ?', 'Susan').order('people.id').first
+  end
+
+  def test_cascaded_eager_association_loading_with_join_for_count
+    categories = Category.joins(:categorizations).includes([{:posts=>:comments}, :authors])
+
+    assert_nothing_raised do
+      assert_equal 2, categories.count
+      assert_equal 2, categories.all.uniq.size # Must uniq since instantiating with inner joins will get dupes
+    end
+  end
+
+  def test_cascaded_eager_association_loading_with_duplicated_includes
+    categories = Category.includes(:categorizations).includes(:categorizations => :author).where("categorizations.id is not null")
+    assert_nothing_raised do
+      assert_equal 2, categories.count
+      assert_equal 2, categories.all.size
+    end
+  end
+
+  def test_cascaded_eager_association_loading_with_twice_includes_edge_cases
+    categories = Category.includes(:categorizations => :author).includes(:categorizations => :post).where("posts.id is not null")
+    assert_nothing_raised do
+      assert_equal 2, categories.count
+      assert_equal 2, categories.all.size
+    end
   end
 
   def test_eager_association_loading_with_join_for_count
@@ -57,7 +84,7 @@ class CascadedEagerLoadingTest < ActiveRecord::TestCase
     assert_equal 2, authors.size
     assert_equal 5, authors[0].posts.size
     assert_equal 1, authors[1].posts.size
-    assert_equal 9, authors[0].posts.collect{|post| post.comments.size }.inject(0){|sum,i| sum+i}
+    assert_equal 10, authors[0].posts.collect{|post| post.comments.size }.inject(0){|sum,i| sum+i}
   end
 
   def test_eager_association_loading_with_cascaded_two_levels_and_self_table_reference
@@ -111,7 +138,7 @@ class CascadedEagerLoadingTest < ActiveRecord::TestCase
   end
 
   def test_eager_association_loading_with_multiple_stis_and_order
-    author = Author.find(:first, :include => { :posts => [ :special_comments , :very_special_comment ] }, :order => 'authors.name, comments.body, very_special_comments_posts.body', :conditions => 'posts.id = 4')
+    author = Author.find(:first, :include => { :posts => [ :special_comments , :very_special_comment ] }, :order => ['authors.name', 'comments.body', 'very_special_comments_posts.body'], :conditions => 'posts.id = 4')
     assert_equal authors(:david), author
     assert_no_queries do
       author.posts.first.special_comments

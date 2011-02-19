@@ -4,13 +4,15 @@ module ActiveModel
   module Validations
     class ConfirmationValidator < EachValidator
       def validate_each(record, attribute, value)
-        confirmed = record.send(:"#{attribute}_confirmation")
-        return if confirmed.nil? || value == confirmed
-        record.errors.add(attribute, :confirmation, options)
+        if (confirmed = record.send("#{attribute}_confirmation")) && (value != confirmed)
+          record.errors.add(attribute, :confirmation, options)
+        end
       end
 
       def setup(klass)
-        klass.send(:attr_accessor, *attributes.map { |attribute| :"#{attribute}_confirmation" })
+        klass.send(:attr_accessor, *attributes.map do |attribute|
+          :"#{attribute}_confirmation" unless klass.method_defined?(:"#{attribute}_confirmation")
+        end.compact)
       end
     end
 
@@ -44,7 +46,7 @@ module ActiveModel
       # * <tt>:message</tt> - A custom error message (default is: "doesn't match
       #   confirmation").
       # * <tt>:on</tt> - Specifies when this validation is active (default is
-      #   <tt>:save</tt>, other options <tt>:create</tt>, <tt>:update</tt>).
+      #   <tt>:nil</tt>, other options <tt>:create</tt>, <tt>:update</tt>).
       # * <tt>:if</tt> - Specifies a method, proc or string to call to determine
       #   if the validation should occur (e.g. <tt>:if => :allow_validation</tt>,
       #   or <tt>:if => Proc.new { |user| user.signup_step > 2 }</tt>).  The

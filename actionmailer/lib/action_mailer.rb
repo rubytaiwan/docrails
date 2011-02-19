@@ -26,6 +26,7 @@ $:.unshift(actionpack_path) if File.directory?(actionpack_path) && !$:.include?(
 
 require 'abstract_controller'
 require 'action_view'
+require 'action_mailer/version'
 
 # Common Active Support usage in Action Mailer
 require 'active_support/core_ext/class'
@@ -43,7 +44,6 @@ module ActionMailer
   autoload :Collector
   autoload :Base
   autoload :DeliveryMethods
-  autoload :DeprecatedApi
   autoload :MailHelper
   autoload :OldApi
   autoload :TestCase

@@ -1,6 +1,7 @@
 require 'set'
 require 'active_support/json'
 require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/string/output_safety'
 
 module ActionView
   # = Action View Prototype Helpers
@@ -131,7 +132,7 @@ module ActionView
 
         url_options = options[:url]
         url_options = url_options.merge(:escape => false) if url_options.is_a?(Hash)
-        function << "'#{html_escape(escape_javascript(url_for(url_options)))}'"
+        function << "'#{ERB::Util.html_escape(escape_javascript(url_for(url_options)))}'"
         function << ", #{javascript_options})"
 
         function = "#{options[:before]}; #{function}" if options[:before]
@@ -161,8 +162,8 @@ module ActionView
 
         # JavaScriptGenerator generates blocks of JavaScript code that allow you
         # to change the content and presentation of multiple DOM elements.  Use
-        # this in your Ajax response bodies, either in a <script> tag or as plain
-        # JavaScript sent with a Content-type of "text/javascript".
+        # this in your Ajax response bodies, either in a <tt>\<script></tt> tag
+        # or as plain JavaScript sent with a Content-type of "text/javascript".
         #
         # Create new instances with PrototypeHelper#update_page or with
         # ActionController::Base#render, then call +insert_html+, +replace_html+,
@@ -224,7 +225,7 @@ module ActionView
         #
         # You can also use PrototypeHelper#update_page_tag instead of
         # PrototypeHelper#update_page to wrap the generated JavaScript in a
-        # <script> tag.
+        # <tt>\<script></tt> tag.
         module GeneratorMethods
           def to_s #:nodoc:
             (@lines * $/).tap do |javascript|
@@ -546,7 +547,7 @@ module ActionView
             end
 
             def with_formats(*args)
-              @context ? @context.update_details(:formats => args) { yield } : yield
+              @context ? @context.lookup_context.update_details(:formats => args) { yield } : yield
             end
 
             def javascript_object_for(object)
@@ -579,15 +580,15 @@ module ActionView
       #     page.hide 'spinner'
       #   end
       def update_page(&block)
-        JavaScriptGenerator.new(view_context, &block).to_s.html_safe
+        JavaScriptGenerator.new(self, &block).to_s.html_safe
       end
 
-      # Works like update_page but wraps the generated JavaScript in a <script>
-      # tag. Use this to include generated JavaScript in an ERb template.
-      # See JavaScriptGenerator for more information.
+      # Works like update_page but wraps the generated JavaScript in a
+      # <tt>\<script></tt> tag. Use this to include generated JavaScript in an
+      # ERb template. See JavaScriptGenerator for more information.
       #
-      # +html_options+ may be a hash of <script> attributes to be passed
-      # to ActionView::Helpers::JavaScriptHelper#javascript_tag.
+      # +html_options+ may be a hash of <tt>\<script></tt> attributes to be
+      # passed to ActionView::Helpers::JavaScriptHelper#javascript_tag.
       def update_page_tag(html_options = {}, &block)
         javascript_tag update_page(&block), html_options
       end

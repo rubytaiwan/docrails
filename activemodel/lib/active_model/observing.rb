@@ -13,14 +13,18 @@ module ActiveModel
       #
       # Activates the observers assigned. Examples:
       #
+      #   class ORM
+      #     include ActiveModel::Observing
+      #   end
+      #
       #   # Calls PersonObserver.instance
-      #   ActiveRecord::Base.observers = :person_observer
+      #   ORM.observers = :person_observer
       #
       #   # Calls Cacher.instance and GarbageCollector.instance
-      #   ActiveRecord::Base.observers = :cacher, :garbage_collector
+      #   ORM.observers = :cacher, :garbage_collector
       #
       #   # Same as above, just using explicit class references
-      #   ActiveRecord::Base.observers = Cacher, GarbageCollector
+      #   ORM.observers = Cacher, GarbageCollector
       #
       # Note: Setting this does not instantiate the observers yet.
       # +instantiate_observers+ is called during startup, and before
@@ -34,6 +38,11 @@ module ActiveModel
         @observers ||= []
       end
 
+      # Gets the current observer instances.
+      def observer_instances
+        @observer_instances ||= []
+      end
+
       # Instantiate the global Active Record observers.
       def instantiate_observers
         observers.each { |o| instantiate_observer(o) }
@@ -43,20 +52,17 @@ module ActiveModel
         unless observer.respond_to? :update
           raise ArgumentError, "observer needs to respond to `update'"
         end
-        @observer_instances ||= []
-        @observer_instances << observer
+        observer_instances << observer
       end
 
       def notify_observers(*arg)
-        if defined? @observer_instances
-          for observer in @observer_instances
-            observer.update(*arg)
-          end
+        for observer in observer_instances
+          observer.update(*arg)
         end
       end
 
       def count_observers
-        @observer_instances.size
+        observer_instances.size
       end
 
       protected
@@ -149,6 +155,10 @@ module ActiveModel
   #
   # The AuditObserver will now act on both updates to Account and Balance by treating
   # them both as records.
+  #
+  # If you're using an Observer in a Rails application with Active Record, be sure to
+  # read about the necessary configuration in the documentation for
+  # ActiveRecord::Observer.
   #
   class Observer
     include Singleton

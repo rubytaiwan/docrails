@@ -25,7 +25,6 @@ end
 
 silence_warnings do
   # These external dependencies have warnings :/
-  require 'text/format'
   require 'mail'
 end
 
@@ -78,3 +77,5 @@ end
 def restore_delivery_method
   ActionMailer::Base.delivery_method = @old_delivery_method
 end
+
+ActiveSupport::Deprecation.silenced = true

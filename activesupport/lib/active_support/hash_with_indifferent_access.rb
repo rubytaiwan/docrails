@@ -28,7 +28,7 @@ module ActiveSupport
     end
 
     def self.new_from_hash_copying_default(hash)
-      ActiveSupport::HashWithIndifferentAccess.new(hash).tap do |new_hash|
+      new(hash).tap do |new_hash|
         new_hash.default = hash.default
       end
     end
@@ -44,6 +44,8 @@ module ActiveSupport
     def []=(key, value)
       regular_writer(convert_key(key), convert_value(value))
     end
+
+    alias_method :store, :[]=
 
     # Updates the instantized hash with values from the second:
     #
@@ -95,7 +97,9 @@ module ActiveSupport
 
     # Returns an exact copy of the hash.
     def dup
-      HashWithIndifferentAccess.new(self)
+      self.class.new(self).tap do |new_hash|
+        new_hash.default = default
+      end
     end
 
     # Merges the instantized and the specified hashes together, giving precedence to the values from the second hash
@@ -136,11 +140,10 @@ module ActiveSupport
       end
 
       def convert_value(value)
-        case value
-        when Hash
+        if value.class == Hash
           self.class.new_from_hash_copying_default(value)
-        when Array
-          value.collect { |e| e.is_a?(Hash) ? self.class.new_from_hash_copying_default(e) : e }
+        elsif value.is_a?(Array)
+          value.dup.replace(value.map { |e| convert_value(e) })
         else
           value
         end

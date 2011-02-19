@@ -36,14 +36,6 @@ class ValidationsTest < ActiveModel::TestCase
     assert p.save(:validate => false)
   end
 
-  def test_deprecated_save_without_validation
-    p = new_project(:name => nil)
-    assert !p.save
-    assert_deprecated do
-      assert p.save(false)
-    end
-  end
-
   def test_validate_callback
     # we have a callback ensuring the description is longer than three letters
     p = new_project(:description => 'a')
@@ -54,6 +46,12 @@ class ValidationsTest < ActiveModel::TestCase
     # should now allow this description
     p.description = 'abcd'
     assert p.save, "should have saved after fixing the validation, but had: #{p.errors.inspect}"
+  end
+
+  def test_client_side_validation_maximum
+    project = Project.new(:description => '123456789012345')
+    assert ! project.valid?
+    assert_equal ['is too long (maximum is 10 characters)'], project.errors[:description]
   end
 
   protected

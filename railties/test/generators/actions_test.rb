@@ -7,9 +7,14 @@ class ActionsTest < Rails::Generators::TestCase
   arguments [destination_root]
 
   def setup
+    Rails.application = TestApp::Application
     super
     @git_plugin_uri = 'git://github.com/technoweenie/restful-authentication.git'
     @svn_plugin_uri = 'svn://svnhub.com/technoweenie/restful-authentication/trunk'
+  end
+
+  def teardown
+    Rails.application = TestApp::Application.instance
   end
 
   def test_invoke_other_generator_with_shortcut
@@ -77,37 +82,6 @@ class ActionsTest < Rails::Generators::TestCase
     run_generator
     action :gem, 'will-paginate'
     assert_file 'Gemfile', /gem "will\-paginate"/
-  end
-
-  def test_gem_with_options_should_include_all_options_in_gemfile
-    run_generator
-
-    assert_deprecated do
-      action :gem, 'mislav-will-paginate', :lib => 'will-paginate', :source => 'http://gems.github.com'
-    end
-
-    assert_deprecated do
-      action :gem, 'thoughtbot-factory_girl', :require_as => 'factory_girl', :source => 'http://gems.github.com'
-    end
-
-    assert_file 'Gemfile', /gem "mislav\-will\-paginate", :require => "will\-paginate"/
-    assert_file 'Gemfile', /source "http:\/\/gems\.github\.com"/
-    assert_file 'Gemfile', /gem "thoughtbot-factory_girl", :require => "factory_girl"/
-  end
-
-  def test_gem_with_env_should_include_all_dependencies_in_gemfile
-    run_generator
-
-    assert_deprecated do
-      action :gem, 'rspec', :env => %w(development test)
-    end
-
-    assert_deprecated do
-      action :gem, 'rspec-rails', :only => %w(development test)
-    end
-
-    assert_file 'Gemfile', /gem "rspec", :group => \["development", "test"\]/
-    assert_file 'Gemfile', /gem "rspec-rails", :group => \["development", "test"\]/
   end
 
   def test_gem_with_version_should_include_version_in_gemfile
@@ -202,12 +176,6 @@ class ActionsTest < Rails::Generators::TestCase
   def test_capify_should_run_the_capify_command
     generator.expects(:run).once.with('capify .', :verbose => false)
     action :capify!
-  end
-
-  def test_freeze_is_deprecated
-    assert_deprecated do
-      action :freeze!
-    end
   end
 
   def test_route_should_add_data_to_the_routes_block_in_config_routes

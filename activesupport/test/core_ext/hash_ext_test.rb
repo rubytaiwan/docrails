@@ -4,8 +4,18 @@ require 'bigdecimal'
 require 'active_support/core_ext/string/access'
 require 'active_support/ordered_hash'
 require 'active_support/core_ext/object/conversions'
+require 'active_support/inflections'
 
 class HashExtTest < Test::Unit::TestCase
+  class IndifferentHash < HashWithIndifferentAccess
+  end
+  
+  class SubclassingArray < Array
+  end
+
+  class SubclassingHash < Hash
+  end
+
   def setup
     @strings = { 'a' => 1, 'b' => 2 }
     @symbols = { :a  => 1, :b  => 2 }
@@ -97,6 +107,11 @@ class HashExtTest < Test::Unit::TestCase
     assert_equal @strings, @symbols.with_indifferent_access.dup.stringify_keys!
     assert_equal @strings, @strings.with_indifferent_access.dup.stringify_keys!
     assert_equal @strings, @mixed.with_indifferent_access.dup.stringify_keys!
+  end
+
+  def test_hash_subclass
+    flash = { "foo" => SubclassingHash.new.tap { |h| h["bar"] = "baz" } }.with_indifferent_access
+    assert_kind_of SubclassingHash, flash["foo"]
   end
 
   def test_indifferent_assorted
@@ -248,6 +263,20 @@ class HashExtTest < Test::Unit::TestCase
     hash = { "urls" => { "url" => [ { "address" => "1" }, { "address" => "2" } ] }}.with_indifferent_access
     assert_equal "1", hash[:urls][:url].first[:address]
   end
+  
+  def test_should_preserve_array_subclass_when_value_is_array
+    array = SubclassingArray.new
+    array << { "address" => "1" }
+    hash = { "urls" => { "url" => array }}.with_indifferent_access
+    assert_equal SubclassingArray, hash[:urls][:url].class
+  end
+  
+  def test_should_preserve_array_class_when_hash_value_is_frozen_array
+    array = SubclassingArray.new
+    array << { "address" => "1" }
+    hash = { "urls" => { "url" => array.freeze }}.with_indifferent_access
+    assert_equal SubclassingArray, hash[:urls][:url].class
+  end
 
   def test_stringify_and_symbolize_keys_on_indifferent_preserves_hash
     h = HashWithIndifferentAccess.new
@@ -267,7 +296,6 @@ class HashExtTest < Test::Unit::TestCase
     assert_equal 1, h['first']
   end
 
-
   def test_indifferent_subhashes
     h = {'user' => {'id' => 5}}.with_indifferent_access
     ['user', :user].each {|user| [:id, 'id'].each {|id| assert_equal 5, h[user][id], "h[#{user.inspect}][#{id.inspect}] should be 5"}}
@@ -276,13 +304,24 @@ class HashExtTest < Test::Unit::TestCase
     ['user', :user].each {|user| [:id, 'id'].each {|id| assert_equal 5, h[user][id], "h[#{user.inspect}][#{id.inspect}] should be 5"}}
   end
 
+  def test_indifferent_duplication
+    # Should preserve default value
+    h = HashWithIndifferentAccess.new
+    h.default = '1234'
+    assert_equal h.default, h.dup.default
+
+    # Should preserve class for subclasses
+    h = IndifferentHash.new
+    assert_equal h.class, h.dup.class
+  end
+
   def test_assert_valid_keys
     assert_nothing_raised do
       { :failure => "stuff", :funny => "business" }.assert_valid_keys([ :failure, :funny ])
       { :failure => "stuff", :funny => "business" }.assert_valid_keys(:failure, :funny)
     end
 
-    assert_raise(ArgumentError, "Unknown key(s): failore") do
+    assert_raise(ArgumentError, "Unknown key: failore") do
       { :failore => "stuff", :funny => "business" }.assert_valid_keys([ :failure, :funny ])
       { :failore => "stuff", :funny => "business" }.assert_valid_keys(:failure, :funny)
     end
@@ -314,6 +353,31 @@ class HashExtTest < Test::Unit::TestCase
 
     hash_1.deep_merge!(hash_2)
     assert_equal expected, hash_1
+  end
+
+  def test_deep_dup
+    hash = { :a => { :b => 'b' } }
+    dup = hash.deep_dup
+    dup[:a][:c] = 'c'
+    assert_equal nil, hash[:a][:c]
+    assert_equal 'c', dup[:a][:c]
+  end
+
+  def test_deep_dup_initialize
+    zero_hash = Hash.new 0
+    hash = { :a => zero_hash }
+    dup = hash.deep_dup
+    assert_equal 0, dup[:a][44]
+  end
+
+  def test_store_on_indifferent_access
+    hash = HashWithIndifferentAccess.new
+    hash.store(:test1, 1)
+    hash.store('test1', 11)
+    hash[:test2] = 2
+    hash['test2'] = 22
+    expected = { "test1" => 11, "test2" => 22 }
+    assert_equal expected, hash
   end
 
   def test_reverse_merge
@@ -462,19 +526,23 @@ class HashExtToParamTests < Test::Unit::TestCase
     assert_equal '', {}.to_param
     assert_equal 'hello=world', { :hello => "world" }.to_param
     assert_equal 'hello=10', { "hello" => 10 }.to_param
-    assert_equal 'hello=world&say_bye=true', ActiveSupport::OrderedHash[:hello, "world", "say_bye", true].to_param
+    assert_equal 'hello=world&say_bye=true', {:hello => "world", "say_bye" => true}.to_param
   end
 
   def test_number_hash
-    assert_equal '10=20&30=40&50=60', ActiveSupport::OrderedHash[10, 20, 30, 40, 50, 60].to_param
+    assert_equal '10=20&30=40&50=60', {10 => 20, 30 => 40, 50 => 60}.to_param
   end
 
   def test_to_param_hash
-    assert_equal 'custom=param-1&custom2=param2-1', ActiveSupport::OrderedHash[ToParam.new('custom'), ToParam.new('param'), ToParam.new('custom2'), ToParam.new('param2')].to_param
+    assert_equal 'custom2=param2-1&custom=param-1', {ToParam.new('custom') => ToParam.new('param'), ToParam.new('custom2') => ToParam.new('param2')}.to_param
   end
 
   def test_to_param_hash_escapes_its_keys_and_values
     assert_equal 'param+1=A+string+with+%2F+characters+%26+that+should+be+%3F+escaped', { 'param 1' => 'A string with / characters & that should be ? escaped' }.to_param
+  end
+
+  def test_to_param_orders_by_key_in_ascending_order
+    assert_equal 'a=2&b=1&c=0', ActiveSupport::OrderedHash[*%w(b 1 c 0 a 2)].to_param
   end
 end
 
@@ -509,6 +577,13 @@ class HashToXmlTest < Test::Unit::TestCase
     assert_equal "<Person>", xml.first(8)
     assert xml.include?(%(<StreetName>Paulina</StreetName>))
     assert xml.include?(%(<Name>David</Name>))
+  end
+
+  def test_one_level_camelize_lower
+    xml = { :name => "David", :street_name => "Paulina" }.to_xml(@xml_options.merge(:camelize => :lower))
+    assert_equal "<person>", xml.first(8)
+    assert xml.include?(%(<streetName>Paulina</streetName>))
+    assert xml.include?(%(<name>David</name>))
   end
 
   def test_one_level_with_types

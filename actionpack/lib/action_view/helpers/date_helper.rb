@@ -1,5 +1,6 @@
 require 'date'
 require 'action_view/helpers/tag_helper'
+require 'active_support/core_ext/date/conversions'
 require 'active_support/core_ext/hash/slice'
 require 'active_support/core_ext/object/with_options'
 
@@ -215,20 +216,9 @@ module ActionView
       #   # Creates a time select tag that, when POSTed, will be stored in the post variable in the sunrise attribute
       #   time_select("post", "sunrise")
       #
-      #   # Creates a time select tag that, when POSTed, will be stored in the order variable in the submitted
-      #   # attribute
-      #   time_select("order", "submitted")
-      #
-      #   # Creates a time select tag that, when POSTed, will be stored in the mail variable in the sent_at attribute
-      #   time_select("mail", "sent_at")
-      #
       #   # Creates a time select tag with a seconds field that, when POSTed, will be stored in the post variables in
       #   # the sunrise attribute.
       #   time_select("post", "start_time", :include_seconds => true)
-      #
-      #   # Creates a time select tag with a seconds field that, when POSTed, will be stored in the entry variables in
-      #   # the submission_time attribute.
-      #   time_select("entry", "submission_time", :include_seconds => true)
       #
       #   # You can set the :minute_step to 15 which will give you: 00, 15, 30 and 45.
       #   time_select 'game', 'game_time', {:minute_step => 15}
@@ -577,6 +567,27 @@ module ActionView
       def select_year(date, options = {}, html_options = {})
         DateTimeSelector.new(date, options, html_options).select_year
       end
+
+      # Returns an html time tag for the given date or time.
+      #
+      # ==== Examples
+      #   time_tag Date.today  # =>
+      #     <time datetime="2010-11-04">November 04, 2010</time>
+      #   time_tag Time.now  # =>
+      #     <time datetime="2010-11-04T17:55:45+01:00">November 04, 2010 17:55</time>
+      #   time_tag Date.yesterday, 'Yesterday'  # =>
+      #     <time datetime="2010-11-03">Yesterday</time>
+      #   time_tag Date.today, :pubdate => true  # =>
+      #     <time datetime="2010-11-04" pubdate="pubdate">November 04, 2010</time>
+      #
+      def time_tag(date_or_time, *args)
+        options  = args.extract_options!
+        format   = options.delete(:format) || :long
+        content  = args.first || I18n.l(date_or_time, :format => format)
+        datetime = date_or_time.acts_like?(:time) ? date_or_time.xmlschema : date_or_time.rfc3339
+
+        content_tag(:time, content, options.reverse_merge(:datetime => datetime))
+      end
     end
 
     class DateTimeSelector #:nodoc:
@@ -893,6 +904,8 @@ module ActionView
         # Returns the separator for a given datetime component
         def separator(type)
           case type
+            when :year
+              @options[:discard_year] ? "" : @options[:date_separator]
             when :month
               @options[:discard_month] ? "" : @options[:date_separator]
             when :day
@@ -923,6 +936,7 @@ module ActionView
       private
         def datetime_selector(options, html_options)
           datetime = value(object) || default_datetime(options)
+          @auto_index ||= nil
 
           options = options.dup
           options[:field_name]           = @method_name

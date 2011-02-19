@@ -80,6 +80,10 @@ module ActiveSupport
       parts.to_sentence(:locale => :en)
     end
 
+    def as_json(options = nil) #:nodoc:
+      to_i
+    end
+
     protected
 
       def sum(sign, time = ::Time.current) #:nodoc:
@@ -99,7 +103,7 @@ module ActiveSupport
     private
 
       def method_missing(method, *args, &block) #:nodoc:
-        value.send(method, *args)
+        value.send(method, *args, &block)
       end
   end
 end

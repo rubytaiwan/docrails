@@ -30,9 +30,10 @@ module ActiveRecord
         reflection   = belongs_to.find { |e| e.class_name == expected_name }
         counter_name = reflection.counter_cache_column
 
-        self.unscoped.where(arel_table[self.primary_key].eq(object.id)).arel.update({
+        stmt = unscoped.where(arel_table[primary_key].eq(object.id)).arel.compile_update({
           arel_table[counter_name] => object.send(association).count
         })
+        connection.update stmt.to_sql
       end
       return true
     end
@@ -72,6 +73,8 @@ module ActiveRecord
         quoted_column = connection.quote_column_name(counter_name)
         "#{quoted_column} = COALESCE(#{quoted_column}, 0) #{operator} #{value.abs}"
       end
+
+      IdentityMap.remove_by_id(symbolized_base_class, id) if IdentityMap.enabled?
 
       update_all(updates.join(', '), primary_key => id )
     end

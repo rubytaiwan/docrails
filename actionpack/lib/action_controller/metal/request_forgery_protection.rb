@@ -17,11 +17,11 @@ module ActionController #:nodoc:
   # which will check the token and raise an ActionController::InvalidAuthenticityToken
   # if it doesn't match what was expected. A call to this method is generated for new
   # \Rails applications by default. You can customize the error message by editing
-  # public/422.html. 
+  # public/422.html.
   #
   # The token parameter is named <tt>authenticity_token</tt> by default. The name and
   # value of this token must be added to every layout that renders forms by including
-  # <tt>csrf_meta_tag</tt> in the html +head+.
+  # <tt>csrf_meta_tags</tt> in the html +head+.
   #
   # Learn more about CSRF attacks and securing your application in the
   # {Ruby on Rails Security Guide}[http://guides.rubyonrails.org/security.html].
@@ -53,9 +53,13 @@ module ActionController #:nodoc:
       #   class FooController < ApplicationController
       #     protect_from_forgery :except => :index
       #
-      #     # you can disable csrf protection on controller-by-controller basis:
-      #     skip_before_filter :verify_authenticity_token
-      #   end
+      # You can disable csrf protection on controller-by-controller basis:
+      #
+      #   skip_before_filter :verify_authenticity_token
+      #
+      # It can also be disabled for specific controller actions:
+      #
+      #   skip_before_filter :verify_authenticity_token, :except => [:create]
       #
       # Valid Options:
       #
@@ -67,25 +71,24 @@ module ActionController #:nodoc:
     end
 
     protected
-
-      def protect_from_forgery(options = {})
-        self.request_forgery_protection_token ||= :authenticity_token
-        before_filter :verify_authenticity_token, options
-      end
-
       # The actual before_filter that is used.  Modify this to change how you handle unverified requests.
       def verify_authenticity_token
-        verified_request? || raise(ActionController::InvalidAuthenticityToken)
+        verified_request? || handle_unverified_request
+      end
+
+      def handle_unverified_request
+        reset_session
       end
 
       # Returns true or false if a request is verified.  Checks:
       #
-      # * is the format restricted?  By default, only HTML requests are checked.
       # * is it a GET request?  Gets should be safe and idempotent
       # * Does the form_authenticity_token match the given token value from the params?
+      # * Does the X-CSRF-Token header match the form_authenticity_token
       def verified_request?
-        !protect_against_forgery? || request.forgery_whitelisted? ||
-          form_authenticity_token == params[request_forgery_protection_token]
+        !protect_against_forgery? || request.get? ||
+          form_authenticity_token == params[request_forgery_protection_token] ||
+          form_authenticity_token == request.headers['X-CSRF-Token']
       end
 
       # Sets the token value for the current session.

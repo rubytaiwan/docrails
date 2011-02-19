@@ -19,6 +19,22 @@ module RailtiesTest
       assert !Rails::Railtie.respond_to?(:config)
     end
 
+    test "Railtie provides railtie_name" do
+      begin
+        class ::FooBarBaz < Rails::Railtie ; end
+        assert_equal "foo_bar_baz", ::FooBarBaz.railtie_name
+      ensure
+        Object.send(:remove_const, :"FooBarBaz")
+      end
+    end
+
+    test "railtie_name can be set manualy" do
+      class Foo < Rails::Railtie
+        railtie_name "bar"
+      end
+      assert_equal "bar", Foo.railtie_name
+    end
+
     test "cannot inherit from a railtie" do
       class Foo < Rails::Railtie ; end
       assert_raise RuntimeError do
@@ -85,6 +101,30 @@ module RailtiesTest
 
       AppTemplate::Application.load_tasks
       assert $ran_block
+    end
+
+    test "rake_tasks block defined in superclass of railtie is also executed" do
+      $ran_block = []
+
+      class Rails::Railtie
+        rake_tasks do
+          $ran_block << railtie_name
+        end
+      end
+
+      class MyTie < Rails::Railtie
+        railtie_name "my_tie"
+      end
+
+      require "#{app_path}/config/environment"
+
+      assert_equal [], $ran_block
+      require 'rake'
+      require 'rake/testtask'
+      require 'rake/rdoctask'
+
+      AppTemplate::Application.load_tasks
+      assert $ran_block.include?("my_tie")
     end
 
     test "generators block is executed when MyApp.load_generators is called" do

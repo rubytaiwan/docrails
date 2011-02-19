@@ -4,14 +4,14 @@ require 'models/owner'
 require 'models/pet'
 require 'models/toy'
 require 'models/car'
+require 'models/task'
 
 class TimestampTest < ActiveRecord::TestCase
-  fixtures :developers, :owners, :pets, :toys, :cars
+  fixtures :developers, :owners, :pets, :toys, :cars, :tasks
 
   def setup
     @developer = Developer.first
     @previously_updated_at = @developer.updated_at
-    @car = Car.first
   end
 
   def test_saving_a_changed_record_updates_its_timestamp
@@ -50,7 +50,7 @@ class TimestampTest < ActiveRecord::TestCase
     Developer.record_timestamps = true
   end
 
-  def test_touching_a_different_attribute
+  def test_touching_an_attribute_updates_timestamp
     previously_created_at = @developer.created_at
     @developer.touch(:created_at)
 
@@ -60,8 +60,16 @@ class TimestampTest < ActiveRecord::TestCase
     assert_not_equal @previously_updated_at, @developer.updated_at
   end
 
-  def test_touch_a_record_without_timestamps
-    assert_nothing_raised { @car.touch }
+  def test_touching_an_attribute_updates_it
+    task = Task.first
+    previous_value = task.ending
+    task.touch(:ending)
+    assert_not_equal previous_value, task.ending
+    assert_in_delta Time.now, task.ending, 1
+  end
+
+  def test_touching_a_record_without_timestamps_is_unexceptional
+    assert_nothing_raised { Car.first.touch }
   end
 
   def test_saving_a_record_with_a_belongs_to_that_specifies_touching_the_parent_should_update_the_parent_updated_at
@@ -105,7 +113,7 @@ class TimestampTest < ActiveRecord::TestCase
 
     pet = Pet.first
     owner = pet.owner
-    owner.update_attribute(:happy_at, (time = 3.days.ago))
+    owner.update_attribute(:happy_at, 3.days.ago)
     previously_owner_updated_at = owner.updated_at
 
     pet.name = "I'm a parrot"
@@ -131,5 +139,35 @@ class TimestampTest < ActiveRecord::TestCase
     assert_not_equal time, owner.updated_at
   ensure
     Toy.belongs_to :pet
+  end
+
+  def test_timestamp_attributes_for_create
+    toy = Toy.first
+    assert_equal toy.send(:timestamp_attributes_for_create), [:created_at, :created_on]
+  end
+
+  def test_timestamp_attributes_for_update
+    toy = Toy.first
+    assert_equal toy.send(:timestamp_attributes_for_update), [:updated_at, :updated_on]
+  end
+
+  def test_all_timestamp_attributes
+    toy = Toy.first
+    assert_equal toy.send(:all_timestamp_attributes), [:created_at, :created_on, :updated_at, :updated_on]
+  end
+
+  def test_timestamp_attributes_for_create_in_model
+    toy = Toy.first
+    assert_equal toy.send(:timestamp_attributes_for_create_in_model), [:created_at]
+  end
+
+  def test_timestamp_attributes_for_update_in_model
+    toy = Toy.first
+    assert_equal toy.send(:timestamp_attributes_for_update_in_model), [:updated_at]
+  end
+
+  def test_all_timestamp_attributes_in_model
+    toy = Toy.first
+    assert_equal toy.send(:all_timestamp_attributes_in_model), [:created_at, :updated_at]
   end
 end

@@ -1,6 +1,7 @@
 require 'rack/session/abstract/id'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/object/to_query'
+require 'active_support/core_ext/class/attribute'
 
 module ActionController
   module TemplateAssertions
@@ -38,6 +39,13 @@ module ActionController
     def teardown_subscriptions
       ActiveSupport::Notifications.unsubscribe("render_template.action_view")
       ActiveSupport::Notifications.unsubscribe("!render_template.action_view")
+    end
+
+    def process(*args)
+      @partials = Hash.new(0)
+      @templates = Hash.new(0)
+      @layouts = Hash.new(0)
+      super
     end
 
     # Asserts that the request was rendered with the appropriate template file or partials.
@@ -127,7 +135,7 @@ module ActionController
     class Result < ::Array #:nodoc:
       def to_s() join '/' end
       def self.new_escaped(strings)
-        new strings.collect {|str| URI.unescape str}
+        new strings.collect {|str| uri_parser.unescape str}
       end
     end
 
@@ -187,20 +195,23 @@ module ActionController
     end
   end
 
-  class TestSession < ActionDispatch::Session::AbstractStore::SessionHash #:nodoc:
-    DEFAULT_OPTIONS = ActionDispatch::Session::AbstractStore::DEFAULT_OPTIONS
+  class TestSession < Rack::Session::Abstract::SessionHash #:nodoc:
+    DEFAULT_OPTIONS = Rack::Session::Abstract::ID::DEFAULT_OPTIONS
 
     def initialize(session = {})
+      @env, @by = nil, nil
       replace(session.stringify_keys)
       @loaded = true
     end
 
-    def exists?; true; end
+    def exists?
+      true
+    end
   end
 
   # Superclass for ActionController functional tests. Functional tests allow you to
   # test a single controller action per test method. This should not be confused with
-  # integration tests (see ActionController::IntegrationTest), which are more like
+  # integration tests (see ActionDispatch::IntegrationTest), which are more like
   # "stories" that can involve multiple controllers and multiple actions (i.e. multiple
   # different HTTP requests).
   #
@@ -315,11 +326,11 @@ module ActionController
 
         def controller_class=(new_class)
           prepare_controller_class(new_class) if new_class
-          write_inheritable_attribute(:controller_class, new_class)
+          self._controller_class = new_class
         end
 
         def controller_class
-          if current_controller_class = read_inheritable_attribute(:controller_class)
+          if current_controller_class = self._controller_class
             current_controller_class
           else
             self.controller_class = determine_default_controller_class(name)
@@ -394,15 +405,16 @@ module ActionController
         parameters ||= {}
         @request.assign_parameters(@routes, @controller.class.name.underscore.sub(/_controller$/, ''), action.to_s, parameters)
 
-        @request.session = ActionController::TestSession.new(session) unless session.nil?
+        @request.session = ActionController::TestSession.new(session) if session
         @request.session["flash"] = @request.flash.update(flash || {})
         @request.session["flash"].sweep
 
         @controller.request = @request
         @controller.params.merge!(parameters)
         build_request_uri(action, parameters)
-        Base.class_eval { include Testing }
+        @controller.class.class_eval { include Testing }
         @controller.process_with_new_base_test(@request, @response)
+        @assigns = @controller.respond_to?(:view_assigns) ? @controller.view_assigns : {}
         @request.session.delete('flash') if @request.session['flash'].blank?
         @response
       end
@@ -417,7 +429,7 @@ module ActionController
 
         @request.env.delete('PATH_INFO')
 
-        if @controller
+        if defined?(@controller) && @controller
           @controller.request = @request
           @controller.params = {}
         end
@@ -431,6 +443,7 @@ module ActionController
       included do
         include ActionController::TemplateAssertions
         include ActionDispatch::Assertions
+        class_attribute :_controller_class
         setup :setup_controller_request_and_response
       end
 
@@ -438,7 +451,7 @@ module ActionController
 
       def build_request_uri(action, parameters)
         unless @request.env["PATH_INFO"]
-          options = @controller.__send__(:url_options).merge(parameters)
+          options = @controller.respond_to?(:url_options) ? @controller.__send__(:url_options).merge(parameters) : parameters
           options.update(
             :only_path => true,
             :action => action,
@@ -462,9 +475,11 @@ module ActionController
     # The exception is stored in the exception accessor for further inspection.
     module RaiseActionExceptions
       def self.included(base)
-        base.class_eval do
-          attr_accessor :exception
-          protected :exception, :exception=
+        unless base.method_defined?(:exception) && base.method_defined?(:exception=)
+          base.class_eval do
+            attr_accessor :exception
+            protected :exception, :exception=
+          end
         end
       end
 

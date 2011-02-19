@@ -19,9 +19,9 @@ module ActiveRecord
     #
     # All approaches accept an options hash as their last parameter.
     #
-    # ==== Parameters
+    # ==== Options
     #
-    # * <tt>:conditions</tt> - An SQL fragment like "administrator = 1", <tt>[ "user_name = ?", username ]</tt>,
+    # * <tt>:conditions</tt> - An SQL fragment like "administrator = 1", <tt>["user_name = ?", username]</tt>,
     #   or <tt>["user_name = :user_name", { :user_name => user_name }]</tt>. See conditions in the intro.
     # * <tt>:order</tt> - An SQL fragment like "created_at DESC, name".
     # * <tt>:group</tt> - An attribute name by which the result should be grouped. Uses the <tt>GROUP BY</tt> SQL-clause.
@@ -54,7 +54,7 @@ module ActiveRecord
     #   Person.find(1, 2, 6) # returns an array for objects with IDs in (1, 2, 6)
     #   Person.find([7, 17]) # returns an array for objects with IDs in (7, 17)
     #   Person.find([1])     # returns an array for the object with ID = 1
-    #   Person.find(1, :conditions => "administrator = 1", :order => "created_on DESC")
+    #   Person.where("administrator = 1").order("created_on DESC").find(1)
     #
     # Note that returned records may not be in the same order as the ids you
     # provide since database rows are unordered. Give an explicit <tt>:order</tt>
@@ -63,23 +63,23 @@ module ActiveRecord
     # ==== Examples
     #
     #   # find first
-    #   Person.find(:first) # returns the first object fetched by SELECT * FROM people
-    #   Person.find(:first, :conditions => [ "user_name = ?", user_name])
-    #   Person.find(:first, :conditions => [ "user_name = :u", { :u => user_name }])
-    #   Person.find(:first, :order => "created_on DESC", :offset => 5)
+    #   Person.first # returns the first object fetched by SELECT * FROM people
+    #   Person.where(["user_name = ?", user_name]).first
+    #   Person.where(["user_name = :u", { :u => user_name }]).first
+    #   Person.order("created_on DESC").offset(5).first
     #
     #   # find last
-    #   Person.find(:last) # returns the last object fetched by SELECT * FROM people
-    #   Person.find(:last, :conditions => [ "user_name = ?", user_name])
-    #   Person.find(:last, :order => "created_on DESC", :offset => 5)
+    #   Person.last # returns the last object fetched by SELECT * FROM people
+    #   Person.where(["user_name = ?", user_name]).last
+    #   Person.order("created_on DESC").offset(5).last
     #
     #   # find all
-    #   Person.find(:all) # returns an array of objects for all the rows fetched by SELECT * FROM people
-    #   Person.find(:all, :conditions => [ "category IN (?)", categories], :limit => 50)
-    #   Person.find(:all, :conditions => { :friends => ["Bob", "Steve", "Fred"] }
-    #   Person.find(:all, :offset => 10, :limit => 10)
-    #   Person.find(:all, :include => [ :account, :friends ])
-    #   Person.find(:all, :group => "category")
+    #   Person.all # returns an array of objects for all the rows fetched by SELECT * FROM people
+    #   Person.where(["category IN (?)", categories]).limit(50).all
+    #   Person.where({ :friends => ["Bob", "Steve", "Fred"] }).all
+    #   Person.offset(10).limit(10).all
+    #   Person.includes([:account, :friends]).all
+    #   Person.group("category").all
     #
     # Example for find with a lock: Imagine two concurrent transactions:
     # each will read <tt>person.visits == 2</tt>, add 1 to it, and save, resulting
@@ -88,7 +88,7 @@ module ActiveRecord
     # expected <tt>person.visits == 4</tt>.
     #
     #   Person.transaction do
-    #     person = Person.find(1, :lock => true)
+    #     person = Person.lock(true).find(1)
     #     person.visits += 1
     #     person.save!
     #   end
@@ -171,22 +171,25 @@ module ActiveRecord
     def exists?(id = nil)
       id = id.id if ActiveRecord::Base === id
 
+      relation = select("1").limit(1)
+
       case id
       when Array, Hash
-        where(id).exists?
+        relation = relation.where(id)
       else
-        relation = select(primary_key).limit(1)
-        relation = relation.where(primary_key.eq(id)) if id
-        relation.first ? true : false
+        relation = relation.where(table[primary_key].eq(id)) if id
       end
+
+      relation.first ? true : false
     end
 
     protected
 
     def find_with_associations
       including = (@eager_load_values + @includes_values).uniq
-      join_dependency = ActiveRecord::Associations::ClassMethods::JoinDependency.new(@klass, including, nil)
-      rows = construct_relation_for_association_find(join_dependency).to_a
+      join_dependency = ActiveRecord::Associations::ClassMethods::JoinDependency.new(@klass, including, [])
+      relation = construct_relation_for_association_find(join_dependency)
+      rows = connection.select_all(relation.to_sql, 'SQL', relation.bind_values)
       join_dependency.instantiate(rows)
     rescue ThrowResult
       []
@@ -194,13 +197,13 @@ module ActiveRecord
 
     def construct_relation_for_association_calculations
       including = (@eager_load_values + @includes_values).uniq
-      join_dependency = ActiveRecord::Associations::ClassMethods::JoinDependency.new(@klass, including, arel.joins(arel))
+      join_dependency = ActiveRecord::Associations::ClassMethods::JoinDependency.new(@klass, including, arel.froms.first)
       relation = except(:includes, :eager_load, :preload)
       apply_join_dependency(relation, join_dependency)
     end
 
     def construct_relation_for_association_find(join_dependency)
-      relation = except(:includes, :eager_load, :preload, :select).select(column_aliases(join_dependency))
+      relation = except(:includes, :eager_load, :preload, :select).select(join_dependency.columns)
       apply_join_dependency(relation, join_dependency)
     end
 
@@ -222,15 +225,15 @@ module ActiveRecord
     end
 
     def construct_limited_ids_condition(relation)
-      orders = relation.order_values.join(", ")
-      values = @klass.connection.distinct("#{@klass.connection.quote_table_name @klass.table_name}.#{@klass.primary_key}", orders)
+      orders = relation.order_values
+      values = @klass.connection.distinct("#{@klass.connection.quote_table_name table_name}.#{primary_key}", orders)
 
-      ids_array = relation.select(values).collect {|row| row[@klass.primary_key]}
-      ids_array.empty? ? raise(ThrowResult) : primary_key.in(ids_array)
+      ids_array = relation.select(values).collect {|row| row[primary_key]}
+      ids_array.empty? ? raise(ThrowResult) : table[primary_key].in(ids_array)
     end
 
     def find_by_attributes(match, attributes, *args)
-      conditions = attributes.inject({}) {|h, a| h[a] = args[attributes.index(a)]; h}
+      conditions = Hash[attributes.map {|a| [a, args[attributes.index(a)]]}]
       result = where(conditions).send(match.finder)
 
       if match.bang? && result.blank?
@@ -288,19 +291,24 @@ module ActiveRecord
     def find_one(id)
       id = id.id if ActiveRecord::Base === id
 
-      record = where(primary_key.eq(id)).first
+      column = columns_hash[primary_key]
+
+      substitute = connection.substitute_for(column, @bind_values)
+      relation = where(table[primary_key].eq(substitute))
+      relation.bind_values = [[column, id]]
+      record = relation.first
 
       unless record
-        conditions = arel.wheres.map { |x| x.value }.join(', ')
-        conditions = " [WHERE #{conditions}]" if conditions.present?
-        raise RecordNotFound, "Couldn't find #{@klass.name} with ID=#{id}#{conditions}"
+        conditions = arel.where_sql
+        conditions = " [#{conditions}]" if conditions
+        raise RecordNotFound, "Couldn't find #{@klass.name} with #{primary_key}=#{id}#{conditions}"
       end
 
       record
     end
 
     def find_some(ids)
-      result = where(primary_key.in(ids)).all
+      result = where(table[primary_key].in(ids)).all
 
       expected_size =
         if @limit_value && ids.size > @limit_value
@@ -342,14 +350,8 @@ module ActiveRecord
       end
     end
 
-    def column_aliases(join_dependency)
-      join_dependency.joins.collect{|join| join.column_names_with_alias.collect{|column_name, aliased_name|
-          "#{connection.quote_table_name join.aliased_table_name}.#{connection.quote_column_name column_name} AS #{aliased_name}"}}.flatten.join(", ")
-    end
-
     def using_limitable_reflections?(reflections)
       reflections.none? { |r| r.collection? }
     end
-
   end
 end

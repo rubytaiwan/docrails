@@ -1,5 +1,6 @@
 require 'abstract_unit'
 require 'active_support/time'
+require 'active_support/json'
 
 class DurationTest < ActiveSupport::TestCase
   def test_is_a
@@ -53,8 +54,8 @@ class DurationTest < ActiveSupport::TestCase
       flunk("no exception was raised")
     rescue ArgumentError => e
       assert_equal 'expected a time or date, got ""', e.message, "ensure ArgumentError is not being raised by dependencies.rb"
-    rescue Exception
-      flunk("ArgumentError should be raised, but we got #{$!.class} instead")
+    rescue Exception => e
+      flunk("ArgumentError should be raised, but we got #{e.class} instead")
     end
   end
 
@@ -128,6 +129,18 @@ class DurationTest < ActiveSupport::TestCase
     with_env_tz 'CET' do
       assert_equal Time.local(2009,3,29,0,0,0) + 1.day, Time.local(2009,3,30,0,0,0)
     end
+  end
+  
+  def test_delegation_with_block_works
+    counter = 0
+    assert_nothing_raised do
+      1.minute.times {counter += 1}
+    end
+    assert_equal counter, 60
+  end
+
+  def test_to_json
+    assert_equal '172800', 2.days.to_json
   end
 
   protected

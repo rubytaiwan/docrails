@@ -1,5 +1,4 @@
 require 'active_model/attribute_methods'
-require 'active_support/concern'
 require 'active_support/hash_with_indifferent_access'
 require 'active_support/core_ext/object/duplicable'
 
@@ -115,7 +114,7 @@ module ActiveModel
     #   person.name = 'bob'
     #   person.changes # => { 'name' => ['bill', 'bob'] }
     def changes
-      changed.inject(HashWithIndifferentAccess.new){ |h, attr| h[attr] = attribute_change(attr); h }
+      HashWithIndifferentAccess[changed.map { |attr| [attr, attribute_change(attr)] }]
     end
 
     # Map of attributes that were changed when the model was saved.

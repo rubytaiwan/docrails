@@ -59,10 +59,12 @@ module ActiveRecord
       end
 
       def drop_table!
+        connection_pool.clear_table_cache!(table_name)
         connection.drop_table table_name
       end
 
       def create_table!
+        connection_pool.clear_table_cache!(table_name)
         connection.create_table(table_name) do |t|
           t.string session_id_column, :limit => 255
           t.text data_column_name
@@ -288,6 +290,7 @@ module ActiveRecord
     self.session_class = Session
 
     SESSION_RECORD_KEY = 'rack.session.record'
+    ENV_SESSION_OPTIONS_KEY = Rack::Session::Abstract::ENV_SESSION_OPTIONS_KEY
 
     private
       def get_session(env, sid)
@@ -299,7 +302,7 @@ module ActiveRecord
         end
       end
 
-      def set_session(env, sid, session_data)
+      def set_session(env, sid, session_data, options)
         Base.silence do
           record = get_session_model(env, sid)
           record.data = session_data
@@ -316,12 +319,15 @@ module ActiveRecord
         sid
       end
 
-      def destroy(env)
+      def destroy_session(env, session_id, options)
         if sid = current_session_id(env)
           Base.silence do
             get_session_model(env, sid).destroy
+            env[SESSION_RECORD_KEY] = nil
           end
         end
+
+        generate_sid unless options[:drop]
       end
 
       def get_session_model(env, sid)

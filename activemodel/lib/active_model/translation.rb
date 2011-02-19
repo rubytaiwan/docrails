@@ -44,7 +44,7 @@ module ActiveModel
     # Specify +options+ with additional translating options.
     def human_attribute_name(attribute, options = {})
       defaults = lookup_ancestors.map do |klass|
-        :"#{self.i18n_scope}.attributes.#{klass.model_name.underscore}.#{attribute}"
+        :"#{self.i18n_scope}.attributes.#{klass.model_name.i18n_key}.#{attribute}"
       end
 
       defaults << :"attributes.#{attribute}"
@@ -53,12 +53,6 @@ module ActiveModel
 
       options.reverse_merge! :count => 1, :default => defaults
       I18n.translate(defaults.shift, options)
-    end
-
-    # Model.human_name is deprecated. Use Model.model_name.human instead.
-    def human_name(*args)
-      ActiveSupport::Deprecation.warn("human_name has been deprecated, please use model_name.human instead", caller[0,5])
-      model_name.human(*args)
     end
   end
 end

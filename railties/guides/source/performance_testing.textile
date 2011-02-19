@@ -20,7 +20,7 @@ In a freshly generated Rails application, +test/performance/browsing_test.rb+ co
 
 <ruby>
 require 'test_helper'
-require 'performance_test_help'
+require 'rails/performance_test_help'
 
 # Profiling results for each test method are written to tmp/performance.
 class BrowsingTest < ActionController::PerformanceTest
@@ -34,17 +34,17 @@ This example is a simple performance test case for profiling a GET request to th
 
 h4. Generating Performance Tests
 
-Rails provides a generator called +performance_test+ for creating new performance tests:
+Rails provides a generator called +test_unit:performance+ for creating new performance tests:
 
 <shell>
-rails generate performance_test homepage
+rails generate test_unit:performance homepage
 </shell>
 
 This generates +homepage_test.rb+ in the +test/performance+ directory:
 
 <ruby>
 require 'test_helper'
-require 'performance_test_help'
+require 'rails/performance_test_help'
 
 class HomepageTest < ActionController::PerformanceTest
   # Replace this with your real tests.
@@ -60,8 +60,8 @@ Let's assume your application has the following controller and model:
 
 <ruby>
 # routes.rb
-map.root :controller => 'home'
-map.resources :posts
+root :to => 'home#index'
+resources :posts
 
 # home_controller.rb
 class HomeController < ApplicationController
@@ -103,7 +103,7 @@ Here's the performance test for +HomeController#dashboard+ and +PostsController#
 
 <ruby>
 require 'test_helper'
-require 'performance_test_help'
+require 'rails/performance_test_help'
 
 class PostPerformanceTest < ActionController::PerformanceTest
   def setup
@@ -131,7 +131,7 @@ Performance test for +Post+ model:
 
 <ruby>
 require 'test_helper'
-require 'performance_test_help'
+require 'rails/performance_test_help'
 
 class PostModelTest < ActionController::PerformanceTest
   def test_creation
@@ -398,7 +398,7 @@ $ rails benchmarker 'Item.first' 'Item.last'
 
 h4. +profiler+
 
-+profiler+ is a wrapper around http://ruby-prof.rubyforge.org/[ruby-prof] gem.
++profiler+ is a wrapper around the "ruby-prof":http://ruby-prof.rubyforge.org gem.
 
 Usage:
 
@@ -436,7 +436,7 @@ h4. Model
 Project.benchmark("Creating project") do
   project = Project.create("name" => "stuff")
   project.create_manager("name" => "David")
-  project.milestones << Milestone.find(:all)
+  project.milestones << Milestone.all
 end
 </ruby>
 
@@ -523,8 +523,6 @@ Rails has been lucky to have two startups dedicated to Rails specific performanc
 * "Scout":http://scoutapp.com
 
 h3. Changelog
-
-"Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213-rails-guides/tickets/4
 
 * January 9, 2009: Complete rewrite by "Pratik":credits.html#lifo
 * September 6, 2008: Initial version by Matthew Bergman

@@ -10,7 +10,7 @@ module ActiveRecord
       # Generates all the attribute related methods for columns in the database
       # accessors, mutators and query methods.
       def define_attribute_methods
-        super(columns_hash.keys)
+        super(column_names)
       end
 
       # Checks whether the method is defined in the model or any of its subclasses
@@ -18,7 +18,7 @@ module ActiveRecord
       # method is defined by Active Record though.
       def instance_method_already_implemented?(method_name)
         method_name = method_name.to_s
-        @_defined_class_methods         ||= ancestors.first(ancestors.index(ActiveRecord::Base)).sum([]) { |m| m.public_instance_methods(false) | m.private_instance_methods(false) | m.protected_instance_methods(false) }.map {|m| m.to_s }.to_set
+        @_defined_class_methods         ||= ancestors.first(ancestors.index(ActiveRecord::Base)).sum([]) { |m| m.instance_methods(false) | m.private_instance_methods(false) }.map {|m| m.to_s }.to_set
         @@_defined_activerecord_methods ||= defined_activerecord_methods
         raise DangerousAttributeError, "#{method_name} is defined by ActiveRecord" if @@_defined_activerecord_methods.include?(method_name)
         @_defined_class_methods.include?(method_name)
@@ -48,13 +48,13 @@ module ActiveRecord
     end
 
     def respond_to?(*args)
-      self.class.define_attribute_methods
+      self.class.define_attribute_methods unless self.class.attribute_methods_generated?
       super
     end
 
     protected
       def attribute_method?(attr_name)
-        attr_name == 'id' || attributes.include?(attr_name)
+        attr_name == 'id' || (defined?(@attributes) && @attributes.include?(attr_name))
       end
   end
 end

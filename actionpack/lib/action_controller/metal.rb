@@ -12,7 +12,7 @@ module ActionController
   #
   class MiddlewareStack < ActionDispatch::MiddlewareStack #:nodoc:
     class Middleware < ActionDispatch::MiddlewareStack::Middleware #:nodoc:
-      def initialize(klass, *args)
+      def initialize(klass, *args, &block)
         options = args.extract_options!
         @only   = Array(options.delete(:only)).map(&:to_s)
         @except = Array(options.delete(:except)).map(&:to_s)
@@ -43,16 +43,69 @@ module ActionController
     end
   end
 
-  # Provides a way to get a valid Rack application from a controller.
+  # <tt>ActionController::Metal</tt> is the simplest possible controller, providing a
+  # valid Rack interface without the additional niceties provided by
+  # <tt>ActionController::Base</tt>.
   #
-  # In AbstractController, dispatching is triggered directly by calling #process on a new controller.
-  # <tt>ActionController::Metal</tt> provides an <tt>action</tt> method that returns a valid Rack application for a
-  # given action. Other rack builders, such as Rack::Builder, Rack::URLMap, and the \Rails router,
-  # can dispatch directly to actions returned by controllers in your application.
+  # A sample metal controller might look like this:
+  #
+  #   class HelloController < ActionController::Metal
+  #     def index
+  #       self.response_body = "Hello World!"
+  #     end
+  #   end
+  #
+  # And then to route requests to your metal controller, you would add
+  # something like this to <tt>config/routes.rb</tt>:
+  #
+  #   match 'hello', :to => HelloController.action(:index)
+  #
+  # The +action+ method returns a valid Rack application for the \Rails
+  # router to dispatch to.
+  #
+  # == Rendering Helpers
+  #
+  # <tt>ActionController::Metal</tt> by default provides no utilities for rendering
+  # views, partials, or other responses aside from explicitly calling of
+  # <tt>response_body=</tt>, <tt>content_type=</tt>, and <tt>status=</tt>. To
+  # add the render helpers you're used to having in a normal controller, you
+  # can do the following:
+  #
+  #   class HelloController < ActionController::Metal
+  #     include ActionController::Rendering
+  #     append_view_path "#{Rails.root}/app/views"
+  #
+  #     def index
+  #       render "hello/index"
+  #     end
+  #   end
+  #
+  # == Redirection Helpers
+  #
+  # To add redirection helpers to your metal controller, do the following:
+  #
+  #   class HelloController < ActionController::Metal
+  #     include ActionController::Redirecting
+  #     include Rails.application.routes.url_helpers
+  #
+  #     def index
+  #       redirect_to root_url
+  #     end
+  #   end
+  #
+  # == Other Helpers
+  #
+  # You can refer to the modules included in <tt>ActionController::Base</tt> to see
+  # other features you can bring into your metal controller.
+  #
   class Metal < AbstractController::Base
     abstract!
 
-    attr_internal :env
+    attr_internal_writer :env
+
+    def env
+      @_env ||= {}
+    end
 
     # Returns the last part of the controller's name, underscored, without the ending
     # <tt>Controller</tt>. For instance, PostsController returns <tt>posts</tt>.
@@ -81,6 +134,9 @@ module ActionController
     def initialize(*)
       @_headers = {"Content-Type" => "text/html"}
       @_status = 200
+      @_request = nil
+      @_response = nil
+      @_routes = nil
       super
     end
 
@@ -95,7 +151,7 @@ module ActionController
     # Basic implementations for content_type=, location=, and headers are
     # provided to reduce the dependency on the RackDelegation module
     # in Renderer and Redirector.
-    
+
     def content_type=(type)
       headers["Content-Type"] = type.to_s
     end
@@ -112,6 +168,11 @@ module ActionController
       headers["Location"] = url
     end
 
+    # basic url_for that can be overridden for more robust functionality
+    def url_for(string)
+      string
+    end
+
     def status
       @_status
     end
@@ -121,7 +182,7 @@ module ActionController
     end
 
     def response_body=(val)
-      body = val.respond_to?(:each) ? val : [val]
+      body = val.nil? ? nil : (val.respond_to?(:each) ? val : [val])
       super body
     end
 
@@ -145,8 +206,8 @@ module ActionController
       super
     end
 
-    def self.use(*args)
-      middleware_stack.use(*args)
+    def self.use(*args, &block)
+      middleware_stack.use(*args, &block)
     end
 
     def self.middleware

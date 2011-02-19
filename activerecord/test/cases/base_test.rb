@@ -19,6 +19,8 @@ require 'models/minimalistic'
 require 'models/warehouse_thing'
 require 'models/parrot'
 require 'models/loose_person'
+require 'models/edge'
+require 'models/joke'
 require 'rexml/document'
 require 'active_support/core_ext/exception'
 
@@ -48,6 +50,62 @@ class Boolean < ActiveRecord::Base; end
 class BasicsTest < ActiveRecord::TestCase
   fixtures :topics, :companies, :developers, :projects, :computers, :accounts, :minimalistics, 'warehouse-things', :authors, :categorizations, :categories, :posts
 
+  def test_columns_should_obey_set_primary_key
+    pk = Subscriber.columns.find { |x| x.name == 'nick' }
+    assert pk.primary, 'nick should be primary key'
+  end
+
+  def test_primary_key_with_no_id
+    assert_nil Edge.primary_key
+  end
+
+  unless current_adapter?(:PostgreSQLAdapter,:OracleAdapter,:SQLServerAdapter)
+    def test_limit_with_comma
+      assert_nothing_raised do
+        Topic.limit("1,2").all
+      end
+    end
+  end
+
+  def test_limit_without_comma
+    assert_nothing_raised do
+      assert_equal 1, Topic.limit("1").all.length
+    end
+
+    assert_nothing_raised do
+      assert_equal 1, Topic.limit(1).all.length
+    end
+  end
+
+  def test_invalid_limit
+    assert_raises(ArgumentError) do
+      Topic.limit("asdfadf").all
+    end
+  end
+
+  def test_limit_should_sanitize_sql_injection_for_limit_without_comas
+    assert_raises(ArgumentError) do
+      Topic.limit("1 select * from schema").all
+    end
+  end
+
+  def test_limit_should_sanitize_sql_injection_for_limit_with_comas
+    assert_raises(ArgumentError) do
+      Topic.limit("1, 7 procedure help()").all
+    end
+  end
+
+  unless current_adapter?(:MysqlAdapter) || current_adapter?(:Mysql2Adapter)
+    def test_limit_should_allow_sql_literal
+      assert_equal 1, Topic.limit(Arel.sql('2-1')).all.length
+    end
+  end
+
+  def test_select_symbol
+    topic_ids = Topic.select(:id).map(&:id).sort
+    assert_equal Topic.find(:all).map(&:id).sort, topic_ids
+  end
+
   def test_table_exists
     assert !NonExistentTable.table_exists?
     assert Topic.table_exists?
@@ -67,6 +125,24 @@ class BasicsTest < ActiveRecord::TestCase
         "The last_read attribute should be of the Date class"
       )
     end
+  end
+
+  def test_use_table_engine_for_quoting_where
+    relation = Topic.where(Topic.arel_table[:id].eq(1))
+    engine = relation.table.engine
+
+    fakepool = Class.new(Struct.new(:spec)) {
+      def with_connection; yield self; end
+      def connection_pool; self; end
+      def quote_table_name(*args); raise "lol quote_table_name"; end
+    }
+
+    relation.table.engine = fakepool.new(engine.connection_pool.spec)
+
+    error = assert_raises(RuntimeError) { relation.to_a }
+    assert_match('lol', error.message)
+  ensure
+    relation.table.engine = engine
   end
 
   def test_preserving_time_objects
@@ -159,7 +235,7 @@ class BasicsTest < ActiveRecord::TestCase
 
   def test_initialize_with_invalid_attribute
     begin
-      topic = Topic.new({ "title" => "test",
+      Topic.new({ "title" => "test",
         "last_read(1i)" => "2005", "last_read(2i)" => "2", "last_read(3i)" => "31"})
     rescue ActiveRecord::MultiparameterAssignmentErrors => ex
       assert_equal(1, ex.errors.size)
@@ -366,8 +442,21 @@ class BasicsTest < ActiveRecord::TestCase
     assert_equal Topic.find(1), Topic.find(2).topic
   end
 
+  def test_find_by_slug
+    assert_equal Topic.find('1-meowmeow'), Topic.find(1)
+  end
+
   def test_equality_of_new_records
     assert_not_equal Topic.new, Topic.new
+  end
+
+  def test_equality_of_destroyed_records
+    topic_1 = Topic.new(:title => 'test_1')
+    topic_1.save
+    topic_2 = Topic.find(topic_1.id)
+    topic_1.destroy
+    assert_equal topic_1, topic_2
+    assert_equal topic_2, topic_1
   end
 
   def test_hashing
@@ -629,64 +718,69 @@ class BasicsTest < ActiveRecord::TestCase
   end
 
   def test_new_record_returns_boolean
-    assert_equal true, Topic.new.new_record?
-    assert_equal false, Topic.find(1).new_record?
+    assert_equal false, Topic.new.persisted?
+    assert_equal true, Topic.find(1).persisted?
   end
 
-  def test_clone
+  def test_dup
     topic = Topic.find(1)
-    cloned_topic = nil
-    assert_nothing_raised { cloned_topic = topic.clone }
-    assert_equal topic.title, cloned_topic.title
-    assert cloned_topic.new_record?
+    duped_topic = nil
+    assert_nothing_raised { duped_topic = topic.dup }
+    assert_equal topic.title, duped_topic.title
+    assert !duped_topic.persisted?
 
-    # test if the attributes have been cloned
+    # test if the attributes have been duped
     topic.title = "a"
-    cloned_topic.title = "b"
+    duped_topic.title = "b"
     assert_equal "a", topic.title
-    assert_equal "b", cloned_topic.title
+    assert_equal "b", duped_topic.title
 
-    # test if the attribute values have been cloned
+    # test if the attribute values have been duped
     topic.title = {"a" => "b"}
-    cloned_topic = topic.clone
-    cloned_topic.title["a"] = "c"
+    duped_topic = topic.dup
+    duped_topic.title["a"] = "c"
     assert_equal "b", topic.title["a"]
 
-    # test if attributes set as part of after_initialize are cloned correctly
-    assert_equal topic.author_email_address, cloned_topic.author_email_address
+    # test if attributes set as part of after_initialize are duped correctly
+    assert_equal topic.author_email_address, duped_topic.author_email_address
 
     # test if saved clone object differs from original
-    cloned_topic.save
-    assert !cloned_topic.new_record?
-    assert_not_equal cloned_topic.id, topic.id
+    duped_topic.save
+    assert duped_topic.persisted?
+    assert_not_equal duped_topic.id, topic.id
+
+    duped_topic.reload
+    # FIXME: I think this is poor behavior, and will fix it with #5686
+    assert_equal({'a' => 'c'}.to_yaml, duped_topic.title)
   end
 
-  def test_clone_with_aggregate_of_same_name_as_attribute
+  def test_dup_with_aggregate_of_same_name_as_attribute
     dev = DeveloperWithAggregate.find(1)
     assert_kind_of DeveloperSalary, dev.salary
 
-    clone = nil
-    assert_nothing_raised { clone = dev.clone }
-    assert_kind_of DeveloperSalary, clone.salary
-    assert_equal dev.salary.amount, clone.salary.amount
-    assert clone.new_record?
+    dup = nil
+    assert_nothing_raised { dup = dev.dup }
+    assert_kind_of DeveloperSalary, dup.salary
+    assert_equal dev.salary.amount, dup.salary.amount
+    assert !dup.persisted?
 
-    # test if the attributes have been cloned
-    original_amount = clone.salary.amount
+    # test if the attributes have been dupd
+    original_amount = dup.salary.amount
     dev.salary.amount = 1
-    assert_equal original_amount, clone.salary.amount
+    assert_equal original_amount, dup.salary.amount
 
-    assert clone.save
-    assert !clone.new_record?
-    assert_not_equal clone.id, dev.id
+    assert dup.save
+    assert dup.persisted?
+    assert_not_equal dup.id, dev.id
   end
 
-  def test_clone_does_not_clone_associations
+  def test_dup_does_not_copy_associations
     author = authors(:david)
     assert_not_equal [], author.posts
+    author.send(:clear_association_cache)
 
-    author_clone = author.clone
-    assert_equal [], author_clone.posts
+    author_dup = author.dup
+    assert_equal [], author_dup.posts
   end
 
   def test_clone_preserves_subtype
@@ -725,22 +819,22 @@ class BasicsTest < ActiveRecord::TestCase
     assert !cloned_developer.salary_changed?  # ... and cloned instance should behave same
   end
 
-  def test_clone_of_saved_object_marks_attributes_as_dirty
+  def test_dup_of_saved_object_marks_attributes_as_dirty
     developer = Developer.create! :name => 'Bjorn', :salary => 100000
     assert !developer.name_changed?
     assert !developer.salary_changed?
 
-    cloned_developer = developer.clone
+    cloned_developer = developer.dup
     assert cloned_developer.name_changed?     # both attributes differ from defaults
     assert cloned_developer.salary_changed?
   end
 
-  def test_clone_of_saved_object_marks_as_dirty_only_changed_attributes
+  def test_dup_of_saved_object_marks_as_dirty_only_changed_attributes
     developer = Developer.create! :name => 'Bjorn'
     assert !developer.name_changed?           # both attributes of saved object should be threated as not changed
     assert !developer.salary_changed?
 
-    cloned_developer = developer.clone
+    cloned_developer = developer.dup
     assert cloned_developer.name_changed?     # ... but on cloned object should be
     assert !cloned_developer.salary_changed?  # ... BUT salary has non-nil default which should be threated as not changed on cloned instance
   end
@@ -909,9 +1003,13 @@ class BasicsTest < ActiveRecord::TestCase
   MyObject = Struct.new :attribute1, :attribute2
 
   def test_serialized_attribute
+    Topic.serialize("content", MyObject)
+
     myobj = MyObject.new('value1', 'value2')
     topic = Topic.create("content" => myobj)
-    Topic.serialize("content", MyObject)
+    assert_equal(myobj, topic.content)
+
+    topic.reload
     assert_equal(myobj, topic.content)
   end
 
@@ -928,7 +1026,6 @@ class BasicsTest < ActiveRecord::TestCase
   end
 
   def test_nil_serialized_attribute_with_class_constraint
-    myobj = MyObject.new('value1', 'value2')
     topic = Topic.new
     assert_nil topic.content
   end
@@ -949,6 +1046,87 @@ class BasicsTest < ActiveRecord::TestCase
     topic = Topic.new(:content => settings)
     assert topic.save
     assert_equal(settings, Topic.find(topic.id).content)
+  ensure
+    Topic.serialize(:content)
+  end
+
+  def test_serialized_default_class
+    Topic.serialize(:content, Hash)
+    topic = Topic.new
+    assert_equal Hash, topic.content.class
+    assert_equal Hash, topic.read_attribute(:content).class
+    topic.content["beer"] = "MadridRb"
+    assert topic.save
+    topic.reload
+    assert_equal Hash, topic.content.class
+    assert_equal "MadridRb", topic.content["beer"]
+  ensure
+    Topic.serialize(:content)
+  end
+
+  def test_serialized_no_default_class_for_object
+    topic = Topic.new
+    assert_nil topic.content
+  end
+
+  def test_serialized_boolean_value_true
+    Topic.serialize(:content)
+    topic = Topic.new(:content => true)
+    assert topic.save
+    topic = topic.reload
+    assert_equal topic.content, true
+  end
+
+  def test_serialized_boolean_value_false
+    Topic.serialize(:content)
+    topic = Topic.new(:content => false)
+    assert topic.save
+    topic = topic.reload
+    assert_equal topic.content, false
+  end
+
+  def test_serialize_with_coder
+    coder = Class.new {
+      # Identity
+      def load(thing)
+        thing
+      end
+
+      # base 64
+      def dump(thing)
+        [thing].pack('m')
+      end
+    }.new
+
+    Topic.serialize(:content, coder)
+    s = 'hello world'
+    topic = Topic.new(:content => s)
+    assert topic.save
+    topic = topic.reload
+    assert_equal [s].pack('m'), topic.content
+  ensure
+    Topic.serialize(:content)
+  end
+
+  def test_serialize_with_bcrypt_coder
+    crypt_coder = Class.new {
+      def load(thing)
+        return unless thing
+        BCrypt::Password.new thing
+      end
+
+      def dump(thing)
+        BCrypt::Password.create(thing).to_s
+      end
+    }.new
+
+    Topic.serialize(:content, crypt_coder)
+    password = 'password'
+    topic = Topic.new(:content => password)
+    assert topic.save
+    topic = topic.reload
+    assert_kind_of BCrypt::Password, topic.content
+    assert_equal(true, topic.content == password, 'password should equal')
   ensure
     Topic.serialize(:content)
   end
@@ -1008,9 +1186,14 @@ class BasicsTest < ActiveRecord::TestCase
   end
 
   def test_define_attr_method_with_block
-    k = Class.new( ActiveRecord::Base )
-    k.send(:define_attr_method, :primary_key) { "sys_" + original_primary_key }
-    assert_equal "sys_id", k.primary_key
+    k = Class.new( ActiveRecord::Base ) do
+      class << self
+        attr_accessor :foo_key
+      end
+    end
+    k.foo_key = "id"
+    k.send(:define_attr_method, :foo_key) { "sys_" + original_foo_key }
+    assert_equal "sys_id", k.foo_key
   end
 
   def test_set_table_name_with_value
@@ -1019,6 +1202,16 @@ class BasicsTest < ActiveRecord::TestCase
     assert_equal "foo", k.table_name
     k.set_table_name "bar"
     assert_equal "bar", k.table_name
+  end
+
+  def test_switching_between_table_name
+    assert_difference("GoodJoke.count") do
+      Joke.set_table_name "cold_jokes"
+      Joke.create
+
+      Joke.set_table_name "funny_jokes"
+      Joke.create
+    end
   end
 
   def test_quoted_table_name_after_set_table_name
@@ -1049,6 +1242,7 @@ class BasicsTest < ActiveRecord::TestCase
 
   def test_set_primary_key_with_block
     k = Class.new( ActiveRecord::Base )
+    k.primary_key = 'id'
     k.set_primary_key { "sys_" + original_primary_key }
     assert_equal "sys_id", k.primary_key
   end
@@ -1101,18 +1295,18 @@ class BasicsTest < ActiveRecord::TestCase
     assert_equal res6, res7
   end
 
-  def test_interpolate_sql
-    assert_nothing_raised { Category.new.send(:interpolate_sql, 'foo@bar') }
-    assert_nothing_raised { Category.new.send(:interpolate_sql, 'foo bar) baz') }
-    assert_nothing_raised { Category.new.send(:interpolate_sql, 'foo bar} baz') }
-  end
-
   def test_scoped_find_conditions
     scoped_developers = Developer.send(:with_scope, :find => { :conditions => 'salary > 90000' }) do
       Developer.find(:all, :conditions => 'id < 5')
     end
     assert !scoped_developers.include?(developers(:david)) # David's salary is less than 90,000
     assert_equal 3, scoped_developers.size
+  end
+
+  def test_no_limit_offset
+    assert_nothing_raised do
+      Developer.find(:all, :offset => 2)
+    end
   end
 
   def test_scoped_find_limit_offset
@@ -1139,18 +1333,18 @@ class BasicsTest < ActiveRecord::TestCase
     scoped_developers = Developer.send(:with_scope, :find => { :limit => 1 }) do
       Developer.find(:all, :order => 'salary DESC')
     end
-    # Test scope order + find order, find has priority
+    # Test scope order + find order, order has priority
     scoped_developers = Developer.send(:with_scope, :find => { :limit => 3, :order => 'id DESC' }) do
       Developer.find(:all, :order => 'salary ASC')
     end
     assert scoped_developers.include?(developers(:poor_jamis))
-    assert scoped_developers.include?(developers(:david))
+    assert ! scoped_developers.include?(developers(:david))
     assert ! scoped_developers.include?(developers(:jamis))
     assert_equal 3, scoped_developers.size
 
     # Test without scoped find conditions to ensure we get the right thing
-    developers = Developer.find(:all, :order => 'id', :limit => 1)
-    assert scoped_developers.include?(developers(:david))
+    assert ! scoped_developers.include?(Developer.find(1))
+    assert scoped_developers.include?(Developer.find(11))
   end
 
   def test_scoped_find_limit_offset_including_has_many_association
@@ -1312,7 +1506,7 @@ class BasicsTest < ActiveRecord::TestCase
 
   def test_inspect_instance
     topic = topics(:first)
-    assert_equal %(#<Topic id: 1, title: "The First Topic", author_name: "David", author_email_address: "david@loudthinking.com", written_on: "#{topic.written_on.to_s(:db)}", bonus_time: "#{topic.bonus_time.to_s(:db)}", last_read: "#{topic.last_read.to_s(:db)}", content: "Have a nice day", approved: false, replies_count: 1, parent_id: nil, parent_title: nil, type: nil, group: nil>), topic.inspect
+    assert_equal %(#<Topic id: 1, title: "The First Topic", author_name: "David", author_email_address: "david@loudthinking.com", written_on: "#{topic.written_on.to_s(:db)}", bonus_time: "#{topic.bonus_time.to_s(:db)}", last_read: "#{topic.last_read.to_s(:db)}", content: "Have a nice day", approved: false, replies_count: 1, parent_id: nil, parent_title: nil, type: nil, group: nil, created_at: "#{topic.created_at.to_s(:db)}", updated_at: "#{topic.updated_at.to_s(:db)}">), topic.inspect
   end
 
   def test_inspect_new_instance
@@ -1394,10 +1588,6 @@ class BasicsTest < ActiveRecord::TestCase
     ActiveRecord::Base.logger = original_logger
   end
 
-  def test_dup
-    assert !Minimalistic.new.freeze.dup.frozen?
-  end
-
   def test_compute_type_success
     assert_equal Author, ActiveRecord::Base.send(:compute_type, 'Author')
   end
@@ -1415,18 +1605,34 @@ class BasicsTest < ActiveRecord::TestCase
     end
   end
 
-  protected
-    def with_env_tz(new_tz = 'US/Eastern')
-      old_tz, ENV['TZ'] = ENV['TZ'], new_tz
-      yield
-    ensure
-      old_tz ? ENV['TZ'] = old_tz : ENV.delete('TZ')
-    end
+  def test_clear_cache!
+    # preheat cache
+    c1 = Post.columns
+    ActiveRecord::Base.clear_cache!
+    c2 = Post.columns
+    assert_not_equal c1, c2
+  end
 
-    def with_active_record_default_timezone(zone)
-      old_zone, ActiveRecord::Base.default_timezone = ActiveRecord::Base.default_timezone, zone
-      yield
-    ensure
-      ActiveRecord::Base.default_timezone = old_zone
+  def test_default_scope_is_reset
+    Object.const_set :UnloadablePost, Class.new(ActiveRecord::Base)
+    UnloadablePost.table_name = 'posts'
+    UnloadablePost.class_eval do
+      default_scope order('posts.comments_count ASC')
     end
+    UnloadablePost.scoped_methods # make Thread.current[:UnloadablePost_scoped_methods] not nil
+
+    UnloadablePost.unloadable
+    assert_not_nil Thread.current[:UnloadablePost_scoped_methods]
+    ActiveSupport::Dependencies.remove_unloadable_constants!
+    assert_nil Thread.current[:UnloadablePost_scoped_methods]
+  ensure
+    Object.class_eval{ remove_const :UnloadablePost } if defined?(UnloadablePost)
+  end
+
+  def test_marshal_round_trip
+    expected = posts(:welcome)
+    actual   = Marshal.load(Marshal.dump(expected))
+
+    assert_equal expected.attributes, actual.attributes
+  end
 end

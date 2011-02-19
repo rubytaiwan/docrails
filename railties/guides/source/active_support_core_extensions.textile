@@ -167,6 +167,12 @@ def log_info(sql, name, ms)
 end
 </ruby>
 
++try+ can also be called without arguments but a block, which will only be executed if the object is not nil:
+
+<ruby>
+@person.try { |p| "#{p.first_name} #{p.last_name}" }
+</ruby>
+
 NOTE: Defined in +active_support/core_ext/object/try.rb+.
 
 h4. +singleton_class+
@@ -395,39 +401,6 @@ C.new(0, 1).instance_values # => {"x" => 0, "y" => 1}
 
 NOTE: Defined in +active_support/core_ext/object/instance_variables.rb+.
 
-h5. +copy_instance_variables_from(object, exclude = [])+
-
-Copies the instance variables of +object+ into +self+.
-
-Instance variable names in the +exclude+ array are ignored. If +object+
-responds to +protected_instance_variables+ the ones returned are
-also ignored. For example, Rails controllers implement that method.
-
-In both arrays strings and symbols are understood, and they have to include
-the at sign.
-
-<ruby>
-class C
-  def initialize(x, y, z)
-    @x, @y, @z = x, y, z
-  end
-
-  def protected_instance_variables
-    %w(@z)
-  end
-end
-
-a = C.new(0, 1, 2)
-b = C.new(3, 4, 5)
-
-a.copy_instance_variables_from(b, [:@y])
-# a is now: @x = 3, @y = 1, @z = 2
-</ruby>
-
-In the example +object+ and +self+ are of the same type, but they don't need to.
-
-NOTE: Defined in +active_support/core_ext/object/instance_variables.rb+.
-
 h4. Silencing Warnings, Streams, and Exceptions
 
 The methods +silence_warnings+ and +enable_warnings+ change the value of +$VERBOSE+ accordingly for the duration of their block, and reset it afterwards:
@@ -525,7 +498,7 @@ h4. Attributes
 
 h5. +alias_attribute+
 
-Model attributes have a reader, a writer, and a predicate. You can aliase a model attribute having the corresponding three methods defined for you in one shot. As in other aliasing methods, the new name is the first argument, and the old name is the second (my mnemonic is they go in the same order as if you did an assignment):
+Model attributes have a reader, a writer, and a predicate. You can alias a model attribute having the corresponding three methods defined for you in one shot. As in other aliasing methods, the new name is the first argument, and the old name is the second (my mnemonic is they go in the same order as if you did an assignment):
 
 <ruby>
 class User < ActiveRecord::Base
@@ -590,7 +563,7 @@ h5. Internal Attributes
 
 When you are defining an attribute in a class that is meant to be subclassed name collisions are a risk. That's remarkably important for libraries.
 
-Active Support defines the macros +attr_internal_reader+, +attr_internal_writer+, and +attr_internal_accessor+. They behave like their Ruby builtin +attr_*+ counterparts, except they name the underlying instance variable in a way that makes collisions less likely.
+Active Support defines the macros +attr_internal_reader+, +attr_internal_writer+, and +attr_internal_accessor+. They behave like their Ruby built-in +attr_*+ counterparts, except they name the underlying instance variable in a way that makes collisions less likely.
 
 The macro +attr_internal+ is a synonym for +attr_internal_accessor+:
 
@@ -1018,7 +991,7 @@ a2.x # => 2, overridden in a2
 The generation of the writer instance method can be prevented by setting the option +:instance_writer+ to false, as in
 
 <ruby>
-module AcitveRecord
+module ActiveRecord
   class Base
     class_attribute :table_name_prefix, :instance_writer => false
     self.table_name_prefix = ""
@@ -1028,7 +1001,7 @@ end
 
 A model may find that option useful as a way to prevent mass-assignment from setting the attribute.
 
-For convenience +class_attribute+ defines also an instance predicate which is the double negation of what the instance reader returns. In the examples above it would be called +x?+.
+For convenience +class_attribute+ also defines an instance predicate which is the double negation of what the instance reader returns. In the examples above it would be called +x?+.
 
 NOTE: Defined in +active_support/core_ext/class/attribute.rb+
 
@@ -1216,6 +1189,12 @@ To insert something verbatim use the +raw+ helper rather than calling +html_safe
 <%= raw @cms.current_template %> <%# inserts @cms.current_template as is %>
 </erb>
 
+or, equivalently, use <tt><%==</tt>:
+
+<erb>
+<%== @cms.current_template %> <%# inserts @cms.current_template as is %>
+</erb>
+
 The +raw+ helper calls +html_safe+ for you:
 
 <ruby>
@@ -1285,7 +1264,7 @@ Active Support adds that functionality to <tt>%</tt> in previous versions of Rub
 
 NOTE: Defined in +active_support/core_ext/string/interpolation.rb+.
 
-h4. +starts_with?+ and +ends_width?+
+h4. +starts_with?+ and +ends_with?+
 
 Active Support defines 3rd person aliases of +String#start_with?+ and +String#end_with?+:
 
@@ -1295,6 +1274,31 @@ Active Support defines 3rd person aliases of +String#start_with?+ and +String#en
 </ruby>
 
 NOTE: Defined in +active_support/core_ext/string/starts_ends_with.rb+.
+
+h4. +strip_heredoc+
+
+The method +strip_heredoc+ strips indentation in heredocs.
+
+For example in
+
+<ruby>
+if options[:usage]
+  puts <<-USAGE.strip_heredoc
+    This command does such and such.
+
+    Supported options are:
+      -h         This message
+      ...
+  USAGE
+end
+</ruby>
+
+the user would see the usage message aligned against the left margin.
+
+Technically, it looks for the least indented line in the whole string, and removes
+that amount of leading whitespace.
+
+NOTE: Defined in +active_support/core_ext/string/strip.rb+.
 
 h4. Access
 
@@ -1564,7 +1568,7 @@ The method +tableize+ is +underscore+ followed by +pluralize+.
 "InvoiceLine".tableize # => "invoice_lines"
 </ruby>
 
-As a rule of thumb, +tableize+ returns the table name that corresponds to a given model for simple cases. The actual implementation in Active Record is not straight +tableize+ indeed, because it also demodulizes de class name and checks a few options that may affect the returned string.
+As a rule of thumb, +tableize+ returns the table name that corresponds to a given model for simple cases. The actual implementation in Active Record is not straight +tableize+ indeed, because it also demodulizes the class name and checks a few options that may affect the returned string.
 
 NOTE: Defined in +active_support/core_ext/string/inflections.rb+.
 
@@ -1864,7 +1868,7 @@ The sum of an empty collection is zero by default, but this is customizable:
 [].sum(1) # => 1
 </ruby>
 
-If a block is given +sum+ becomes an iterator that yields the elements of the collection and sums the returned values:
+If a block is given, +sum+ becomes an iterator that yields the elements of the collection and sums the returned values:
 
 <ruby>
 (1..5).sum {|n| n * 2 } # => 30
@@ -1892,7 +1896,7 @@ h4. +each_with_object+
 The +inject+ method offers iteration with an accumulator:
 
 <ruby>
-[2, 3, 4].inject(1) {|acc, i| product*i } # => 24
+[2, 3, 4].inject(1) {|product, i| product*i } # => 24
 </ruby>
 
 The block is expected to return the value for the accumulator in the next iteration, and this makes building mutable objects a bit cumbersome:
@@ -1938,7 +1942,7 @@ The method +many?+ is shorthand for +collection.size > 1+:
 <% end %>
 </erb>
 
-If an optional block is given +many?+ only takes into account those elements that return true:
+If an optional block is given, +many?+ only takes into account those elements that return true:
 
 <ruby>
 @see_more = videos.many? {|video| video.category == params[:category]}
@@ -1948,7 +1952,7 @@ NOTE: Defined in +active_support/core_ext/enumerable.rb+.
 
 h4. +exclude?+
 
-The predicate +exclude?+ tests whether a given object does *not* belong to the collection. It is the negation of the builtin +include?+:
+The predicate +exclude?+ tests whether a given object does *not* belong to the collection. It is the negation of the built-in +include?+:
 
 <ruby>
 to_visit << node if visited.exclude?(node)
@@ -2003,7 +2007,7 @@ User.exists?(:email => params[:email])
 
 That syntactic sugar is used a lot in Rails to avoid positional arguments where there would be too many, offering instead interfaces that emulate named parameters. In particular it is very idiomatic to use a trailing hash for options.
 
-If a method expects a variable number of arguments and uses <tt>*</tt> in its declaration, however, such an options hash ends up being an item of the array of arguments, where kind of loses its role.
+If a method expects a variable number of arguments and uses <tt>*</tt> in its declaration, however, such an options hash ends up being an item of the array of arguments, where it loses its role.
 
 In those cases, you may give an options hash a distinguished treatment with +extract_options!+. That method checks the type of the last item of an array. If it is a hash it pops it and returns it, otherwise returns an empty hash.
 
@@ -2186,7 +2190,7 @@ Array.wrap(0)         # => [0]
 
 This method is similar in purpose to <tt>Kernel#Array</tt>, but there are some differences:
 
-* If the argument responds to +to_ary+ the method is invoked. <tt>Kernel#Array</tt> moves on to try +to_a+ if the returned value is +nil+, but <tt>Arraw.wrap</tt> returns such a +nil+ right away.
+* If the argument responds to +to_ary+ the method is invoked. <tt>Kernel#Array</tt> moves on to try +to_a+ if the returned value is +nil+, but <tt>Array.wrap</tt> returns +nil+ right away.
 * If the returned value from +to_ary+ is neither +nil+ nor an +Array+ object, <tt>Kernel#Array</tt> raises an exception, while <tt>Array.wrap</tt> does not, it just returns the value.
 * It does not call +to_a+ on the argument, though special-cases +nil+ to return an empty array.
 
@@ -2834,14 +2838,22 @@ d.end_of_week            # => Sun, 09 May 2010
 
 +beginning_of_week+ is aliased to +monday+ and +at_beginning_of_week+. +end_of_week+ is aliased to +sunday+ and +at_end_of_week+.
 
-h6. +next_week+
+h6. +prev_week+, +next_week+
 
-+next_week+ receives a symbol with a day name in English (in lowercase, default is +:monday+) and it returns the date corresponding to that day in the next week:
+The method +next_week+ receives a symbol with a day name in English (in lowercase, default is +:monday+) and it returns the date corresponding to that day:
 
 <ruby>
 d = Date.new(2010, 5, 9) # => Sun, 09 May 2010
 d.next_week              # => Mon, 10 May 2010
 d.next_week(:saturday)   # => Sat, 15 May 2010
+</ruby>
+
+The method +prev_week+ is analogous:
+
+<ruby>
+d.prev_week              # => Mon, 26 Apr 2010
+d.prev_week(:saturday)   # => Sat, 01 May 2010
+d.prev_week(:friday)     # => Fri, 30 Apr 2010
 </ruby>
 
 h6. +beginning_of_month+, +end_of_month+
@@ -2919,6 +2931,15 @@ If such a day does not exist, the last day of the corresponding month is returne
 <ruby>
 Date.new(2010, 4, 30).months_ago(2)    # => Sun, 28 Feb 2010
 Date.new(2009, 12, 31).months_since(2) # => Sun, 28 Feb 2010
+</ruby>
+
+h6. +weeks_ago+
+
+The method +weeks_ago+ works analogously for weeks:
+
+<ruby>
+Date.new(2010, 5, 24).weeks_ago(1)    # => Mon, 17 May 2010
+Date.new(2010, 5, 24).weeks_ago(2)    # => Mon, 10 May 2010
 </ruby>
 
 h6. +advance+
@@ -3042,6 +3063,8 @@ yesterday
 tomorrow
 beginning_of_week (monday, at_beginning_of_week)
 end_on_week (at_end_of_week)
+weeks_ago
+prev_week
 next_week
 months_ago
 months_since
@@ -3214,6 +3237,8 @@ beginning_of_day (midnight, at_midnight, at_beginning_of_day)
 end_of_day
 beginning_of_week (monday, at_beginning_of_week)
 end_on_week (at_end_of_week)
+weeks_ago
+prev_week
 next_week
 months_ago
 months_since
@@ -3334,6 +3359,49 @@ The auxiliary file is written in a standard directory for temporary files, but y
 
 NOTE: Defined in +active_support/core_ext/file/atomic.rb+.
 
+h3. Extensions to +Logger+
+
+h4. +around_[level]+
+
+Takes two arguments, a +before_message+ and +after_message+ and calls the current level method on the +Logger+ instance, passing in the +before_message+, then the specified message, then the +after_message+:
+
+<ruby>
+  logger = Logger.new("log/development.log")
+  logger.around_info("before", "after") { |logger| logger.info("during") }
+</ruby>
+
+h4. +silence+
+
+Silences every log level lesser to the specified one for the duration of the given block. Log level orders are: debug, info, error and fatal.
+
+<ruby>
+  logger = Logger.new("log/development.log")
+  logger.silence(Logger::INFO) do
+    logger.debug("In space, no one can hear you scream.")
+    logger.info("Scream all you want, small mailman!")
+  end
+</ruby>
+
+h4. +datetime_format=+
+
+Modifies the datetime format output by the formatter class associated with this logger. If the formatter class does not have a +datetime_format+ method then this is ignored.
+
+<ruby>
+  class Logger::FormatWithTime < Logger::Formatter
+    cattr_accessor(:datetime_format) { "%Y%m%d%H%m%S" }
+
+    def self.call(severity, timestamp, progname, msg)
+      "#{timestamp.strftime(datetime_format)} -- #{String === msg ? msg : msg.inspect}\n"
+    end
+  end
+
+  logger = Logger.new("log/development.log")
+  logger.formatter = Logger::FormatWithTime
+  logger.info("<- is the current time")
+</ruby>
+
+NOTE: Defined in +active_support/core_ext/logger.rb+.
+
 h3. Extensions to +NameError+
 
 Active Support adds +missing_name?+ to +NameError+, which tests whether the exception was raised because of the name passed as argument.
@@ -3381,8 +3449,6 @@ end
 NOTE: Defined in +active_support/core_ext/load_error.rb+.
 
 h3. Changelog
-
-"Lighthouse ticket":https://rails.lighthouseapp.com/projects/16213/tickets/67
 
 * August 10, 2010: Starts to take shape, added to the index.
 * April 18, 2009: Initial version by "Xavier Noria":credits.html#fxn

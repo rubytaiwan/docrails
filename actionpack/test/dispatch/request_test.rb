@@ -1,6 +1,31 @@
 require 'abstract_unit'
 
 class RequestTest < ActiveSupport::TestCase
+
+  def url_for(options = {})
+    options.reverse_merge!(:host => 'www.example.com')
+    ActionDispatch::Http::URL.url_for(options)
+  end
+
+  test "url_for class method" do
+    e = assert_raise(ArgumentError) { url_for(:host => nil) }
+    assert_match(/Please provide the :host parameter/, e.message)
+
+    assert_equal '/books', url_for(:only_path => true, :path => '/books')
+
+    assert_equal 'http://www.example.com',  url_for
+    assert_equal 'http://api.example.com',  url_for(:subdomain => 'api')
+    assert_equal 'http://www.ror.com',      url_for(:domain => 'ror.com')
+    assert_equal 'http://api.ror.co.uk',    url_for(:host => 'www.ror.co.uk', :subdomain => 'api', :tld_length => 2)
+    assert_equal 'http://www.example.com:8080',   url_for(:port => 8080)
+    assert_equal 'https://www.example.com',       url_for(:protocol => 'https')
+    assert_equal 'http://www.example.com/docs',   url_for(:path => '/docs')
+    assert_equal 'http://www.example.com#signup', url_for(:anchor => 'signup')
+    assert_equal 'http://www.example.com/',       url_for(:trailing_slash => true)
+    assert_equal 'http://dhh:supersecret@www.example.com', url_for(:user => 'dhh', :password => 'supersecret')
+    assert_equal 'http://www.example.com?search=books',    url_for(:params => { :search => 'books' })
+  end
+
   test "remote ip" do
     request = stub_request 'REMOTE_ADDR' => '1.2.3.4'
     assert_equal '1.2.3.4', request.remote_ip
@@ -45,9 +70,9 @@ class RequestTest < ActiveSupport::TestCase
     e = assert_raise(ActionDispatch::RemoteIp::IpSpoofAttackError) {
       request.remote_ip
     }
-    assert_match /IP spoofing attack/, e.message
-    assert_match /HTTP_X_FORWARDED_FOR="1.1.1.1"/, e.message
-    assert_match /HTTP_CLIENT_IP="2.2.2.2"/, e.message
+    assert_match(/IP spoofing attack/, e.message)
+    assert_match(/HTTP_X_FORWARDED_FOR="1.1.1.1"/, e.message)
+    assert_match(/HTTP_CLIENT_IP="2.2.2.2"/, e.message)
 
     # turn IP Spoofing detection off.
     # This is useful for sites that are aimed at non-IP clients.  The typical
@@ -96,6 +121,9 @@ class RequestTest < ActiveSupport::TestCase
     request = stub_request 'HTTP_HOST' => "www.rubyonrails.co.uk"
     assert_equal "rubyonrails.co.uk", request.domain(2)
 
+    request = stub_request 'HTTP_HOST' => "www.rubyonrails.co.uk", :tld_length => 2
+    assert_equal "rubyonrails.co.uk", request.domain
+
     request = stub_request 'HTTP_HOST' => "192.168.1.200"
     assert_nil request.domain
 
@@ -115,6 +143,9 @@ class RequestTest < ActiveSupport::TestCase
 
     request = stub_request 'HTTP_HOST' => "dev.www.rubyonrails.co.uk"
     assert_equal %w( dev www ), request.subdomains(2)
+
+    request = stub_request 'HTTP_HOST' => "dev.www.rubyonrails.co.uk", :tld_length => 2
+    assert_equal %w( dev www ), request.subdomains
 
     request = stub_request 'HTTP_HOST' => "foobar.foobar.com"
     assert_equal %w( foobar ), request.subdomains
@@ -158,12 +189,20 @@ class RequestTest < ActiveSupport::TestCase
     assert !request.standard_port?
   end
 
-  test "port string" do
+  test "optional port" do
     request = stub_request 'HTTP_HOST' => 'www.example.org:80'
-    assert_equal "", request.port_string
+    assert_equal nil, request.optional_port
 
     request = stub_request 'HTTP_HOST' => 'www.example.org:8080'
-    assert_equal ":8080", request.port_string
+    assert_equal 8080, request.optional_port
+  end
+
+  test "port string" do
+    request = stub_request 'HTTP_HOST' => 'www.example.org:80'
+    assert_equal '', request.port_string
+
+    request = stub_request 'HTTP_HOST' => 'www.example.org:8080'
+    assert_equal ':8080', request.port_string
   end
 
   test "full path" do
@@ -382,6 +421,18 @@ class RequestTest < ActiveSupport::TestCase
     assert_equal({"bar" => 2}, request.query_parameters)
   end
 
+  test "parameters still accessible after rack parse error" do
+    mock_rack_env = { "QUERY_STRING" => "x[y]=1&x[y][][w]=2", "rack.input" => "foo" }
+    request = nil
+    begin
+      request = stub_request(mock_rack_env)
+      request.parameters
+    rescue TypeError
+      # rack will raise a TypeError when parsing this query string
+    end
+    assert_equal({}, request.parameters)
+  end
+
   test "formats with accept header" do
     request = stub_request 'HTTP_ACCEPT' => 'text/html'
     request.expects(:parameters).at_least_once.returns({})
@@ -471,8 +522,11 @@ protected
 
   def stub_request(env = {})
     ip_spoofing_check = env.key?(:ip_spoofing_check) ? env.delete(:ip_spoofing_check) : true
+    @trusted_proxies ||= nil
     ip_app = ActionDispatch::RemoteIp.new(Proc.new { }, ip_spoofing_check, @trusted_proxies)
+    tld_length = env.key?(:tld_length) ? env.delete(:tld_length) : 1
     ip_app.call(env)
+    ActionDispatch::Http::URL.tld_length = tld_length
     ActionDispatch::Request.new(env)
   end
 

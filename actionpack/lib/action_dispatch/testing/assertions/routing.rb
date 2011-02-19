@@ -37,9 +37,6 @@ module ActionDispatch
       #
       #   # Test a custom route
       #   assert_recognizes({:controller => 'items', :action => 'show', :id => '1'}, 'view/item1')
-      #
-      #   # Check a Simply RESTful generated route
-      #   assert_recognizes list_items_url, 'items/list'
       def assert_recognizes(expected_options, path, extras={}, message=nil)
         request = recognized_request_for(path)
 
@@ -124,7 +121,8 @@ module ActionDispatch
           options[:controller] = "/#{controller}"
         end
 
-        assert_generates(path.is_a?(Hash) ? path[:path] : path, options, defaults, extras, message)
+        generate_options = options.dup.delete_if{ |k,v| defaults.key?(k) }
+        assert_generates(path.is_a?(Hash) ? path[:path] : path, generate_options, defaults, extras, message)
       end
 
       # A helper to make it easier to test different route configurations.
@@ -146,16 +144,16 @@ module ActionDispatch
       #
       def with_routing
         old_routes, @routes = @routes, ActionDispatch::Routing::RouteSet.new
-        old_controller, @controller = @controller, @controller.clone if @controller
-        _routes = @routes
+        if defined?(@controller) && @controller
+          old_controller, @controller = @controller, @controller.clone
+          _routes = @routes
 
-        # Unfortunately, there is currently an abstraction leak between AC::Base
-        # and AV::Base which requires having the URL helpers in both AC and AV.
-        # To do this safely at runtime for tests, we need to bump up the helper serial
-        # to that the old AV subclass isn't cached.
-        #
-        # TODO: Make this unnecessary
-        if @controller
+          # Unfortunately, there is currently an abstraction leak between AC::Base
+          # and AV::Base which requires having the URL helpers in both AC and AV.
+          # To do this safely at runtime for tests, we need to bump up the helper serial
+          # to that the old AV subclass isn't cached.
+          #
+          # TODO: Make this unnecessary
           @controller.singleton_class.send(:include, _routes.url_helpers)
           @controller.view_context_class = Class.new(@controller.view_context_class) do
             include _routes.url_helpers
@@ -164,14 +162,14 @@ module ActionDispatch
         yield @routes
       ensure
         @routes = old_routes
-        if @controller
+        if defined?(@controller) && @controller
           @controller = old_controller
         end
       end
 
       # ROUTES TODO: These assertions should really work in an integration context
       def method_missing(selector, *args, &block)
-        if @controller && @routes && @routes.named_routes.helpers.include?(selector)
+        if defined?(@controller) && @controller && @routes && @routes.named_routes.helpers.include?(selector)
           @controller.send(selector, *args, &block)
         else
           super

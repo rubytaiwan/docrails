@@ -60,10 +60,12 @@ module ActiveModel
   #   p.validate!             # => ["can not be nil"]
   #   p.errors.full_messages  # => ["name can not be nil"]
   #   # etc..
-  class Errors < ActiveSupport::OrderedHash
-    include DeprecatedErrorMethods
+  class Errors
+    include Enumerable
 
     CALLBACKS_OPTIONS = [:if, :unless, :on, :allow_nil, :allow_blank]
+
+    attr_reader :messages
 
     # Pass in the instance of the object that is using the errors object.
     #
@@ -73,12 +75,29 @@ module ActiveModel
     #     end
     #   end
     def initialize(base)
-      @base = base
-      super()
+      @base     = base
+      @messages = ActiveSupport::OrderedHash.new
     end
 
-    alias_method :get, :[]
-    alias_method :set, :[]=
+    # Clear the messages
+    def clear
+      messages.clear
+    end
+
+    # Do the error messages include an error with key +error+?
+    def include?(error)
+      messages.include? error
+    end
+
+    # Get messages for +key+
+    def get(key)
+      messages[key]
+    end
+
+    # Set messages for +key+ to +value+
+    def set(key, value)
+      messages[key] = value
+    end
 
     # When passed a symbol or a name of a method, returns an array of errors
     # for the method.
@@ -112,7 +131,7 @@ module ActiveModel
     #     # then yield :name and "must be specified"
     #   end
     def each
-      each_key do |attribute|
+      messages.each_key do |attribute|
         self[attribute].each { |error| yield attribute, error }
       end
     end
@@ -125,6 +144,16 @@ module ActiveModel
     #   p.errors.size # => 2
     def size
       values.flatten.size
+    end
+
+    # Returns all message values
+    def values
+      messages.values
+    end
+
+    # Returns all message keys
+    def keys
+      messages.keys
     end
 
     # Returns an array of error messages, with the attribute name included
@@ -149,7 +178,7 @@ module ActiveModel
     def empty?
       all? { |k, v| v && v.empty? }
     end
-
+    alias_method :blank?, :empty?
     # Returns an xml formatted representation of the Errors hash.
     #
     #   p.errors.add(:name, "can't be blank")
@@ -167,7 +196,11 @@ module ActiveModel
 
     # Returns an ActiveSupport::OrderedHash that can be used as the JSON representation for this object.
     def as_json(options=nil)
-      self
+      to_hash
+    end
+
+    def to_hash
+      messages.dup
     end
 
     # Adds +message+ to the error messages on +attribute+, which will be returned on a call to
@@ -191,13 +224,6 @@ module ActiveModel
 
     # Will add an error message to each of the attributes in +attributes+ that is empty.
     def add_on_empty(attributes, options = {})
-      if options && !options.is_a?(Hash)
-        options = { :message => options }
-        ActiveSupport::Deprecation.warn \
-          "ActiveModel::Errors#add_on_empty(attributes, custom_message) has been deprecated.\n" +
-          "Instead of passing a custom_message pass an options Hash { :message => custom_message }."
-      end
-
       [attributes].flatten.each do |attribute|
         value = @base.send(:read_attribute_for_validation, attribute)
         is_empty = value.respond_to?(:empty?) ? value.empty? : false
@@ -207,13 +233,6 @@ module ActiveModel
 
     # Will add an error message to each of the attributes in +attributes+ that is blank (using Object#blank?).
     def add_on_blank(attributes, options = {})
-      if options && !options.is_a?(Hash)
-        options = { :message => options }
-        ActiveSupport::Deprecation.warn \
-          "ActiveModel::Errors#add_on_blank(attributes, custom_message) has been deprecated.\n" +
-          "Instead of passing a custom_message pass an options Hash { :message => custom_message }."
-      end
-
       [attributes].flatten.each do |attribute|
         value = @base.send(:read_attribute_for_validation, attribute)
         add(attribute, :blank, options) if value.blank?
@@ -231,26 +250,20 @@ module ActiveModel
     #   company.errors.full_messages # =>
     #     ["Name is too short (minimum is 5 characters)", "Name can't be blank", "Address can't be blank"]
     def full_messages
-      full_messages = []
-
-      each do |attribute, messages|
-        messages = Array.wrap(messages)
-        next if messages.empty?
-
+      map { |attribute, message|
         if attribute == :base
-          messages.each {|m| full_messages << m }
+          message
         else
           attr_name = attribute.to_s.gsub('.', '_').humanize
           attr_name = @base.class.human_attribute_name(attribute, :default => attr_name)
-          options = { :default => "%{attribute} %{message}", :attribute => attr_name }
 
-          messages.each do |m|
-            full_messages << I18n.t(:"errors.format", options.merge(:message => m))
-          end
+          I18n.t(:"errors.format", {
+            :default   => "%{attribute} %{message}",
+            :attribute => attr_name,
+            :message   => message
+          })
         end
-      end
-
-      full_messages
+      }
     end
 
     # Translates an error message in its default scope
@@ -281,16 +294,9 @@ module ActiveModel
     def generate_message(attribute, type = :invalid, options = {})
       type = options.delete(:message) if options[:message].is_a?(Symbol)
 
-      if options[:default]
-        ActiveSupport::Deprecation.warn \
-          "ActiveModel::Errors#generate_message(attributes, custom_message) has been deprecated.\n" +
-          "Use ActiveModel::Errors#generate_message(attributes, :message => 'your message') instead."
-        options[:message] = options.delete(:default)
-      end
-
       defaults = @base.class.lookup_ancestors.map do |klass|
-        [ :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.underscore}.attributes.#{attribute}.#{type}",
-          :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.underscore}.#{type}" ]
+        [ :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.i18n_key}.attributes.#{attribute}.#{type}",
+          :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.i18n_key}.#{type}" ]
       end
 
       defaults << options.delete(:message)

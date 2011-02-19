@@ -17,7 +17,7 @@ module ActionController
     #
     #   def show
     #     @article = Article.find(params[:id])
-    #     fresh_when(:etag => @article, :last_modified => @article.created_at.utc, :public => true)
+    #     fresh_when(:etag => @article, :last_modified => @article.created_at, :public => true)
     #   end
     #
     # This will render the show template if the request isn't sending a matching etag or
@@ -48,7 +48,7 @@ module ActionController
     #   def show
     #     @article = Article.find(params[:id])
     #
-    #     if stale?(:etag => @article, :last_modified => @article.created_at.utc)
+    #     if stale?(:etag => @article, :last_modified => @article.created_at)
     #       @statistics = @article.really_expensive_call
     #       respond_to do |format|
     #         # all the supported formats
@@ -66,7 +66,7 @@ module ActionController
     # Examples:
     #   expires_in 20.minutes
     #   expires_in 3.hours, :public => true
-    #   expires in 3.hours, 'max-stale' => 5.hours, :public => true
+    #   expires_in 3.hours, 'max-stale' => 5.hours, :public => true
     #
     # This method will overwrite an existing Cache-Control header.
     # See http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html for more possibilities.

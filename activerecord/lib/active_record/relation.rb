@@ -5,13 +5,14 @@ module ActiveRecord
   class Relation
     JoinOperation = Struct.new(:relation, :join_class, :on)
     ASSOCIATION_METHODS = [:includes, :eager_load, :preload]
-    MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having]
+    MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having, :bind]
     SINGLE_VALUE_METHODS = [:limit, :offset, :lock, :readonly, :create_with, :from]
 
     include FinderMethods, Calculations, SpawnMethods, QueryMethods, Batches
 
+    # These are explicitly delegated to improve performance (avoids method_missing)
     delegate :to_xml, :to_yaml, :length, :collect, :map, :each, :all?, :include?, :to => :to_a
-    delegate :insert, :to => :arel
+    delegate :table_name, :primary_key, :to => :klass
 
     attr_reader :table, :klass, :loaded
     attr_accessor :extensions
@@ -26,6 +27,25 @@ module ActiveRecord
       SINGLE_VALUE_METHODS.each {|v| instance_variable_set(:"@#{v}_value", nil)}
       (ASSOCIATION_METHODS + MULTI_VALUE_METHODS).each {|v| instance_variable_set(:"@#{v}_values", [])}
       @extensions = []
+    end
+
+    def insert(values)
+      im = arel.compile_insert values
+      im.into @table
+
+      primary_key_value = nil
+
+      if primary_key && Hash === values
+        primary_key_value = values[values.keys.find { |k|
+          k.name == primary_key
+        }]
+      end
+
+      @klass.connection.insert(
+        im.to_sql,
+        'SQL',
+        primary_key,
+        primary_key_value)
     end
 
     def new(*args, &block)
@@ -61,7 +81,13 @@ module ActiveRecord
     def to_a
       return @records if loaded?
 
-      @records = eager_loading? ? find_with_associations : @klass.find_by_sql(arel.to_sql)
+      @records = if @readonly_value.nil? && !@klass.locking_enabled?
+        eager_loading? ? find_with_associations : @klass.find_by_sql(arel.to_sql, @bind_values)
+      else
+        IdentityMap.without do
+          eager_loading? ? find_with_associations : @klass.find_by_sql(arel.to_sql, @bind_values)
+        end
+      end
 
       preload = @preload_values
       preload +=  @includes_values unless eager_loading?
@@ -76,7 +102,9 @@ module ActiveRecord
       @records
     end
 
-    def as_json(options = nil) to_a end #:nodoc:
+    def as_json(options = nil) #:nodoc:
+      to_a.as_json(options)
+    end
 
     # Returns size of the records.
     def size
@@ -152,12 +180,19 @@ module ActiveRecord
       if conditions || options.present?
         where(conditions).apply_finder_options(options.slice(:limit, :order)).update_all(updates)
       else
+        limit = nil
+        order = []
         # Apply limit and order only if they're both present
         if @limit_value.present? == @order_values.present?
-          arel.update(Arel::SqlLiteral.new(@klass.send(:sanitize_sql_for_assignment, updates)))
-        else
-          except(:limit, :order).update_all(updates)
+          limit = arel.limit
+          order = arel.orders
         end
+
+        stmt = arel.compile_update(Arel.sql(@klass.send(:sanitize_sql_for_assignment, updates)))
+        stmt.take limit
+        stmt.order(*order)
+        stmt.key = table[primary_key]
+        @klass.connection.update stmt.to_sql
       end
     end
 
@@ -268,7 +303,14 @@ module ActiveRecord
     # If you need to destroy dependent associations or call your <tt>before_*</tt> or
     # +after_destroy+ callbacks, use the +destroy_all+ method instead.
     def delete_all(conditions = nil)
-      conditions ? where(conditions).delete_all : arel.delete.tap { reset }
+      if conditions
+        where(conditions).delete_all
+      else
+        statement = arel.compile_delete
+        affected = @klass.connection.delete statement.to_sql
+        reset
+        affected
+      end
     end
 
     # Deletes the row with a primary key matching the +id+ argument, using a
@@ -292,7 +334,7 @@ module ActiveRecord
     #   # Delete multiple rows
     #   Todo.delete([2,3,4])
     def delete(id_or_array)
-      where(@klass.primary_key => id_or_array).delete_all
+      where(primary_key => id_or_array).delete_all
     end
 
     def reload
@@ -308,28 +350,20 @@ module ActiveRecord
       self
     end
 
-    def primary_key
-      @primary_key ||= table[@klass.primary_key]
-    end
-
     def to_sql
       @to_sql ||= arel.to_sql
     end
 
     def where_values_hash
-          Hash[@where_values.find_all { |w|
-            w.respond_to?(:operator) && w.operator == :==
-          }.map { |where|
-            [where.operand1.name,
-             where.operand2.respond_to?(:value) ?
-             where.operand2.value : where.operand2]
-        }]
+      equalities = @where_values.grep(Arel::Nodes::Equality).find_all { |node|
+        node.left.relation.name == table_name
+      }
+
+      Hash[equalities.map { |where| [where.left.name, where.right] }]
     end
 
     def scope_for_create
-      @scope_for_create ||= begin
-        @create_with_value || where_values_hash
-      end
+      @scope_for_create ||= where_values_hash.merge(@create_with_value || {})
     end
 
     def eager_loading?
@@ -341,7 +375,7 @@ module ActiveRecord
       when Relation
         other.to_sql == to_sql
       when Array
-        to_a == other.to_a
+        to_a == other
       end
     end
 
@@ -360,15 +394,6 @@ module ActiveRecord
         scoping { @klass.send(method, *args, &block) }
       elsif arel.respond_to?(method)
         arel.send(method, *args, &block)
-      elsif match = DynamicFinderMatch.match(method)
-        attributes = match.attribute_names
-        super unless @klass.send(:all_attributes_exists?, attributes)
-
-        if match.finder?
-          find_by_attributes(match, attributes, *args)
-        elsif match.instantiator?
-          find_or_instantiator_by_attributes(match, attributes, *args, &block)
-        end
       else
         super
       end
@@ -378,7 +403,7 @@ module ActiveRecord
 
     def references_eager_loaded_tables?
       # always convert table names to downcase as in Oracle quoted table names are in uppercase
-      joined_tables = (tables_in_string(arel.joins(arel)) + [table.name, table.table_alias]).compact.map{ |t| t.downcase }.uniq
+      joined_tables = (tables_in_string(arel.join_sql) + [table.name, table.table_alias]).compact.map{ |t| t.downcase }.uniq
       (tables_in_string(to_sql) - joined_tables).any?
     end
 
@@ -386,7 +411,7 @@ module ActiveRecord
       return [] if string.blank?
       # always convert table names to downcase as in Oracle quoted table names are in uppercase
       # ignore raw_sql_ that is used by Oracle adapter as alias for limit/offset subqueries
-      string.scan(/([a-zA-Z_][\.\w]+).?\./).flatten.map{ |s| s.downcase }.uniq - ['raw_sql_']
+      string.scan(/([a-zA-Z_][.\w]+).?\./).flatten.map{ |s| s.downcase }.uniq - ['raw_sql_']
     end
 
   end

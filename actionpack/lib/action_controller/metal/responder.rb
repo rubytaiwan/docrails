@@ -77,8 +77,6 @@ module ActionController #:nodoc:
   #
   #   respond_with(@project, :manager, @task)
   #
-  # Check <code>polymorphic_url</code> documentation for more examples.
-  #
   class Responder
     attr_reader :controller, :request, :format, :resource, :resources, :options
 
@@ -115,7 +113,7 @@ module ActionController #:nodoc:
     # Main entry point for responder responsible to dispatch to the proper format.
     #
     def respond
-      method = :"to_#{format}"
+      method = "to_#{format}"
       respond_to?(method) ? send(method) : to_format
     end
 
@@ -161,6 +159,8 @@ module ActionController #:nodoc:
         display resource.errors, :status => :unprocessable_entity
       elsif post?
         display resource, :status => :created, :location => api_location
+      elsif has_empty_resource_definition?
+        display empty_resource, :status => :ok
       else
         head :ok
       end
@@ -169,7 +169,7 @@ module ActionController #:nodoc:
     # Checks whether the resource responds to the current format or not.
     #
     def resourceful?
-      resource.respond_to?(:"to_#{format}")
+      resource.respond_to?("to_#{format}")
     end
 
     # Returns the resource location by retrieving it from the options or
@@ -220,6 +220,24 @@ module ActionController #:nodoc:
     #
     def default_action
       @action ||= ACTIONS_FOR_VERBS[request.request_method_symbol]
+    end
+
+    # Check whether resource needs a specific definition of empty resource to be valid
+    #
+    def has_empty_resource_definition?
+      respond_to?("empty_#{format}_resource")
+    end
+
+    # Delegate to proper empty resource method
+    #
+    def empty_resource
+      send("empty_#{format}_resource")
+    end
+
+    # Return a valid empty JSON resource
+    #
+    def empty_json_resource
+      "{}"
     end
   end
 end

@@ -1,5 +1,5 @@
 module ActiveRecord
-  # = Active Record Validations
+  # = Active Record RecordInvalid
   #
   # Raised by <tt>save!</tt> and <tt>create!</tt> when the record is invalid.  Use the
   # +record+ method to retrieve the record which did not validate.
@@ -18,6 +18,13 @@ module ActiveRecord
     end
   end
 
+  # = Active Record Validations
+  #
+  # Active Record includes the majority of its validations from ActiveModel::Validations
+  # all of which accept the <tt>:on</tt> argument to define the context where the
+  # validations are active. Active Record will always supply either the context of
+  # <tt>:create</tt> or <tt>:update</tt> dependent on whether the model is a
+  # <tt>new_record?</tt>.
   module Validations
     extend ActiveSupport::Concern
     include ActiveModel::Validations
@@ -37,7 +44,7 @@ module ActiveRecord
       end
     end
 
-    # The validation process on save can be skipped by passing false. The regular Base#save method is
+    # The validation process on save can be skipped by passing :validate => false. The regular Base#save method is
     # replaced with this when the validations module is mixed in, which it is by default.
     def save(options={})
       perform_validations(options) ? super : false
@@ -50,32 +57,24 @@ module ActiveRecord
     end
 
     # Runs all the specified validations and returns true if no errors were added otherwise false.
+    #
+    # ==== Arguments
+    #
+    # * <tt>context</tt> - Context to scope the execution of the validations. Default is <tt>nil</tt>.
+    #   If <tt>nil</tt> then the response of <tt>new_record?</tt> will determine the context. If <tt>new_record?</tt>
+    #   returns true the the context will be <tt>:create</tt>, otherwise <tt>:update</tt>.  Validation contexts
+    #   for each validation can be defined using the <tt>:on</tt> option
     def valid?(context = nil)
       context ||= (new_record? ? :create : :update)
       output = super(context)
-
-      deprecated_callback_method(:validate)
-      deprecated_callback_method(:"validate_on_#{context}")
-
       errors.empty? && output
     end
 
   protected
 
     def perform_validations(options={})
-      perform_validation = case options
-      when Hash
-        options[:validate] != false
-      else
-        ActiveSupport::Deprecation.warn "save(#{options}) is deprecated, please give save(:validate => #{options}) instead", caller
-        options
-      end
-
-      if perform_validation
-        valid?(options.is_a?(Hash) ? options[:context] : nil)
-      else
-        true
-      end
+      perform_validation = options[:validate] != false
+      perform_validation ? valid?(options[:context]) : true
     end
   end
 end
