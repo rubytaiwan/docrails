@@ -691,8 +691,6 @@ class Person < ActiveRecord::Base
 end
 </ruby>
 
-
-
 h4. +errors.clear+
 
 The +clear+ method is used when you intentionally want to clear all the messages in the +errors+ collection. Of course, calling +errors.clear+ upon an invalid object won't actually make it valid: the +errors+ collection will now be empty, but the next time you call +valid?+ or any method that tries to save this object to the database, the validations will run again. If any of the validations fail, the +errors+ collection will be filled again.
