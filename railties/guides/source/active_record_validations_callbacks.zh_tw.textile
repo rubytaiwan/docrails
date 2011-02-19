@@ -96,7 +96,7 @@ Rails 使用 +valid?+ 方法，來確認物件是否有效，您也可以如法�
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
 end
 
 Person.create(:name => "John Doe").valid? # => true
@@ -109,7 +109,7 @@ Person.create(:name => nil).valid? # => false
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
 end
 
 >> p = Person.new
@@ -147,7 +147,7 @@ h4(#validations_overview-errors). +errors[]+ 屬性內，錯誤訊息的陣列�
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
 end
 
 >> Person.new.errors[:name].any? # => false
@@ -235,7 +235,7 @@ h4. +validates_exclusion_of+ 確定屬性的值不在指定清單內
 
 <ruby>
 class Account < ActiveRecord::Base
-  validates_exclusion_of :subdomain, :in => %w(www),
+  validates_exclusion_of :subdomain, :in => %w(www us ca jp),
     :message => "Subdomain %{value} is reserved."
 end
 </ruby>
@@ -314,6 +314,8 @@ class Essay < ActiveRecord::Base
 end
 </ruby>
 
+Note that the default error messages are plural (e.g., "is too short (minimum is %{count} characters)"). For this reason, when +:minimum+ is 1 you should provide a personalized message or use +validates_presence_of+ instead. When +:in+ or +:within+ have a lower limit of 1, you should either provide a personalized message or call +validates_presence_of+ prior to +validates_length_of+.
+
 +validates_length_of+ 輔助工具的別名，叫做 +validates_size_of+ 。
 
 h4. +validates_numericality_of+ 確保屬性只包括數值
@@ -355,7 +357,7 @@ h4. +validates_presence_of+ 確定屬性是存在的
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name, :login, :email
+  validates :name, :login, :email, :presence => true
 end
 </ruby>
 
@@ -414,7 +416,7 @@ class Person < ActiveRecord::Base
   validates_with GoodnessValidator
 end
 
-class GoodnessValidator < ActiveRecord::Validator
+class GoodnessValidator < ActiveModel::Validator
   def validate
     if record.first_name == "Evil"
       record.errors[:base] << "This person is evil"
@@ -505,7 +507,7 @@ class Person < ActiveRecord::Base
   validates_numericality_of :age, :on => :update
 
   # 預設的狀況（新增、更新，兩種狀況都驗證）
-  validates_presence_of :name, :on => :save
+  validates :name, :presence => true, :on => :save
 end
 </ruby>
 
@@ -603,7 +605,7 @@ h4(#working_with_validation_errors-errors). +errors+ 列出物件的錯誤訊息
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
   validates_length_of :name, :minimum => 3
 end
 
@@ -623,7 +625,7 @@ h4(#working_with_validation_errors-errors-2). +errors[]+ 列出屬性的錯誤�
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
   validates_length_of :name, :minimum => 3
 end
 
@@ -697,7 +699,7 @@ h4. +errors.clear+ 清空錯誤訊息
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
   validates_length_of :name, :minimum => 3
 end
 
@@ -721,7 +723,7 @@ h4. +errors.size+ 物件的錯誤訊息總數
 
 <ruby>
 class Person < ActiveRecord::Base
-  validates_presence_of :name
+  validates :name, :presence => true
   validates_length_of   :name, :minimum => 3
   validates_presence_of :email
 end
@@ -822,10 +824,10 @@ h4. 自訂錯誤訊息的 HTML
 ActionView::Base.field_error_proc = Proc.new do |html_tag, instance|
   if instance.error_message.kind_of?(Array)
     %(#{html_tag}<span class="validation-error">&nbsp;
-      #{instance.error_message.join(',')}</span>)
+      #{instance.error_message.join(',')}</span>).html_safe
   else
     %(#{html_tag}<span class="validation-error">&nbsp;
-      #{instance.error_message}</span>)
+      #{instance.error_message}</span>).html_safe
   end
 end
 </ruby>
@@ -1156,10 +1158,45 @@ end
 config.active_record.observers = :mailer_observer
 </ruby>
 
+h3. Transaction Callbacks
+
+There are two additional callbacks that are triggered by the completion of a database transaction: +after_commit+ and +after_rollback+. These callbacks are very similar to the +after_save+ callback except that they don't execute until after database changes have either been committed or rolled back. They are most useful when your active record models need to interact with external systems which are not part of the database transaction.
+
+Consider, for example, the previous example where the +PictureFile+ model needs to delete a file after a record is destroyed. If anything raises an exception after the +after_destroy+ callback is called and the transaction rolls back, the file will have been deleted and the model will be left in an inconsistent state. For example, suppose that +picture_file_2+ in the code below is not valid and the +save!+ method raises an error.
+
+<ruby>
+PictureFile.transaction do
+  picture_file_1.destroy
+  picture_file_2.save!
+end
+</ruby>
+
+By using the +after_commit+ callback we can account for this case.
+
+<ruby>
+class PictureFile < ActiveRecord::Base
+  attr_accessor :delete_file
+
+  after_destroy do |picture_file|
+    picture_file.delete_file = picture_file.filepath
+  end
+
+  after_commit do |picture_file|
+    if picture_file.delete_file && File.exist?(picture_file.delete_file)
+      File.delete(picture_file.delete_file)
+      picture_file.delete_file = nil
+    end
+  end
+end
+</ruby>
+
+The +after_commit+ and +after_rollback+ callbacks are guaranteed to be called for all models created, updated, or destroyed within a transaction block. If any exceptions are raised within one of these callbacks, they will be ignored so that they don't interfere with the other callbacks. As such, if your callback code could raise an exception, you'll need to rescue it and handle it appropriately within the callback.
+
 h3. 文件修改記錄 (Changelog)
 
 "Lighthouse ticket":http://rails.lighthouseapp.com/projects/16213/tickets/26-active-record-validations-and-callbacks
 
+* February 17, 2011: Add description of transaction callbacks.
 * July 20, 2010: Fixed typos and rephrased some paragraphs for clarity. "Jaime Iniesta":http://jaimeiniesta.com
 * May 24, 2010: Fixed document to validate XHTML 1.0 Strict. "Jaime Iniesta":http://jaimeiniesta.com
 * May 15, 2010: Validation Errors section updated by "Emili Parreño":http://www.eparreno.com
