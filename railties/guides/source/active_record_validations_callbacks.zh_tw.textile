@@ -1158,11 +1158,11 @@ end
 config.active_record.observers = :mailer_observer
 </ruby>
 
-h3. Transaction Callbacks
+h3. 交易功能回呼 (Transaction Callbacks)
 
-There are two additional callbacks that are triggered by the completion of a database transaction: +after_commit+ and +after_rollback+. These callbacks are very similar to the +after_save+ callback except that they don't execute until after database changes have either been committed or rolled back. They are most useful when your active record models need to interact with external systems which are not part of the database transaction.
+資料庫交易完成時，會觸發兩個額外的回呼，分別是 +after_commit+ 以及 +after_rollback+ 。它們跟 +after_save+ 回呼很像，不過，它們僅在資料庫變更提交 (committed) 或滾回 (rolled back) 之後，才會執行。當 active record models 要跟不在交易功能內的外部系統互動，這兩個回呼會很有用。
 
-Consider, for example, the previous example where the +PictureFile+ model needs to delete a file after a record is destroyed. If anything raises an exception after the +after_destroy+ callback is called and the transaction rolls back, the file will have been deleted and the model will be left in an inconsistent state. For example, suppose that +picture_file_2+ in the code below is not valid and the +save!+ method raises an error.
+前面範例中，+PictureFile+ model 要在一筆紀錄銷毀後，跟著刪掉一個檔案。如果，在呼叫 +after_destroy+ 回呼之後，出現例外，導致交易功能滾回的話，刪掉的檔案並不會跟著回復，最後 model 會處在矛盾狀態中。下面的程式碼中，假設 +picture_file_2+ 無效，而 +save!+ 方法丟出了例外：
 
 <ruby>
 PictureFile.transaction do
@@ -1171,7 +1171,7 @@ PictureFile.transaction do
 end
 </ruby>
 
-By using the +after_commit+ callback we can account for this case.
+這個狀況，可以用 +after_commit+ 回呼來處理：
 
 <ruby>
 class PictureFile < ActiveRecord::Base
@@ -1190,7 +1190,7 @@ class PictureFile < ActiveRecord::Base
 end
 </ruby>
 
-The +after_commit+ and +after_rollback+ callbacks are guaranteed to be called for all models created, updated, or destroyed within a transaction block. If any exceptions are raised within one of these callbacks, they will be ignored so that they don't interfere with the other callbacks. As such, if your callback code could raise an exception, you'll need to rescue it and handle it appropriately within the callback.
+在交易功能區塊 (transaction block) 內建立、更新、或銷毀的 models ，必定會呼叫 +after_commit+ 與 +after_rollback+ 回呼。它們丟出的例外，都會被忽略，以免影響到其他的回呼。所以，如果您的 +after_commit+ 與 +after_rollback+ 回呼可能會丟出例外，必須在回呼之內救援??? (rescue) 並適當的處理它。
 
 h3. 文件修改記錄 (Changelog)
 
