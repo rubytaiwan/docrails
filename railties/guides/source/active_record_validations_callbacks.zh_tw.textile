@@ -1190,7 +1190,7 @@ class PictureFile < ActiveRecord::Base
 end
 </ruby>
 
-在交易功能區塊 (transaction block) 內建立、更新、或銷毀的 models ，必定會呼叫 +after_commit+ 與 +after_rollback+ 回呼。它們丟出的例外，都會被忽略，以免影響到其他的回呼。所以，如果您的 +after_commit+ 與 +after_rollback+ 回呼可能會丟出例外，必須在回呼之內救援??? (rescue) 並適當的處理它。
+在交易功能區塊 (transaction block) 內建立、更新、或銷毀的 models ，必定會呼叫 +after_commit+ 與 +after_rollback+ 回呼。它們丟出的例外，都會被忽略，以免影響到其他的回呼。所以，如果您的 +after_commit+ 與 +after_rollback+ 回呼可能會丟出例外，必須在回呼之內救援 (rescue) 並適當的處理它。
 
 h3. 文件修改記錄 (Changelog)
 
