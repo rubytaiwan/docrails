@@ -36,8 +36,8 @@ module ActiveModel
   #   person.invalid?                 # => true
   #   person.errors                   # => #<OrderedHash {:first_name=>["starts with z."]}>
   #
-  # Note that ActiveModel::Validations automatically adds an +errors+ method
-  # to your instances initialized with a new ActiveModel::Errors object, so
+  # Note that <tt>ActiveModel::Validations</tt> automatically adds an +errors+ method
+  # to your instances initialized with a new <tt>ActiveModel::Errors</tt> object, so
   # there is no need for you to do this manually.
   #
   module Validations
@@ -71,8 +71,8 @@ module ActiveModel
       #   end
       #
       # Options:
-      # * <tt>:on</tt> - Specifies the context where this validation is active 
-      #   (e.g. <tt>:on => :create</tt> or <tt>:on => :special_rules</tt>)
+      # * <tt>:on</tt> - Specifies the context where this validation is active
+      #   (e.g. <tt>:on => :create</tt> or <tt>:on => :custom_validation_context</tt>)
       # * <tt>:allow_nil</tt> - Skip validation if attribute is +nil+.
       # * <tt>:allow_blank</tt> - Skip validation if attribute is blank.
       # * <tt>:if</tt> - Specifies a method, proc or string to call to determine
@@ -165,7 +165,7 @@ module ActiveModel
       end
     end
 
-    # Returns the Errors object that holds all information about attribute error messages.
+    # Returns the +Errors+ object that holds all information about attribute error messages.
     def errors
       @errors ||= Errors.new(self)
     end

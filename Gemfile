@@ -22,6 +22,7 @@ end
 
 # AS
 gem "memcache-client", ">= 1.8.5"
+gem "fssm", "~> 0.2.5"
 
 platforms :mri_18 do
   gem "system_timer"
@@ -35,6 +36,9 @@ platforms :mri_19 do
 end
 
 platforms :ruby do
+  if ENV["RB_FSEVENT"]
+    gem 'rb-fsevent'
+  end
   gem 'json'
   gem 'yajl-ruby'
   gem "nokogiri", ">= 1.4.4"

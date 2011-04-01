@@ -106,11 +106,14 @@ module ActiveModel
         if block_given?
           sing.send :define_method, name, &block
         else
-          # use eval instead of a block to work around a memory leak in dev
-          # mode in fcgi
-          sing.class_eval <<-eorb, __FILE__, __LINE__ + 1
-            def #{name}; #{value.nil? ? 'nil' : value.to_s.inspect}; end
-          eorb
+          if name =~ /^[a-zA-Z_]\w*[!?=]?$/
+            sing.class_eval <<-eorb, __FILE__, __LINE__ + 1
+                def #{name}; #{value.nil? ? 'nil' : value.to_s.inspect}; end
+            eorb
+          else
+            value = value.to_s if value
+            sing.send(:define_method, name) { value }
+          end
         end
       end
 
@@ -260,30 +263,30 @@ module ActiveModel
       #     end
       #   end
       def define_attribute_methods(attr_names)
-        return if attribute_methods_generated?
-        attr_names.each do |attr_name|
-          attribute_method_matchers.each do |matcher|
-            unless instance_method_already_implemented?(matcher.method_name(attr_name))
-              generate_method = "define_method_#{matcher.prefix}attribute#{matcher.suffix}"
+        attr_names.each { |attr_name| define_attribute_method(attr_name) }
+      end
 
-              if respond_to?(generate_method)
-                send(generate_method, attr_name)
-              else
-                method_name = matcher.method_name(attr_name)
+      def define_attribute_method(attr_name)
+        attribute_method_matchers.each do |matcher|
+          unless instance_method_already_implemented?(matcher.method_name(attr_name))
+            generate_method = "define_method_#{matcher.prefix}attribute#{matcher.suffix}"
 
-                generated_attribute_methods.module_eval <<-STR, __FILE__, __LINE__ + 1
-                  if method_defined?('#{method_name}')
-                    undef :'#{method_name}'
-                  end
-                  define_method('#{method_name}') do |*args|
-                    send('#{matcher.method_missing_target}', '#{attr_name}', *args)
-                  end
-                STR
-              end
+            if respond_to?(generate_method)
+              send(generate_method, attr_name)
+            else
+              method_name = matcher.method_name(attr_name)
+
+              generated_attribute_methods.module_eval <<-STR, __FILE__, __LINE__ + 1
+                if method_defined?('#{method_name}')
+                  undef :'#{method_name}'
+                end
+                define_method('#{method_name}') do |*args|
+                  send('#{matcher.method_missing_target}', '#{attr_name}', *args)
+                end
+              STR
             end
           end
         end
-        @attribute_methods_generated = true
       end
 
       # Removes all the previously dynamically defined methods from the class
@@ -291,7 +294,6 @@ module ActiveModel
         generated_attribute_methods.module_eval do
           instance_methods.each { |m| undef_method(m) }
         end
-        @attribute_methods_generated = nil
       end
 
       # Returns true if the attribute methods defined have been generated.
@@ -301,11 +303,6 @@ module ActiveModel
           include mod
           mod
         end
-      end
-
-      # Returns true if the attribute methods defined have been generated.
-      def attribute_methods_generated?
-        @attribute_methods_generated ||= nil
       end
 
       protected

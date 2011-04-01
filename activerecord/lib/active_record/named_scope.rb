@@ -99,13 +99,35 @@ module ActiveRecord
       #
       #   Article.published.new.published    # => true
       #   Article.published.create.published # => true
+      #
+      # Class methods on your model are automatically available
+      # on scopes. Assuming the following setup:
+      #
+      #   class Article < ActiveRecord::Base
+      #     scope :published, where(:published => true)
+      #     scope :featured, where(:featured => true)
+      #
+      #     def self.latest_article
+      #       order('published_at desc').first
+      #     end
+      #
+      #     def self.titles
+      #       map(&:title)
+      #     end
+      #
+      #   end
+      #
+      # We are able to call the methods like this:
+      #
+      #   Article.published.featured.latest_article
+      #   Article.featured.titles
+
       def scope(name, scope_options = {})
         name = name.to_sym
         valid_scope_name?(name)
-
         extension = Module.new(&Proc.new) if block_given?
 
-        scopes[name] = lambda do |*args|
+        scope_proc = lambda do |*args|
           options = scope_options.respond_to?(:call) ? scope_options.call(*args) : scope_options
 
           relation = if options.is_a?(Hash)
@@ -118,6 +140,8 @@ module ActiveRecord
 
           extension ? relation.extending(extension) : relation
         end
+
+        self.scopes = self.scopes.merge name => scope_proc
 
         singleton_class.send(:redefine_method, name, &scopes[name])
       end

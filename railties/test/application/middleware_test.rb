@@ -52,6 +52,12 @@ module ApplicationTests
       assert_equal "Rack::Cache", middleware.first
     end
 
+    test "Rack::SSL is present when force_ssl is set" do
+      add_to_config "config.force_ssl = true"
+      boot!
+      assert middleware.include?("Rack::SSL")
+    end
+
     test "removing Active Record omits its middleware" do
       use_frameworks []
       boot!
@@ -78,10 +84,10 @@ module ApplicationTests
       assert !middleware.include?("ActionDispatch::Static")
     end
 
-    test "removes show exceptions if action_dispatch.show_exceptions is disabled" do
+    test "includes show exceptions even action_dispatch.show_exceptions is disabled" do
       add_to_config "config.action_dispatch.show_exceptions = false"
       boot!
-      assert !middleware.include?("ActionDispatch::ShowExceptions")
+      assert middleware.include?("ActionDispatch::ShowExceptions")
     end
 
     test "removes ActionDispatch::Reloader if cache_classes is true" do
@@ -116,7 +122,7 @@ module ApplicationTests
 
     test "identity map is inserted" do
       boot!
-      assert_equal "ActiveRecord::IdentityMap::Middleware", middleware[9]
+      assert middleware.include?("ActiveRecord::IdentityMap::Middleware")
     end
 
     test "insert middleware before" do

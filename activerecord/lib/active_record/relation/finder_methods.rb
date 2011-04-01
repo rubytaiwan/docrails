@@ -123,6 +123,12 @@ module ActiveRecord
       end
     end
 
+    # Same as +first+ but raises <tt>ActiveRecord::RecordNotFound</tt> if no record
+    # is found. Note that <tt>first!</tt> accepts no arguments.
+    def first!
+      first or raise RecordNotFound
+    end
+
     # A convenience wrapper for <tt>find(:last, *args)</tt>. You can pass in all the
     # same arguments to this method as you can to <tt>find(:last)</tt>.
     def last(*args)
@@ -135,6 +141,12 @@ module ActiveRecord
       else
         find_last
       end
+    end
+
+    # Same as +last+ but raises <tt>ActiveRecord::RecordNotFound</tt> if no record
+    # is found. Note that <tt>last!</tt> accepts no arguments.
+    def last!
+      last or raise RecordNotFound
     end
 
     # A convenience wrapper for <tt>find(:all, *args)</tt>. You can pass in all the
@@ -187,7 +199,7 @@ module ActiveRecord
 
     def find_with_associations
       including = (@eager_load_values + @includes_values).uniq
-      join_dependency = ActiveRecord::Associations::ClassMethods::JoinDependency.new(@klass, including, [])
+      join_dependency = ActiveRecord::Associations::JoinDependency.new(@klass, including, [])
       relation = construct_relation_for_association_find(join_dependency)
       rows = connection.select_all(relation.to_sql, 'SQL', relation.bind_values)
       join_dependency.instantiate(rows)
@@ -197,7 +209,7 @@ module ActiveRecord
 
     def construct_relation_for_association_calculations
       including = (@eager_load_values + @includes_values).uniq
-      join_dependency = ActiveRecord::Associations::ClassMethods::JoinDependency.new(@klass, including, arel.froms.first)
+      join_dependency = ActiveRecord::Associations::JoinDependency.new(@klass, including, arel.froms.first)
       relation = except(:includes, :eager_load, :preload)
       apply_join_dependency(relation, join_dependency)
     end

@@ -32,21 +32,21 @@ class BaseTest < ActiveSupport::TestCase
   end
 
   test "mail() with bcc, cc, content_type, charset, mime_version, reply_to and date" do
-    @time = Time.now.beginning_of_day.to_datetime
+    time  = Time.now.beginning_of_day.to_datetime
     email = BaseMailer.welcome(:bcc => 'bcc@test.lindsaar.net',
                                :cc  => 'cc@test.lindsaar.net',
                                :content_type => 'multipart/mixed',
                                :charset => 'iso-8559-1',
                                :mime_version => '2.0',
                                :reply_to => 'reply-to@test.lindsaar.net',
-                               :date => @time)
+                               :date => time)
     assert_equal(['bcc@test.lindsaar.net'],             email.bcc)
     assert_equal(['cc@test.lindsaar.net'],              email.cc)
     assert_equal('multipart/mixed; charset=iso-8559-1', email.content_type)
     assert_equal('iso-8559-1',                          email.charset)
     assert_equal('2.0',                                 email.mime_version)
     assert_equal(['reply-to@test.lindsaar.net'],        email.reply_to)
-    assert_equal(@time,                                 email.date)
+    assert_equal(time,                                  email.date)
   end
 
   test "mail() renders the template using the method being processed" do
@@ -153,8 +153,8 @@ class BaseTest < ActiveSupport::TestCase
     assert_equal(2, email.parts.length)
     assert_equal("multipart/related", email.mime_type)
     assert_equal("multipart/alternative", email.parts[0].mime_type)
-      assert_equal("text/plain", email.parts[0].parts[0].mime_type)
-      assert_equal("text/html",  email.parts[0].parts[1].mime_type)
+    assert_equal("text/plain", email.parts[0].parts[0].mime_type)
+    assert_equal("text/html",  email.parts[0].parts[1].mime_type)
     assert_equal("logo.png", email.parts[1].filename)
   end
 

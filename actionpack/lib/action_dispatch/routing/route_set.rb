@@ -1,5 +1,6 @@
 require 'rack/mount'
 require 'forwardable'
+require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/object/to_query'
 require 'active_support/core_ext/hash/slice'
 
@@ -50,12 +51,13 @@ module ActionDispatch
       private
 
         def controller_reference(controller_param)
+          controller_name = "#{controller_param.camelize}Controller"
+
           unless controller = @controllers[controller_param]
-            controller_name = "#{controller_param.camelize}Controller"
             controller = @controllers[controller_param] =
-              ActiveSupport::Dependencies.ref(controller_name)
+              ActiveSupport::Dependencies.reference(controller_name)
           end
-          controller.get
+          controller.get(controller_name)
         end
 
         def dispatch(controller, action, env)
@@ -329,8 +331,9 @@ module ActionDispatch
       end
 
       def add_route(app, conditions = {}, requirements = {}, defaults = {}, name = nil, anchor = true)
+        raise ArgumentError, "Invalid route name: '#{name}'" unless name.blank? || name.to_s.match(/^[_a-z]\w*$/i)
         route = Route.new(self, app, conditions, requirements, defaults, name, anchor)
-        @set.add_route(*route)
+        @set.add_route(route.app, route.conditions, route.defaults, route.name)
         named_routes[name] = route if name
         routes << route
         route
