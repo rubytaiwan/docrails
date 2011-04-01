@@ -81,7 +81,7 @@ Each fixture is given a name followed by an indented list of colon-separated key
 
 h5. ERb'in It Up
 
-ERb allows you embed ruby code within templates. Both the YAML and CSV fixture formats are pre-processed with ERb when you load fixtures. This allows you to use Ruby to help you generate some sample data.
+ERb allows you to embed ruby code within templates. Both the YAML and CSV fixture formats are pre-processed with ERb when you load fixtures. This allows you to use Ruby to help you generate some sample data.
 
 <erb>
 <% earth_size = 20 %>
@@ -227,7 +227,7 @@ $ rake db:migrate
 $ rake db:test:load
 </shell>
 
-Above +rake db:migrate+ runs any pending migrations on the _development_ environment and updates +db/schema.rb+. +rake db:test:load+ recreates the test database from the current +db/schema.rb+. On subsequent attempts, it is a good idea to first run +db:test:prepare+, as it first checks for pending migrations and warns you appropriately.
+The +rake db:migrate+ above runs any pending migrations on the _development_ environment and updates +db/schema.rb+. The +rake db:test:load+ recreates the test database from the current +db/schema.rb+. On subsequent attempts, it is a good idea to first run +db:test:prepare+, as it first checks for pending migrations and warns you appropriately.
 
 NOTE: +db:test:prepare+ will fail with an error if +db/schema.rb+ doesn't exist.
 
@@ -391,7 +391,7 @@ There are a bunch of different types of assertions you can use. Here's the compl
 |+assert_nil( obj, [msg] )+                                        |Ensures that +obj.nil?+ is true.|
 |+assert_not_nil( obj, [msg] )+                                    |Ensures that +obj.nil?+ is false.|
 |+assert_match( regexp, string, [msg] )+                           |Ensures that a string matches the regular expression.|
-|+assert_no_match( regexp, string, [msg] )+                        |Ensures that a string doesn't matches the regular expression.|
+|+assert_no_match( regexp, string, [msg] )+                        |Ensures that a string doesn't match the regular expression.|
 |+assert_in_delta( expecting, actual, delta, [msg] )+              |Ensures that the numbers +expecting+ and +actual+ are within +delta+ of each other.|
 |+assert_throws( symbol, [msg] ) { block }+                        |Ensures that the given block throws the symbol.|
 |+assert_raise( exception1, exception2, ... ) { block }+           |Ensures that the given block raises one of the given exceptions.|
@@ -499,6 +499,8 @@ If you're familiar with the HTTP protocol, you'll know that +get+ is a type of r
 * +delete+
 
 All of request types are methods that you can use, however, you'll probably end up using the first two more often than the others.
+
+NOTE: Functional tests do not verify whether the specified request type should be accepted by the action. Request types in this context exist to make your tests more descriptive.
 
 h4. The Four Hashes of the Apocalypse
 
@@ -746,7 +748,8 @@ You don't need to set up and run your tests by hand on a test-by-test basis. Rai
 
 h3. Brief Note About +Test::Unit+
 
-Ruby ships with a boat load of libraries. One little gem of a library is +Test::Unit+, a framework for unit testing in Ruby. All the basic assertions discussed above are actually defined in +Test::Unit::Assertions+. The class +ActiveSupport::TestCase+ which we have been using in our unit and functional tests extends +Test::Unit::TestCase+ that it is how we can use all the basic assertions in our tests.
+Ruby ships with a boat load of libraries. One little gem of a library is +Test::Unit+, a framework for unit testing in Ruby. All the basic assertions discussed above are actually defined in +Test::Unit::Assertions+. The class +ActiveSupport::TestCase+ which we have been using in our unit and functional tests extends +Test::Unit::TestCase+, allowing
+us to use all of the basic assertions in our tests.
 
 NOTE: For more information on +Test::Unit+, refer to "test/unit Documentation":http://ruby-doc.org/stdlib/libdoc/test/unit/rdoc/
 
@@ -939,8 +942,8 @@ h3. Other Testing Approaches
 The built-in +test/unit+ based testing is not the only way to test Rails applications. Rails developers have come up with a wide variety of other approaches and aids for testing, including:
 
 * "NullDB":http://avdi.org/projects/nulldb/, a way to speed up testing by avoiding database use.
-* "Factory Girl":http://github.com/thoughtbot/factory_girl/tree/master, as replacement for fixtures.
-* "Machinist":http://github.com/notahat/machinist/tree/master, another replacement for fixtures.
+* "Factory Girl":https://github.com/thoughtbot/factory_girl/tree/master, as replacement for fixtures.
+* "Machinist":https://github.com/notahat/machinist/tree/master, another replacement for fixtures.
 * "Shoulda":http://www.thoughtbot.com/projects/shoulda, an extension to +test/unit+ with additional helpers, macros, and assertions.
 * "RSpec":http://rspec.info/, a behavior-driven development framework
 

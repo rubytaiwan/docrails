@@ -20,7 +20,7 @@ Thus, after a simple require like:
 require 'active_support'
 </ruby>
 
-objects do not even respond to +blank?+, let's see how to load its definition.
+objects do not even respond to +blank?+. Let's see how to load its definition.
 
 h5. Cherry-picking a Definition
 
@@ -42,7 +42,7 @@ h5. Loading Grouped Core Extensions
 
 The next level is to simply load all extensions to +Object+. As a rule of thumb, extensions to +SomeClass+ are available in one shot by loading +active_support/core_ext/some_class+.
 
-Thus, if that would do, to have +blank?+ available we could just load all extensions to +Object+:
+Thus, to load all extensions to +Object+ (including +blank?+):
 
 <ruby>
 require 'active_support/core_ext/object'
@@ -432,7 +432,7 @@ h4. +require_library_or_gem+
 
 The convenience method +require_library_or_gem+ tries to load its argument with a regular +require+ first. If it fails loads +rubygems+ and tries again.
 
-If the first attempt is a failure and +rubygems+ can't be loaded the method raises +LoadError+. On the other hand, if +rubygems+ is available but the argument is not loadable as a gem, the method gives up and +LoadError+ is also raised.
+If the first attempt is a failure and +rubygems+ can't be loaded the method raises +LoadError+. A +LoadError+ is also raised if +rubygems+ is available but the argument is not loadable as a gem.
 
 For example, that's the way the MySQL adapter loads the MySQL library:
 
@@ -503,7 +503,7 @@ Model attributes have a reader, a writer, and a predicate. You can alias a model
 <ruby>
 class User < ActiveRecord::Base
   # let me refer to the email column as "login",
-  # much meaningful for authentication code
+  # possibly meaningful for authentication code
   alias_attribute :login, :email
 end
 </ruby>
@@ -528,7 +528,7 @@ The default value can be also specified with a block, which is called in the con
 class User
   attr_accessor :name, :surname
   attr_accessor_with_default(:full_name) {
-	[name, surname].compact.join(" ")
+  [name, surname].compact.join(" ")
   }
 end
 
@@ -1044,6 +1044,8 @@ A model may find that option useful as a way to prevent mass-assignment from set
 NOTE: Defined in +active_support/core_ext/class/attribute_accessors.rb+.
 
 h4. Class Inheritable Attributes
+
+WARNING: Class Inheritable Attributes are deprecated. It's recommended that you use +Class#class_attribute+ instead.
 
 Class variables are shared down the inheritance tree. Class instance variables are not shared, but they are not inherited either. The macros +class_inheritable_reader+, +class_inheritable_writer+, and +class_inheritable_accessor+ provide accessors for class-level data which is inherited but not shared with children:
 
@@ -1816,7 +1818,7 @@ h3. Extensions to +Float+
 
 h4. +round+
 
-The built-in method +Float#round+ rounds a float to the nearest integer. Active Support adds an optional parameter to let you specify a precision:
+The built-in method +Float#round+ rounds a float to the nearest integer. In Ruby 1.9 this method takes an optional argument to let you specify a precision. Active Support adds that functionality to +round+ in previous versions of Ruby:
 
 <ruby>
 Math::E.round(4) # => 2.7183
@@ -2009,7 +2011,7 @@ That syntactic sugar is used a lot in Rails to avoid positional arguments where 
 
 If a method expects a variable number of arguments and uses <tt>*</tt> in its declaration, however, such an options hash ends up being an item of the array of arguments, where it loses its role.
 
-In those cases, you may give an options hash a distinguished treatment with +extract_options!+. That method checks the type of the last item of an array. If it is a hash it pops it and returns it, otherwise returns an empty hash.
+In those cases, you may give an options hash a distinguished treatment with +extract_options!+. This method checks the type of the last item of an array. If it is a hash it pops it and returns it, otherwise it returns an empty hash.
 
 Let's see for example the definition of the +caches_action+ controller macro:
 
@@ -2713,6 +2715,14 @@ WARNING: The original +Range#include?+ is still the one aliased to +Range#===+.
 
 NOTE: Defined in +active_support/core_ext/range/include_range.rb+.
 
+h4. +cover?+
+
+Ruby 1.9 provides +cover?+, and Active Support defines it for previous versions as an alias for +include?+.
+
+The method +include?+ in Ruby 1.9 is different from the one in 1.8 for non-numeric ranges: instead of being based on comparisons between the value and the range's endpoints, it walks the range with +succ+ looking for value. This works better for ranges with holes, but it has different complexity and may not finish in some other cases.
+
+In Ruby 1.9 the old behavior is still available in the new +cover?+, which Active Support backports for forward compatibility. For example, Rails uses +cover?+ for ranges in +validates_inclusion_of+.
+
 h4. +overlaps?+
 
 The method +Range#overlaps?+ says whether any two given ranges have non-void intersection:
@@ -2782,6 +2792,8 @@ INFO: The following calculation methods have edge cases in October 1582, since d
 h5. +Date.current+
 
 Active Support defines +Date.current+ to be today in the current time zone. That's like +Date.today+, except that it honors the user time zone, if defined. It also defines +Date.yesterday+ and +Date.tomorrow+, and the instance predicates +past?+, +today?+, and +future?+, all of them relative to +Date.current+.
+
+When making Date comparisons using methods which honor the user time zone, make sure to use +Date.current+ and not +Date.today+. There are cases where the user time zone might be in the future compared to the system time zone, which +Date.today+ uses by default. This means +Date.today+ may equal +Date.yesterday+.
 
 h5. Named dates
 
@@ -3097,7 +3109,7 @@ h5. Named Datetimes
 
 h6. +DateTime.current+
 
-Active Support defines +DateTime.current+ to be like +Time.now.to_datetime+, except that it honors the user time zone, if defined. It also defines instance predicates +past?+, and +future?+ relative to +DateTime.current+.
+Active Support defines +DateTime.current+ to be like +Time.now.to_datetime+, except that it honors the user time zone, if defined. It also defines +DateTime.yesterday+ and +DateTime.tomorrow+, and the instance predicates +past?+, and +future?+ relative to +DateTime.current+.
 
 h5. Other Extensions
 
@@ -3273,6 +3285,12 @@ t.advance(:seconds => 1)
 </ruby>
 
 * If +since+ or +ago+ jump to a time that can't be expressed with +Time+ a +DateTime+ object is returned instead.
+
+h5. +Time.current+
+
+Active Support defines +Time.current+ to be today in the current time zone. That's like +Time.now+, except that it honors the user time zone, if defined. It also defines +Time.yesterday+ and +Time.tomorrow+, and the instance predicates +past?+, +today?+, and +future?+, all of them relative to +Time.current+.
+
+When making Time comparisons using methods which honor the user time zone, make sure to use +Time.current+ and not +Time.now+. There are cases where the user time zone might be in the future compared to the system time zone, which +Time.today+ uses by default. This means +Time.now+ may equal +Time.yesterday+.
 
 h4. Time Constructors
 

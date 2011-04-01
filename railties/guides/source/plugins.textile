@@ -31,7 +31,7 @@ Rails currently ships with a generator to generate a plugin within a Rails appli
 how this generator works.
 
 <shell>
-	rails generate plugin --help
+$ rails generate plugin --help
 </shell>
 
 This generator places the plugin into the vendor/plugins directory.  
@@ -45,9 +45,9 @@ as a gem.  This tutorial will begin to bridge that gap by demonstrating how to c
 "Enginex gem":http://www.github.com/josevalim/enginex.
 
 <shell>
-	gem install enginex
-	enginex --help
-	enginex yaffle
+$ gem install enginex
+$ enginex --help
+$ enginex yaffle
 </shell>
 
 This command will create a new directory named "yaffle" within the current directory.
@@ -214,18 +214,18 @@ We can easily generate these models in our "dummy" Rails application by running 
 test/dummy directory:
 
 <shell>
-	cd test/dummy
-	rails generate model Hickwall last_squak:string
-	rails generate model Wickwall last_squak:string last_tweet:string
+$ cd test/dummy
+$ rails generate model Hickwall last_squak:string
+$ rails generate model Wickwall last_squak:string last_tweet:string
 </shell>
 
 Now you can create the necessary database tables in your testing database by navigating to your dummy app
 and migrating the database.  First 
 
 <shell>
-	cd test/dummy
-	rake db:migrate
-	rake db:test:prepare
+$ cd test/dummy
+$ rake db:migrate
+$ rake db:test:prepare
 </shell>
 
 While you are here, change the Hickwall and Wickwall models so that they know that they are supposed to act
@@ -401,7 +401,9 @@ h3. Publishing your Gem
 Gem plugins in progress can be easily be shared from any Git repository.  To share the Yaffle gem with others, simply 
 commit the code to a Git repository (like Github) and add a line to the Gemfile of the any application:
 
-gem 'yaffle', :git => 'git://github.com/yaffle_watcher/yaffle.git'
+<ruby>
+gem 'yaffle', :git => 'git://github.com/yaffle_watcher/yaffle.git'	
+</ruby>
 
 After running +bundle install+, your gem functionality will be available to the application.
 
@@ -424,9 +426,9 @@ require 'yaffle'
 You can test this by changing to the Rails application that you added the plugin to and starting a rails console.  Once in the 
 console we can check to see if the String has an instance method of to_squawk.
 <shell>
-	cd my_app
-	rails console
-	String.instance_methods.sort
+$ cd my_app
+$ rails console
+$ String.instance_methods.sort
 </shell>
 
 You can also remove the .gemspec, Gemfile and Gemfile.lock files as they will no longer be needed.
@@ -447,10 +449,8 @@ Once your README is solid, go through and add rdoc comments to all of the method
 Once your comments are good to go, navigate to your plugin directory and run:
 
 <shell>
-rake rdoc
+$ rake rdoc
 </shell>
-
-!!!!!!!!!!!!!! Make sure these still make sense. Add any references that you see fit. !!!!!!!!!!!!!
 
 h4. References
 
@@ -462,6 +462,7 @@ h4. References
 
 h3. Changelog
 
+* March 10, 2011: Minor formatting tweaks.
 * February 13, 2011: Get guide in synch with Rails 3.0.3. Remove information not compatible with Rails 3. Send reader elsewhere
 for information that is covered elsewhere.
 * April 4, 2010: Fixed document to validate XHTML 1.0 Strict. "Jaime Iniesta":http://jaimeiniesta.com

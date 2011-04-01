@@ -5,7 +5,6 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/string/conversions'
 require 'active_support/core_ext/module/remove_method'
 require 'active_support/core_ext/class/attribute'
-require 'active_record/associations/class_methods/join_dependency'
 
 module ActiveRecord
   class InverseOfAssociationNotFoundError < ActiveRecordError #:nodoc:
@@ -53,14 +52,6 @@ module ActiveRecord
     end
   end
 
-  class HasManyThroughSourceAssociationMacroError < ActiveRecordError #:nodoc:
-    def initialize(reflection)
-      through_reflection = reflection.through_reflection
-      source_reflection  = reflection.source_reflection
-      super("Invalid source reflection macro :#{source_reflection.macro}#{" :through" if source_reflection.options[:through]} for has_many #{reflection.name.inspect}, :through => #{through_reflection.name.inspect}.  Use :source to specify the source reflection.")
-    end
-  end
-
   class HasManyThroughCantAssociateThroughHasOneOrManyReflection < ActiveRecordError #:nodoc:
     def initialize(owner, reflection)
       super("Cannot modify association '#{owner.class.name}##{reflection.name}' because the source reflection class '#{reflection.source_reflection.class_name}' is associated to '#{reflection.through_reflection.class_name}' via :#{reflection.source_reflection.macro}.")
@@ -76,6 +67,12 @@ module ActiveRecord
   class HasManyThroughCantDissociateNewRecords < ActiveRecordError #:nodoc:
     def initialize(owner, reflection)
       super("Cannot dissociate new records through '#{owner.class.name}##{reflection.name}' on '#{reflection.source_reflection.class_name rescue nil}##{reflection.source_reflection.name rescue nil}'. Both records must have an id in order to delete the has_many :through record associating them.")
+    end
+  end
+
+  class HasManyThroughNestedAssociationsAreReadonly < ActiveRecordError #:nodoc
+    def initialize(owner, reflection)
+      super("Cannot modify association '#{owner.class.name}##{reflection.name}' because it goes through more than one other association.")
     end
   end
 
@@ -107,8 +104,8 @@ module ActiveRecord
   # (has_many, has_one) when there is at least 1 child associated instance.
   # ex: if @project.tasks.size > 0, DeleteRestrictionError will be raised when trying to destroy @project
   class DeleteRestrictionError < ActiveRecordError #:nodoc:
-    def initialize(reflection)
-      super("Cannot delete record because of dependent #{reflection.name}")
+    def initialize(name)
+      super("Cannot delete record because of dependent #{name}")
     end
   end
 
@@ -131,6 +128,23 @@ module ActiveRecord
     autoload :HasOneAssociation,               'active_record/associations/has_one_association'
     autoload :HasOneThroughAssociation,        'active_record/associations/has_one_through_association'
     autoload :ThroughAssociation,              'active_record/associations/through_association'
+
+    module Builder #:nodoc:
+      autoload :Association,           'active_record/associations/builder/association'
+      autoload :SingularAssociation,   'active_record/associations/builder/singular_association'
+      autoload :CollectionAssociation, 'active_record/associations/builder/collection_association'
+
+      autoload :BelongsTo,           'active_record/associations/builder/belongs_to'
+      autoload :HasOne,              'active_record/associations/builder/has_one'
+      autoload :HasMany,             'active_record/associations/builder/has_many'
+      autoload :HasAndBelongsToMany, 'active_record/associations/builder/has_and_belongs_to_many'
+    end
+
+    autoload :Preloader,        'active_record/associations/preloader'
+    autoload :JoinDependency,   'active_record/associations/join_dependency'
+    autoload :AssociationScope, 'active_record/associations/association_scope'
+    autoload :AliasTracker,     'active_record/associations/alias_tracker'
+    autoload :JoinHelper,       'active_record/associations/join_helper'
 
     # Clears out the association cache.
     def clear_association_cache #:nodoc:
@@ -156,7 +170,7 @@ module ActiveRecord
     private
       # Returns the specified association instance if it responds to :loaded?, nil otherwise.
       def association_instance_get(name)
-        @association_cache[name]
+        @association_cache[name.to_sym]
       end
 
       # Set the specified association instance.
@@ -534,6 +548,49 @@ module ActiveRecord
     #     belongs_to :post
     #     belongs_to :tag, :inverse_of => :taggings
     #   end
+    #
+    # === Nested Associations
+    #
+    # You can actually specify *any* association with the <tt>:through</tt> option, including an
+    # association which has a <tt>:through</tt> option itself. For example:
+    #
+    #   class Author < ActiveRecord::Base
+    #     has_many :posts
+    #     has_many :comments, :through => :posts
+    #     has_many :commenters, :through => :comments
+    #   end
+    #
+    #   class Post < ActiveRecord::Base
+    #     has_many :comments
+    #   end
+    #
+    #   class Comment < ActiveRecord::Base
+    #     belongs_to :commenter
+    #   end
+    #
+    #   @author = Author.first
+    #   @author.commenters # => People who commented on posts written by the author
+    #
+    # An equivalent way of setting up this association this would be:
+    #
+    #   class Author < ActiveRecord::Base
+    #     has_many :posts
+    #     has_many :commenters, :through => :posts
+    #   end
+    #
+    #   class Post < ActiveRecord::Base
+    #     has_many :comments
+    #     has_many :commenters, :through => :comments
+    #   end
+    #
+    #   class Comment < ActiveRecord::Base
+    #     belongs_to :commenter
+    #   end
+    #
+    # When using nested association, you will not be able to modify the association because there
+    # is not enough information to know what modification to make. For example, if you tried to
+    # add a <tt>Commenter</tt> in the example above, there would be no way to tell how to set up the
+    # intermediate <tt>Post</tt> and <tt>Comment</tt> objects.
     #
     # === Polymorphic Associations
     #
@@ -1055,10 +1112,10 @@ module ActiveRecord
       # [:as]
       #   Specifies a polymorphic interface (See <tt>belongs_to</tt>).
       # [:through]
-      #   Specifies a join model through which to perform the query.  Options for <tt>:class_name</tt>,
+      #   Specifies an association through which to perform the query. This can be any other type
+      #   of association, including other <tt>:through</tt> associations. Options for <tt>:class_name</tt>,
       #   <tt>:primary_key</tt> and <tt>:foreign_key</tt> are ignored, as the association uses the
-      #   source reflection. You can only use a <tt>:through</tt> query through a <tt>belongs_to</tt>,
-      #   <tt>has_one</tt> or <tt>has_many</tt> association on the join model.
+      #   source reflection.
       #
       #   If the association on the join model is a +belongs_to+, the collection can be modified
       #   and the records on the <tt>:through</tt> model will be automatically created and removed
@@ -1108,11 +1165,8 @@ module ActiveRecord
       #       'FROM people p, post_subscriptions ps ' +
       #       'WHERE ps.post_id = #{id} AND ps.person_id = p.id ' +
       #       'ORDER BY p.first_name'
-      def has_many(association_id, options = {}, &extension)
-        reflection = create_has_many_reflection(association_id, options, &extension)
-        configure_dependency_for_has_many(reflection)
-        add_association_callbacks(reflection.name, reflection.options)
-        collection_accessor_methods(reflection)
+      def has_many(name, options = {}, &extension)
+        Builder::HasMany.build(self, name, options, &extension)
       end
 
       # Specifies a one-to-one association with another class. This method should only be used
@@ -1188,10 +1242,10 @@ module ActiveRecord
       #   you want to do a join but not include the joined columns. Do not forget to include the
       #   primary and foreign keys, otherwise it will raise an error.
       # [:through]
-      #   Specifies a Join Model through which to perform the query.  Options for <tt>:class_name</tt>
-      #   and <tt>:foreign_key</tt> are ignored, as the association uses the source reflection. You
-      #   can only use a <tt>:through</tt> query through a <tt>has_one</tt> or <tt>belongs_to</tt>
-      #   association on the join model.
+      #   Specifies a Join Model through which to perform the query.  Options for <tt>:class_name</tt>,
+      #   <tt>:primary_key</tt>, and <tt>:foreign_key</tt> are ignored, as the association uses the
+      #   source reflection. You can only use a <tt>:through</tt> query through a <tt>has_one</tt>
+      #   or <tt>belongs_to</tt> association on the join model.
       # [:source]
       #   Specifies the source association name used by <tt>has_one :through</tt> queries.
       #   Only use it if the name cannot be inferred from the association.
@@ -1224,15 +1278,8 @@ module ActiveRecord
       #   has_one :boss, :readonly => :true
       #   has_one :club, :through => :membership
       #   has_one :primary_address, :through => :addressables, :conditions => ["addressable.primary = ?", true], :source => :addressable
-      def has_one(association_id, options = {})
-        if options[:through]
-          reflection = create_has_one_through_reflection(association_id, options)
-        else
-          reflection = create_has_one_reflection(association_id, options)
-          association_constructor_methods(reflection)
-          configure_dependency_for_has_one(reflection)
-        end
-        association_accessor_methods(reflection)
+      def has_one(name, options = {})
+        Builder::HasOne.build(self, name, options)
       end
 
       # Specifies a one-to-one association with another class. This method should only be used
@@ -1350,19 +1397,8 @@ module ActiveRecord
       #   belongs_to :post, :counter_cache => true
       #   belongs_to :company, :touch => true
       #   belongs_to :company, :touch => :employees_last_updated_at
-      def belongs_to(association_id, options = {})
-        reflection = create_belongs_to_reflection(association_id, options)
-
-        association_accessor_methods(reflection)
-
-        unless reflection.options[:polymorphic]
-          association_constructor_methods(reflection)
-        end
-
-        add_counter_cache_callbacks(reflection)          if options[:counter_cache]
-        add_touch_callbacks(reflection, options[:touch]) if options[:touch]
-
-        configure_dependency_for_belongs_to(reflection)
+      def belongs_to(name, options = {})
+        Builder::BelongsTo.build(self, name, options)
       end
 
       # Specifies a many-to-many relationship with another class. This associates two classes via an
@@ -1533,364 +1569,9 @@ module ActiveRecord
       #   has_and_belongs_to_many :categories, :readonly => true
       #   has_and_belongs_to_many :active_projects, :join_table => 'developers_projects', :delete_sql =>
       #   'DELETE FROM developers_projects WHERE active=1 AND developer_id = #{id} AND project_id = #{record.id}'
-      def has_and_belongs_to_many(association_id, options = {}, &extension)
-        reflection = create_has_and_belongs_to_many_reflection(association_id, options, &extension)
-        collection_accessor_methods(reflection)
-
-        # Don't use a before_destroy callback since users' before_destroy
-        # callbacks will be executed after the association is wiped out.
-        include Module.new {
-          class_eval <<-RUBY, __FILE__, __LINE__ + 1
-            def destroy                     # def destroy
-              super                         #   super
-              #{reflection.name}.clear      #   posts.clear
-            end                             # end
-          RUBY
-        }
-
-        add_association_callbacks(reflection.name, options)
+      def has_and_belongs_to_many(name, options = {}, &extension)
+        Builder::HasAndBelongsToMany.build(self, name, options, &extension)
       end
-
-      private
-        # Generates a join table name from two provided table names.
-        # The names in the join table names end up in lexicographic order.
-        #
-        #   join_table_name("members", "clubs")         # => "clubs_members"
-        #   join_table_name("members", "special_clubs") # => "members_special_clubs"
-        def join_table_name(first_table_name, second_table_name)
-          if first_table_name < second_table_name
-            join_table = "#{first_table_name}_#{second_table_name}"
-          else
-            join_table = "#{second_table_name}_#{first_table_name}"
-          end
-
-          table_name_prefix + join_table + table_name_suffix
-        end
-
-        def association_accessor_methods(reflection)
-          redefine_method(reflection.name) do |*params|
-            force_reload = params.first unless params.empty?
-            association  = association(reflection.name)
-
-            if force_reload
-              reflection.klass.uncached { association.reload }
-            elsif !association.loaded? || association.stale_target?
-              association.reload
-            end
-
-            association.target
-          end
-
-          redefine_method("#{reflection.name}=") do |record|
-            association(reflection.name).replace(record)
-          end
-        end
-
-        def collection_reader_method(reflection)
-          redefine_method(reflection.name) do |*params|
-            force_reload = params.first unless params.empty?
-            association  = association(reflection.name)
-
-            if force_reload
-              reflection.klass.uncached { association.reload }
-            elsif association.stale_target?
-              association.reload
-            end
-
-            association.proxy
-          end
-
-          redefine_method("#{reflection.name.to_s.singularize}_ids") do
-            if send(reflection.name).loaded? || reflection.options[:finder_sql]
-              records = send(reflection.name)
-              records.map { |r| r.send(reflection.association_primary_key) }
-            else
-              column  = "#{reflection.quoted_table_name}.#{reflection.association_primary_key}"
-              records = send(reflection.name).select(column).except(:includes)
-              records.map! { |r| r.send(reflection.association_primary_key) }
-            end
-          end
-        end
-
-        def collection_accessor_methods(reflection, writer = true)
-          collection_reader_method(reflection)
-
-          if writer
-            redefine_method("#{reflection.name}=") do |new_value|
-              association(reflection.name).replace(new_value)
-            end
-
-            redefine_method("#{reflection.name.to_s.singularize}_ids=") do |new_value|
-              pk_column = reflection.primary_key_column
-              ids = (new_value || []).reject { |nid| nid.blank? }
-              ids.map!{ |i| pk_column.type_cast(i) }
-              send("#{reflection.name}=", reflection.klass.find(ids).index_by{ |r| r.id }.values_at(*ids))
-            end
-          end
-        end
-
-        def association_constructor_methods(reflection)
-          constructors = {
-            "build_#{reflection.name}"   => "build",
-            "create_#{reflection.name}"  => "create",
-            "create_#{reflection.name}!" => "create!"
-          }
-
-          constructors.each do |name, proxy_name|
-            redefine_method(name) do |*params|
-              attributes = params.first unless params.empty?
-              association(reflection.name).send(proxy_name, attributes)
-            end
-          end
-        end
-
-        def add_counter_cache_callbacks(reflection)
-          cache_column = reflection.counter_cache_column
-
-          method_name = "belongs_to_counter_cache_after_create_for_#{reflection.name}".to_sym
-          define_method(method_name) do
-            association = send(reflection.name)
-            association.class.increment_counter(cache_column, association.id) unless association.nil?
-          end
-          after_create(method_name)
-
-          method_name = "belongs_to_counter_cache_before_destroy_for_#{reflection.name}".to_sym
-          define_method(method_name) do
-            association = send(reflection.name)
-            association.class.decrement_counter(cache_column, association.id) unless association.nil?
-          end
-          before_destroy(method_name)
-
-          module_eval(
-            "#{reflection.class_name}.send(:attr_readonly,\"#{cache_column}\".intern) if defined?(#{reflection.class_name}) && #{reflection.class_name}.respond_to?(:attr_readonly)", __FILE__, __LINE__
-          )
-        end
-
-        def add_touch_callbacks(reflection, touch_attribute)
-          method_name = :"belongs_to_touch_after_save_or_destroy_for_#{reflection.name}"
-          redefine_method(method_name) do
-            association = send(reflection.name)
-
-            if touch_attribute == true
-              association.touch unless association.nil?
-            else
-              association.touch(touch_attribute) unless association.nil?
-            end
-          end
-          after_save(method_name)
-          after_touch(method_name)
-          after_destroy(method_name)
-        end
-
-        # Creates before_destroy callback methods that nullify, delete or destroy
-        # has_many associated objects, according to the defined :dependent rule.
-        #
-        # See HasManyAssociation#delete_records for more information. In general
-        #  - delete children if the option is set to :destroy or :delete_all
-        #  - set the foreign key to NULL if the option is set to :nullify
-        #  - do not delete the parent record if there is any child record if the
-        #    option is set to :restrict
-        def configure_dependency_for_has_many(reflection)
-          if reflection.options[:dependent]
-            method_name = "has_many_dependent_for_#{reflection.name}"
-
-            case reflection.options[:dependent]
-            when :destroy, :delete_all, :nullify
-              define_method(method_name) do
-                if reflection.options[:dependent] == :destroy
-                  send(reflection.name).each do |o|
-                    # No point in executing the counter update since we're going to destroy the parent anyway
-                    counter_method = ('belongs_to_counter_cache_before_destroy_for_' + self.class.name.downcase).to_sym
-                    if o.respond_to?(counter_method)
-                      class << o
-                        self
-                      end.send(:define_method, counter_method, Proc.new {})
-                    end
-                  end
-                end
-
-                # AssociationProxy#delete_all looks at the :dependent option and acts accordingly
-                send(reflection.name).delete_all
-              end
-            when :restrict
-              define_method(method_name) do
-                unless send(reflection.name).empty?
-                  raise DeleteRestrictionError.new(reflection)
-                end
-              end
-            else
-              raise ArgumentError, "The :dependent option expects either :destroy, :delete_all, :nullify or :restrict (#{reflection.options[:dependent].inspect})"
-            end
-
-            before_destroy method_name
-          end
-        end
-
-        # Creates before_destroy callback methods that nullify, delete or destroy
-        # has_one associated objects, according to the defined :dependent rule.
-        # If the association is marked as :dependent => :restrict, create a callback
-        # that prevents deleting entirely.
-        def configure_dependency_for_has_one(reflection)
-          if reflection.options.include?(:dependent)
-            name = reflection.options[:dependent]
-            method_name = :"has_one_dependent_#{name}_for_#{reflection.name}"
-
-            case name
-              when :destroy, :delete
-                class_eval <<-eoruby, __FILE__, __LINE__ + 1
-                  def #{method_name}
-                    association = #{reflection.name}
-                    association.#{name} if association
-                  end
-                eoruby
-              when :nullify
-                class_eval <<-eoruby, __FILE__, __LINE__ + 1
-                  def #{method_name}
-                    association = #{reflection.name}
-                    association.update_attribute(#{reflection.foreign_key.inspect}, nil) if association
-                  end
-                eoruby
-              when :restrict
-                method_name = "has_one_dependent_restrict_for_#{reflection.name}".to_sym
-                define_method(method_name) do
-                  unless send(reflection.name).nil?
-                    raise DeleteRestrictionError.new(reflection)
-                  end
-                end
-                before_destroy method_name
-              else
-                raise ArgumentError, "The :dependent option expects either :destroy, :delete, :nullify or :restrict (#{reflection.options[:dependent].inspect})"
-            end
-
-            before_destroy method_name
-          end
-        end
-
-        def configure_dependency_for_belongs_to(reflection)
-          if reflection.options.include?(:dependent)
-            name = reflection.options[:dependent]
-
-            unless [:destroy, :delete].include?(name)
-              raise ArgumentError, "The :dependent option expects either :destroy or :delete (#{reflection.options[:dependent].inspect})"
-            end
-
-            method_name = :"belongs_to_dependent_#{name}_for_#{reflection.name}"
-            class_eval <<-eoruby, __FILE__, __LINE__ + 1
-              def #{method_name}
-                association = #{reflection.name}
-                association.#{name} if association
-              end
-            eoruby
-            after_destroy method_name
-          end
-        end
-
-        mattr_accessor :valid_keys_for_has_many_association
-        @@valid_keys_for_has_many_association = [
-          :class_name, :table_name, :foreign_key, :primary_key,
-          :dependent,
-          :select, :conditions, :include, :order, :group, :having, :limit, :offset,
-          :as, :through, :source, :source_type,
-          :uniq,
-          :finder_sql, :counter_sql,
-          :before_add, :after_add, :before_remove, :after_remove,
-          :extend, :readonly,
-          :validate, :inverse_of
-        ]
-
-        def create_has_many_reflection(association_id, options, &extension)
-          options.assert_valid_keys(valid_keys_for_has_many_association)
-          options[:extend] = create_extension_modules(association_id, extension, options[:extend])
-
-          create_reflection(:has_many, association_id, options, self)
-        end
-
-        mattr_accessor :valid_keys_for_has_one_association
-        @@valid_keys_for_has_one_association = [
-          :class_name, :foreign_key, :remote, :select, :conditions, :order,
-          :include, :dependent, :counter_cache, :extend, :as, :readonly,
-          :validate, :primary_key, :inverse_of
-        ]
-
-        def create_has_one_reflection(association_id, options)
-          options.assert_valid_keys(valid_keys_for_has_one_association)
-          create_reflection(:has_one, association_id, options, self)
-        end
-
-        def create_has_one_through_reflection(association_id, options)
-          options.assert_valid_keys(
-            :class_name, :foreign_key, :remote, :select, :conditions, :order, :include, :dependent, :counter_cache, :extend, :as, :through, :source, :source_type, :validate
-          )
-          create_reflection(:has_one, association_id, options, self)
-        end
-
-        mattr_accessor :valid_keys_for_belongs_to_association
-        @@valid_keys_for_belongs_to_association = [
-          :class_name, :primary_key, :foreign_key, :foreign_type, :remote, :select, :conditions,
-          :include, :dependent, :counter_cache, :extend, :polymorphic, :readonly,
-          :validate, :touch, :inverse_of
-        ]
-
-        def create_belongs_to_reflection(association_id, options)
-          options.assert_valid_keys(valid_keys_for_belongs_to_association)
-          create_reflection(:belongs_to, association_id, options, self)
-        end
-
-        mattr_accessor :valid_keys_for_has_and_belongs_to_many_association
-        @@valid_keys_for_has_and_belongs_to_many_association = [
-          :class_name, :table_name, :join_table, :foreign_key, :association_foreign_key,
-          :select, :conditions, :include, :order, :group, :having, :limit, :offset,
-          :uniq,
-          :finder_sql, :counter_sql, :delete_sql, :insert_sql,
-          :before_add, :after_add, :before_remove, :after_remove,
-          :extend, :readonly,
-          :validate
-        ]
-
-        def create_has_and_belongs_to_many_reflection(association_id, options, &extension)
-          options.assert_valid_keys(valid_keys_for_has_and_belongs_to_many_association)
-          options[:extend] = create_extension_modules(association_id, extension, options[:extend])
-
-          reflection = create_reflection(:has_and_belongs_to_many, association_id, options, self)
-
-          if reflection.association_foreign_key == reflection.foreign_key
-            raise HasAndBelongsToManyAssociationForeignKeyNeeded.new(reflection)
-          end
-
-          reflection.options[:join_table] ||= join_table_name(undecorated_table_name(self.to_s), undecorated_table_name(reflection.class_name))
-          if connection.supports_primary_key? && (connection.primary_key(reflection.options[:join_table]) rescue false)
-             raise HasAndBelongsToManyAssociationWithPrimaryKeyError.new(reflection)
-          end
-
-          reflection
-        end
-
-        def add_association_callbacks(association_name, options)
-          callbacks = %w(before_add after_add before_remove after_remove)
-          callbacks.each do |callback_name|
-            full_callback_name = "#{callback_name}_for_#{association_name}"
-            defined_callbacks = options[callback_name.to_sym]
-
-            full_callback_value = options.has_key?(callback_name.to_sym) ? [defined_callbacks].flatten : []
-
-            # TODO : why do i need method_defined? I think its because of the inheritance chain
-            class_attribute full_callback_name.to_sym unless method_defined?(full_callback_name)
-            self.send("#{full_callback_name}=", full_callback_value)
-          end
-        end
-
-        def create_extension_modules(association_id, block_extension, extensions)
-          if block_extension
-            extension_module_name = "#{self.to_s.demodulize}#{association_id.to_s.camelize}AssociationExtension"
-
-            silence_warnings do
-              self.parent.const_set(extension_module_name, Module.new(&block_extension))
-            end
-            Array.wrap(extensions).push("#{self.parent}::#{extension_module_name}".constantize)
-          else
-            Array.wrap(extensions)
-          end
-        end
     end
   end
 end

@@ -122,7 +122,8 @@ module Rails
       @env_config ||= super.merge({
         "action_dispatch.parameter_filter" => config.filter_parameters,
         "action_dispatch.secret_token" => config.secret_token,
-        "action_dispatch.asset_path" => nil
+        "action_dispatch.asset_path" => nil,
+        "action_dispatch.show_exceptions" => config.action_dispatch.show_exceptions
       })
     end
 
@@ -144,19 +145,25 @@ module Rails
 
     def default_middleware_stack
       ActionDispatch::MiddlewareStack.new.tap do |middleware|
-        rack_cache = config.action_controller.perform_caching && config.action_dispatch.rack_cache
+        if rack_cache = config.action_controller.perform_caching && config.action_dispatch.rack_cache
+          require "action_dispatch/http/rack_cache"
+          middleware.use ::Rack::Cache, rack_cache
+        end
 
-        require "action_dispatch/http/rack_cache" if rack_cache
-        middleware.use ::Rack::Cache, rack_cache  if rack_cache
+        if config.force_ssl
+          require "rack/ssl"
+          middleware.use ::Rack::SSL
+        end
 
         if config.serve_static_assets
           asset_paths = ActiveSupport::OrderedHash[config.static_asset_paths.to_a.reverse]
           middleware.use ::ActionDispatch::Static, asset_paths
         end
+
         middleware.use ::Rack::Lock unless config.allow_concurrency
         middleware.use ::Rack::Runtime
         middleware.use ::Rails::Rack::Logger
-        middleware.use ::ActionDispatch::ShowExceptions, config.consider_all_requests_local if config.action_dispatch.show_exceptions
+        middleware.use ::ActionDispatch::ShowExceptions, config.consider_all_requests_local
         middleware.use ::ActionDispatch::RemoteIp, config.action_dispatch.ip_spoofing_check, config.action_dispatch.trusted_proxies
         middleware.use ::Rack::Sendfile, config.action_dispatch.x_sendfile_header
         middleware.use ::ActionDispatch::Reloader unless config.cache_classes
@@ -173,7 +180,10 @@ module Rails
         middleware.use ::ActionDispatch::Head
         middleware.use ::Rack::ConditionalGet
         middleware.use ::Rack::ETag, "no-cache"
-        middleware.use ::ActionDispatch::BestStandardsSupport, config.action_dispatch.best_standards_support if config.action_dispatch.best_standards_support
+
+        if config.action_dispatch.best_standards_support
+          middleware.use ::ActionDispatch::BestStandardsSupport, config.action_dispatch.best_standards_support
+        end
       end
     end
 

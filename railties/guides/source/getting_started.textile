@@ -149,11 +149,11 @@ Usually run this as the root user:
 # gem install rails
 </shell>
 
-TIP. If you're working on Windows, you should be aware that the vast majority of Rails development is done in Unix environments. While Ruby and Rails themselves install easily using for example "Ruby Installer":http://rubyinstaller.org/, the supporting ecosystem often assumes you are able to build C-based rubygems and work in a command window. If at all possible, we suggest that you install a Linux virtual machine and use that for Rails development, instead of using Windows.
+TIP. If you're working on Windows, you can quickly install Ruby and Rails with "Rails Installer":http://railsinstaller.org.
 
 h4. Creating the Blog Application
 
-The best way to use this guide is to follow each step as it happens, no code or step needed to make this example application has been left out, so you can literally follow along step by step.  If you need to see the completed code, you can download it from "Getting Started Code":http://github.com/mikel/getting-started-code.
+The best way to use this guide is to follow each step as it happens, no code or step needed to make this example application has been left out, so you can literally follow along step by step.  If you need to see the completed code, you can download it from "Getting Started Code":https://github.com/mikel/getting-started-code.
 
 To begin, open a terminal, navigate to a folder where you have rights to create files, and type:
 
@@ -1201,33 +1201,16 @@ h3. Security
 
 If you were to publish your blog online, anybody would be able to add, edit and delete posts or delete comments.
 
-Rails provides a very simple HTTP authentication system that will work nicely in this situation. First, we enable simple HTTP based authentication in our <tt>app/controllers/application_controller.rb</tt>:
+Rails provides a very simple HTTP authentication system that will work nicely in this situation.
 
-<ruby>
-class ApplicationController < ActionController::Base
-  protect_from_forgery
+In the +PostsController+ we need to have a way to block access to the various actions if the person is not authenticated, here we can use the Rails <tt>http_basic_authenticate_with</tt> method, allowing access to the requested action if that method allows it.
 
-  private
-
-  def authenticate
-    authenticate_or_request_with_http_basic do |user_name, password|
-      user_name == 'admin' && password == 'password'
-    end
-  end
-
-end
-</ruby>
-
-You can obviously change the username and password to whatever you want.  We put this method inside of +ApplicationController+ so that it is available to all of our controllers.
-
-Then in the +PostsController+ we need to have a way to block access to the various actions if the person is not authenticated, here we can use the Rails <tt>before_filter</tt> method, which allows us to specify that Rails must run a method and only then allow access to the requested action if that method allows it.
-
-To use the before filter, we specify it at the top of our +PostsController+, in this case, we want the user to be authenticated on every action, except for +index+ and +show+, so we write that:
+To use the authentication system, we specify it at the top of our +PostsController+, in this case, we want the user to be authenticated on every action, except for +index+ and +show+, so we write that:
 
 <ruby>
 class PostsController < ApplicationController
 
-  before_filter :authenticate, :except => [:index, :show]
+  http_basic_authenticate_with :name => "dhh", :password => "secret", :except => :index
 
   # GET /posts
   # GET /posts.xml
@@ -1242,7 +1225,7 @@ We also only want to allow authenticated users to delete comments, so in the +Co
 <ruby>
 class CommentsController < ApplicationController
 
-  before_filter :authenticate, :only => :destroy
+  http_basic_authenticate_with :name => "dhh", :password => "secret", :only => :destroy
 
   def create
     @post = Post.find(params[:post_id])

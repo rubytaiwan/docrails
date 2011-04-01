@@ -84,6 +84,7 @@ The following methods skip validations, and will save the object to the database
 * +toggle!+
 * +update_all+
 * +update_attribute+
+* +update_column+
 * +update_counters+
 
 Note that +save+ also has the ability to skip validations if passed +:validate => false+ as argument. This technique should be used with caution.
@@ -417,7 +418,7 @@ class Person < ActiveRecord::Base
 end
 
 class GoodnessValidator < ActiveModel::Validator
-  def validate
+  def validate(record)
     if record.first_name == "Evil"
       record.errors[:base] << "This person is evil"
     end
@@ -427,10 +428,7 @@ end
 
 The +validates_with+ helper takes a class, or a list of classes to use for validation. There is no default error message for +validates_with+. You must manually add errors to the record's errors collection in the validator class.
 
-The validator class has two attributes by default:
-
-* +record+ - the record to be validated
-* +options+ - the extra options that were passed to +validates_with+
+To implement the validate method, you must have an +record+ parameter defined, which is the record to be validated.
 
 Like all other validations, +validates_with+ takes the +:if+, +:unless+ and +:on+ options. If you pass any other options, it will send those options to the validator class as +options+:
 
@@ -439,8 +437,8 @@ class Person < ActiveRecord::Base
   validates_with GoodnessValidator, :fields => [:first_name, :last_name]
 end
 
-class GoodnessValidator < ActiveRecord::Validator
-  def validate
+class GoodnessValidator < ActiveModel::Validator
+  def validate(record)
     if options[:fields].any?{|field| record.send(field) == "Evil" }
       record.errors[:base] << "This person is evil"
     end
@@ -464,11 +462,11 @@ The block receives the model, the attribute's name and the attribute's value. Yo
 
 h3. Common Validation Options
 
-There are some common options that all the validation helpers can use. Here they are, except for the +:if+ and +:unless+ options, which are discussed later in "Conditional Validation":#conditional-validation.
+These are common validation options:
 
 h4. +:allow_nil+
 
-The +:allow_nil+ option skips the validation when the value being validated is +nil+. Using +:allow_nil+ with +validates_presence_of+ allows for +nil+, but any other +blank?+ value will still be rejected.
+The +:allow_nil+ option skips the validation when the value being validated is +nil+.
 
 <ruby>
 class Coffee < ActiveRecord::Base
@@ -476,6 +474,8 @@ class Coffee < ActiveRecord::Base
     :message => "%{value} is not a valid size", :allow_nil => true
 end
 </ruby>
+
+TIP: +:allow_nil+ is ignored by the presence validator.
 
 h4. +:allow_blank+
 
@@ -489,6 +489,8 @@ end
 Topic.create("title" => "").valid? # => true
 Topic.create("title" => nil).valid? # => true
 </ruby>
+
+TIP: +:allow_blank+ is ignored by the presence validator.
 
 h4. +:message+
 
@@ -739,7 +741,20 @@ person.errors.size # => 0
 
 h3. Displaying Validation Errors in the View
 
-Rails provides built-in helpers to display the error messages of your models in your view templates.
+Rails maintains an official plugin that provides helpers to display the error messages of your models in your view templates. You can install it as a plugin or as a Gem.
+
+h4. Installing as a plugin
+<shell>
+$ rails plugin install git://github.com/joelmoss/dynamic_form.git
+</shell>
+
+h4 Installing as a Gem
+Add this line on your Gemfile:
+<ruby>
+gem "dynamic_form"
+</ruby>
+
+Now you will have access to these two methods in your view templates:
 
 h4. +error_messages+ and +error_messages_for+
 
@@ -977,6 +992,7 @@ Just as with validations, it's also possible to skip callbacks. These methods sh
 * +increment+
 * +increment_counter+
 * +toggle+
+* +update_column+
 * +update_all+
 * +update_counters+
 
@@ -1113,7 +1129,7 @@ h4. Creating Observers
 For example, imagine a +User+ model where we want to send an email every time a new user is created. Because sending emails is not directly related to our model's purpose, we could create an observer to contain this functionality.
 
 <shell>
-rails generate observer User
+$ rails generate observer User
 </shell>
 
 <ruby>

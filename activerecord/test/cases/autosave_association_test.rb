@@ -21,19 +21,19 @@ require 'models/eye'
 
 class TestAutosaveAssociationsInGeneral < ActiveRecord::TestCase
   def test_autosave_should_be_a_valid_option_for_has_one
-    assert base.valid_keys_for_has_one_association.include?(:autosave)
+    assert ActiveRecord::Associations::Builder::HasOne.valid_options.include?(:autosave)
   end
 
   def test_autosave_should_be_a_valid_option_for_belongs_to
-    assert base.valid_keys_for_belongs_to_association.include?(:autosave)
+    assert ActiveRecord::Associations::Builder::BelongsTo.valid_options.include?(:autosave)
   end
 
   def test_autosave_should_be_a_valid_option_for_has_many
-    assert base.valid_keys_for_has_many_association.include?(:autosave)
+    assert ActiveRecord::Associations::Builder::HasMany.valid_options.include?(:autosave)
   end
 
   def test_autosave_should_be_a_valid_option_for_has_and_belongs_to_many
-    assert base.valid_keys_for_has_and_belongs_to_many_association.include?(:autosave)
+    assert ActiveRecord::Associations::Builder::HasAndBelongsToMany.valid_options.include?(:autosave)
   end
 
   def test_should_not_add_the_same_callbacks_multiple_times_for_has_one
@@ -743,7 +743,7 @@ class TestDestroyAsPartOfAutosaveAssociation < ActiveRecord::TestCase
     2.times { |i| @pirate.birds.create!(:name => "birds_#{i}") }
     before = @pirate.birds.map { |c| c.mark_for_destruction ; c }
 
-    # Stub the destroy method of the the second child to raise an exception
+    # Stub the destroy method of the second child to raise an exception
     class << before.last
       def destroy(*args)
         super
@@ -793,7 +793,6 @@ class TestDestroyAsPartOfAutosaveAssociation < ActiveRecord::TestCase
   def test_should_destroy_habtm_as_part_of_the_save_transaction_if_they_were_marked_for_destruction
     2.times { |i| @pirate.parrots.create!(:name => "parrots_#{i}") }
 
-<<<<<<< HEAD
     assert !@pirate.parrots.any? { |parrot| parrot.marked_for_destruction? }
     @pirate.parrots.each { |parrot| parrot.mark_for_destruction }
 
@@ -809,15 +808,6 @@ class TestDestroyAsPartOfAutosaveAssociation < ActiveRecord::TestCase
 
   def test_should_skip_validation_on_habtm_if_marked_for_destruction
     2.times { |i| @pirate.parrots.create!(:name => "parrots_#{i}") }
-=======
-      # Stub the destroy method of the second child to raise an exception
-      class << before.last
-        def destroy(*args)
-          super
-          raise 'Oh noes!'
-        end
-      end
->>>>>>> 220cb107b672d65fdc0488d4ff310ab04b62b463
 
     @pirate.parrots.each { |parrot| parrot.name = '' }
     assert !@pirate.valid?
@@ -975,7 +965,10 @@ class TestAutosaveAssociationOnAHasOneAssociation < ActiveRecord::TestCase
     values = [@pirate.reload.catchphrase, @pirate.ship.name, *@pirate.ship.parts.map(&:name)]
     # Oracle saves empty string as NULL
     if current_adapter?(:OracleAdapter)
-      assert_equal [nil, nil, nil, nil], values
+      expected = ActiveRecord::IdentityMap.enabled? ?
+        [nil, nil, '', ''] :
+        [nil, nil, nil, nil]
+      assert_equal expected, values
     else
       assert_equal ['', '', '', ''], values
     end
@@ -1070,7 +1063,8 @@ class TestAutosaveAssociationOnABelongsToAssociation < ActiveRecord::TestCase
     @ship.save(:validate => false)
     # Oracle saves empty string as NULL
     if current_adapter?(:OracleAdapter)
-      assert_equal [nil, nil], [@ship.reload.name, @ship.pirate.catchphrase]
+      expected = ActiveRecord::IdentityMap.enabled? ?  [nil, ''] : [nil, nil]
+      assert_equal expected, [@ship.reload.name, @ship.pirate.catchphrase]
     else
       assert_equal ['', ''], [@ship.reload.name, @ship.pirate.catchphrase]
     end

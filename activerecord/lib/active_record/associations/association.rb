@@ -7,7 +7,7 @@ module ActiveRecord
     # This is the root class of all associations ('+ Foo' signifies an included module Foo):
     #
     #   Association
-    #     SingularAssociaton
+    #     SingularAssociation
     #       HasOneAssociation
     #         HasOneThroughAssociation + ThroughAssociation
     #       BelongsToAssociation
@@ -19,7 +19,7 @@ module ActiveRecord
     class Association #:nodoc:
       attr_reader :owner, :target, :reflection
 
-      delegate :options, :klass, :to => :reflection
+      delegate :options, :to => :reflection
 
       def initialize(owner, reflection)
         reflection.check_validity!
@@ -37,13 +37,13 @@ module ActiveRecord
       #   post.comments.aliased_table_name # => "comments"
       #
       def aliased_table_name
-        @reflection.klass.table_name
+        reflection.klass.table_name
       end
 
       # Resets the \loaded flag to +false+ and sets the \target to +nil+.
       def reset
         @loaded = false
-        IdentityMap.remove(@target) if IdentityMap.enabled? && @target
+        IdentityMap.remove(target) if IdentityMap.enabled? && target
         @target = nil
       end
 
@@ -52,7 +52,7 @@ module ActiveRecord
         reset
         construct_scope
         load_target
-        self unless @target.nil?
+        self unless target.nil?
       end
 
       # Has the \target been already \loaded?
@@ -88,48 +88,34 @@ module ActiveRecord
 
       # Construct the scope for this association.
       #
-      # Note that the association_scope is merged into the targed_scope only when the
+      # Note that the association_scope is merged into the target_scope only when the
       # scoped method is called. This is because at that point the call may be surrounded
       # by scope.scoping { ... } or with_scope { ... } etc, which affects the scope which
       # actually gets built.
       def construct_scope
-        @association_scope = association_scope if target_klass
-      end
-
-      def association_scope
-        scope = target_klass.unscoped
-        scope = scope.create_with(creation_attributes)
-        scope = scope.apply_finder_options(@reflection.options.slice(:readonly, :include))
-        scope = scope.where(interpolate(@reflection.options[:conditions]))
-        if select = select_value
-          scope = scope.select(select)
+        if klass
+          @association_scope = AssociationScope.new(self).scope
         end
-        scope = scope.extending(*Array.wrap(@reflection.options[:extend]))
-        scope.where(construct_owner_conditions)
-      end
-
-      def aliased_table
-        target_klass.arel_table
       end
 
       # Set the inverse association, if possible
       def set_inverse_instance(record)
         if record && invertible_for?(record)
           inverse = record.association(inverse_reflection_for(record).name)
-          inverse.target = @owner
+          inverse.target = owner
         end
       end
 
       # This class of the target. belongs_to polymorphic overrides this to look at the
       # polymorphic_type field on the owner.
-      def target_klass
-        @reflection.klass
+      def klass
+        reflection.klass
       end
 
       # Can be overridden (i.e. in ThroughAssociation) to merge in other scopes (i.e. the
       # through association's scope)
       def target_scope
-        target_klass.scoped
+        klass.scoped
       end
 
       # Loads the \target if needed and returns it.
@@ -146,7 +132,7 @@ module ActiveRecord
         if find_target?
           begin
             if IdentityMap.enabled? && association_class && association_class.respond_to?(:base_class)
-              @target = IdentityMap.get(association_class, @owner[@reflection.foreign_key])
+              @target = IdentityMap.get(association_class, owner[reflection.foreign_key])
             end
           rescue NameError
             nil
@@ -163,59 +149,41 @@ module ActiveRecord
       private
 
         def find_target?
-          !loaded? && (!@owner.new_record? || foreign_key_present?) && target_klass
+          !loaded? && (!owner.new_record? || foreign_key_present?) && klass
         end
 
         def interpolate(sql, record = nil)
           if sql.respond_to?(:to_proc)
-            @owner.send(:instance_exec, record, &sql)
+            owner.send(:instance_exec, record, &sql)
           else
             sql
           end
         end
 
-        def select_value
-          @reflection.options[:select]
-        end
-
-        # Implemented by (some) subclasses
         def creation_attributes
-          { }
-        end
-
-        # Returns a hash linking the owner to the association represented by the reflection
-        def construct_owner_attributes(reflection = @reflection)
           attributes = {}
-          if reflection.macro == :belongs_to
-            attributes[reflection.association_primary_key] = @owner[reflection.foreign_key]
-          else
-            attributes[reflection.foreign_key] = @owner[reflection.active_record_primary_key]
+
+          if [:has_one, :has_many].include?(reflection.macro) && !options[:through]
+            attributes[reflection.foreign_key] = owner[reflection.active_record_primary_key]
 
             if reflection.options[:as]
-              attributes["#{reflection.options[:as]}_type"] = @owner.class.base_class.name
+              attributes[reflection.type] = owner.class.base_class.name
             end
           end
-          attributes
-        end
 
-        # Builds an array of arel nodes from the owner attributes hash
-        def construct_owner_conditions(table = aliased_table, reflection = @reflection)
-          conditions = construct_owner_attributes(reflection).map do |attr, value|
-            table[attr].eq(value)
-          end
-          table.create_and(conditions)
+          attributes
         end
 
         # Sets the owner attributes on the given record
         def set_owner_attributes(record)
-          if @owner.persisted?
-            construct_owner_attributes.each { |key, value| record[key] = value }
+          if owner.persisted?
+            creation_attributes.each { |key, value| record[key] = value }
           end
         end
 
-        # Should be true if there is a foreign key present on the @owner which
+        # Should be true if there is a foreign key present on the owner which
         # references the target. This is used to determine whether we can load
-        # the target if the @owner is currently a new record (and therefore
+        # the target if the owner is currently a new record (and therefore
         # without a key).
         #
         # Currently implemented by belongs_to (vanilla and polymorphic) and
@@ -228,8 +196,8 @@ module ActiveRecord
         # the kind of the class of the associated objects. Meant to be used as
         # a sanity check when you are about to assign an associated record.
         def raise_on_type_mismatch(record)
-          unless record.is_a?(@reflection.klass) || record.is_a?(@reflection.class_name.constantize)
-            message = "#{@reflection.class_name}(##{@reflection.klass.object_id}) expected, got #{record.class}(##{record.class.object_id})"
+          unless record.is_a?(reflection.klass) || record.is_a?(reflection.class_name.constantize)
+            message = "#{reflection.class_name}(##{reflection.klass.object_id}) expected, got #{record.class}(##{record.class.object_id})"
             raise ActiveRecord::AssociationTypeMismatch, message
           end
         end
@@ -238,7 +206,7 @@ module ActiveRecord
         # The record parameter is necessary to support polymorphic inverses as we must check for
         # the association in the specific class of the record.
         def inverse_reflection_for(record)
-          @reflection.inverse_of
+          reflection.inverse_of
         end
 
         # Is this association invertible? Can be redefined by subclasses.
