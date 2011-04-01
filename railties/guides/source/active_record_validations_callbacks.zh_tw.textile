@@ -1218,4 +1218,4 @@ h3. 翻譯詞彙
 
 英文與繁體中文的對照詞彙，請見 "rails-guide-glossary-list-zh_tw":https://spreadsheets.google.com/ccc?key=0AkNsS2a-Qx8ZdDJzTUlNeVlvRy1BYnZDUnRjZUpWWGc&hl=en
 
-部份翻譯詞彙參考自 "Ruby Programming－向Ruby之父學程式設計":http://anobii.com/books/Ruby_Programming/9789575279776/018bca897e4b3aafa8/ 以及 "松本行弘的程式世界：成為一流程式設計師的14種思考術":http://anobii.com/books/%E6%9D%BE%E6%9C%AC%E8%A1%8C%E5%BC%98%E7%9A%84%E7%A8%8B%E5%BC%8F%E4%B8%96%E7%95%8C/9789862013571/017262b33d6647d8f3/ 二書，皆為博碩出版。
+部份翻譯詞彙參考自 "Ruby Programming－向Ruby之父學程式設計":http://anobii.com/books/Ruby_Programming/9789575279776/018bca897e4b3aafa8/ 以及 "松本行弘的程式世界：成為一流程式設計師的14種思考術":http://anobii.com/books/%E6%9D%BE%E6%9C%AC%E8%A1%8C%E5%BC%98%E7%9A%84%E7%A8%8B%E5%BC%8F%E4%B8%96%E7%95%8C/9789862013571/017262b33d6647d8f3/ 二書，皆為博碩出版。test04
