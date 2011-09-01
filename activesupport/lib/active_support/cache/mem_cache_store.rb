@@ -4,7 +4,9 @@ rescue LoadError => e
   $stderr.puts "You don't have memcache-client installed in your application. Please add it to your Gemfile and run bundle install"
   raise e
 end
+
 require 'digest/md5'
+require 'active_support/core_ext/string/encoding'
 
 module ActiveSupport
   module Cache
@@ -29,7 +31,7 @@ module ActiveSupport
         DELETED     = "DELETED\r\n"
       end
 
-      ESCAPE_KEY_CHARS = /[\x00-\x20%\x7F-\xFF]/
+      ESCAPE_KEY_CHARS = /[\x00-\x20%\x7F-\xFF]/n
 
       def self.build_mem_cache(*addresses)
         addresses = addresses.flatten
@@ -157,8 +159,14 @@ module ActiveSupport
         end
 
       private
+
+        # Memcache keys are binaries. So we need to force their encoding to binary
+        # before applying the regular expression to ensure we are escaping all
+        # characters properly.
         def escape_key(key)
-          key = key.to_s.gsub(ESCAPE_KEY_CHARS){|match| "%#{match.getbyte(0).to_s(16).upcase}"}
+          key = key.to_s.dup
+          key = key.force_encoding("BINARY") if key.encoding_aware?
+          key = key.gsub(ESCAPE_KEY_CHARS){ |match| "%#{match.getbyte(0).to_s(16).upcase}" }
           key = "#{key[0, 213]}:md5:#{Digest::MD5.hexdigest(key)}" if key.size > 250
           key
         end
@@ -175,6 +183,14 @@ module ActiveSupport
       # Provide support for raw values in the local cache strategy.
       module LocalCacheWithRaw # :nodoc:
         protected
+          def read_entry(key, options)
+            entry = super
+            if options[:raw] && local_cache && entry
+               entry = deserialize_entry(entry.value)
+            end
+            entry
+          end
+
           def write_entry(key, entry, options) # :nodoc:
             retval = super
             if options[:raw] && local_cache && retval

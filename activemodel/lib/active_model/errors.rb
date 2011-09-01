@@ -49,8 +49,8 @@ module ActiveModel
   #
   # The last three methods are required in your object for Errors to be
   # able to generate error messages correctly and also handle multiple
-  # languages.  Of course, if you extend your object with ActiveModel::Translations
-  # you will not need to implement the last two.  Likewise, using
+  # languages. Of course, if you extend your object with ActiveModel::Translation
+  # you will not need to implement the last two. Likewise, using
   # ActiveModel::Validations will handle the validation related methods
   # for you.
   #
@@ -63,7 +63,7 @@ module ActiveModel
   class Errors
     include Enumerable
 
-    CALLBACKS_OPTIONS = [:if, :unless, :on, :allow_nil, :allow_blank]
+    CALLBACKS_OPTIONS = [:if, :unless, :on, :allow_nil, :allow_blank, :strict]
 
     attr_reader :messages
 
@@ -86,7 +86,7 @@ module ActiveModel
 
     # Do the error messages include an error with key +error+?
     def include?(error)
-      messages.include? error
+      (v = messages[error]) && v.any?
     end
 
     # Get messages for +key+
@@ -117,7 +117,7 @@ module ActiveModel
     end
 
     # Iterates through each error key, value pair in the error messages hash.
-    # Yields the attribute and the error for that attribute.  If the attribute
+    # Yields the attribute and the error for that attribute. If the attribute
     # has more than one error message, yields once for each error message.
     #
     #   p.errors.add(:name, "can't be blank")
@@ -174,7 +174,7 @@ module ActiveModel
       to_a.size
     end
 
-    # Returns true if there are any errors, false if not.
+    # Returns true if no errors are found, false otherwise.
     def empty?
       all? { |k, v| v && v.empty? }
     end
@@ -218,6 +218,9 @@ module ActiveModel
       elsif message.is_a?(Proc)
         message = message.call
       end
+      if options[:strict]
+        raise ActiveModel::StrictValidationFailed,  message
+      end
 
       self[attribute] << message
     end
@@ -248,7 +251,7 @@ module ActiveModel
     #
     #   company = Company.create(:address => '123 First St.')
     #   company.errors.full_messages # =>
-    #     ["Name is too short (minimum is 5 characters)", "Name can't be blank", "Address can't be blank"]
+    #     ["Name is too short (minimum is 5 characters)", "Name can't be blank", "Email can't be blank"]
     def full_messages
       map { |attribute, message|
         if attribute == :base
@@ -294,8 +297,8 @@ module ActiveModel
       type = options.delete(:message) if options[:message].is_a?(Symbol)
 
       defaults = @base.class.lookup_ancestors.map do |klass|
-        [ :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.underscore}.attributes.#{attribute}.#{type}",
-          :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.underscore}.#{type}" ]
+        [ :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.i18n_key}.attributes.#{attribute}.#{type}",
+          :"#{@base.class.i18n_scope}.errors.models.#{klass.model_name.i18n_key}.#{type}" ]
       end
 
       defaults << options.delete(:message)
@@ -318,5 +321,8 @@ module ActiveModel
 
       I18n.translate(key, options)
     end
+  end
+
+  class StrictValidationFailed < StandardError
   end
 end

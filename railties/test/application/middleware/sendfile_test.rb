@@ -10,6 +10,10 @@ module ApplicationTests
       FileUtils.rm_rf "#{app_path}/config/environments"
     end
 
+    def teardown
+      teardown_app
+    end
+
     def app
       @app ||= Rails.application
     end
@@ -23,11 +27,12 @@ module ApplicationTests
     end
 
     # x_sendfile_header middleware
-    test "config.action_dispatch.x_sendfile_header defaults to ''" do
+    test "config.action_dispatch.x_sendfile_header defaults to nil" do
       make_basic_app
       simple_controller
 
       get "/"
+      assert !last_response.headers["X-Sendfile"]
       assert_equal File.read(__FILE__), last_response.body
     end
 

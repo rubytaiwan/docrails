@@ -9,11 +9,6 @@ module ActiveRecord
   module NamedScope
     extend ActiveSupport::Concern
 
-    included do
-      class_attribute :scopes
-      self.scopes = {}
-    end
-
     module ClassMethods
       # Returns an anonymous \scope.
       #
@@ -22,7 +17,7 @@ module ActiveRecord
       #   posts.each {|p| puts p.name } # Fires "select * from posts" and loads post objects
       #
       #   fruits = Fruit.scoped
-      #   fruits = fruits.where(:colour => 'red') if options[:red_only]
+      #   fruits = fruits.where(:color => 'red') if options[:red_only]
       #   fruits = fruits.limit(10) if limited?
       #
       # Anonymous \scopes tend to be useful when procedurally generating complex
@@ -35,8 +30,33 @@ module ActiveRecord
         if options
           scoped.apply_finder_options(options)
         else
-          current_scoped_methods ? relation.merge(current_scoped_methods) : relation.clone
+          if current_scope
+            current_scope.clone
+          else
+            scope = relation.clone
+            scope.default_scoped = true
+            scope
+          end
         end
+      end
+
+      ##
+      # Collects attributes from scopes that should be applied when creating
+      # an AR instance for the particular class this is called on.
+      def scope_attributes # :nodoc:
+        if current_scope
+          current_scope.scope_for_create
+        else
+          scope = relation.clone
+          scope.default_scoped = true
+          scope.scope_for_create
+        end
+      end
+
+      ##
+      # Are there default attributes associated with this scope?
+      def scope_attributes? # :nodoc:
+        current_scope || default_scopes.any?
       end
 
       # Adds a class method for retrieving and querying objects. A \scope represents a narrowing of a database query,
@@ -49,6 +69,14 @@ module ActiveRecord
       #
       # The above calls to <tt>scope</tt> define class methods Shirt.red and Shirt.dry_clean_only. Shirt.red,
       # in effect, represents the query <tt>Shirt.where(:color => 'red')</tt>.
+      #
+      # Note that this is simply 'syntactic sugar' for defining an actual class method:
+      #
+      #   class Shirt < ActiveRecord::Base
+      #     def self.red
+      #       where(:color => 'red')
+      #     end
+      #   end
       #
       # Unlike <tt>Shirt.find(...)</tt>, however, the object returned by Shirt.red is not an Array; it
       # resembles the association object constructed by a <tt>has_many</tt> declaration. For instance,
@@ -76,10 +104,30 @@ module ActiveRecord
       # Named \scopes can also be procedural:
       #
       #   class Shirt < ActiveRecord::Base
-      #     scope :colored, lambda {|color| where(:color => color) }
+      #     scope :colored, lambda { |color| where(:color => color) }
       #   end
       #
       # In this example, <tt>Shirt.colored('puce')</tt> finds all puce shirts.
+      #
+      # On Ruby 1.9 you can use the 'stabby lambda' syntax:
+      #
+      #   scope :colored, ->(color) { where(:color => color) }
+      #
+      # Note that scopes defined with \scope will be evaluated when they are defined, rather than
+      # when they are used. For example, the following would be incorrect:
+      #
+      #   class Post < ActiveRecord::Base
+      #     scope :recent, where('published_at >= ?', Time.now - 1.week)
+      #   end
+      #
+      # The example above would be 'frozen' to the <tt>Time.now</tt> value when the <tt>Post</tt>
+      # class was defined, and so the resultant SQL query would always be the same. The correct
+      # way to do this would be via a lambda, which will re-evaluate the scope each time
+      # it is called:
+      #
+      #   class Post < ActiveRecord::Base
+      #     scope :recent, lambda { where('published_at >= ?', Time.now - 1.week) }
+      #   end
       #
       # Named \scopes can also have extensions, just as with <tt>has_many</tt> declarations:
       #
@@ -129,27 +177,20 @@ module ActiveRecord
 
         scope_proc = lambda do |*args|
           options = scope_options.respond_to?(:call) ? scope_options.call(*args) : scope_options
+          options = scoped.apply_finder_options(options) if options.is_a?(Hash)
 
-          relation = if options.is_a?(Hash)
-            scoped.apply_finder_options(options)
-          elsif options
-            scoped.merge(options)
-          else
-            scoped
-          end
+          relation = scoped.merge(options)
 
           extension ? relation.extending(extension) : relation
         end
 
-        self.scopes = self.scopes.merge name => scope_proc
-
-        singleton_class.send(:redefine_method, name, &scopes[name])
+        singleton_class.send(:redefine_method, name, &scope_proc)
       end
 
     protected
 
       def valid_scope_name?(name)
-        if !scopes[name] && respond_to?(name, true)
+        if respond_to?(name, true)
           logger.warn "Creating scope :#{name}. " \
                       "Overwriting existing method #{self.name}.#{name}."
         end

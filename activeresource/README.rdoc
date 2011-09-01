@@ -20,13 +20,23 @@ Model classes are mapped to remote REST resources by Active Resource much the sa
 tables.  When a request is made to a remote resource, a REST XML request is generated, transmitted, and the result
 received and serialized into a usable Ruby object.
 
+== Download and installation
+
+The latest version of Active Support can be installed with RubyGems:
+
+  % [sudo] gem install activeresource
+
+Source code can be downloaded as part of the Rails project on GitHub
+
+* https://github.com/rails/rails/tree/master/activeresource
+
 === Configuration and Usage
 
 Putting Active Resource to use is very similar to Active Record.  It's as simple as creating a model class
 that inherits from ActiveResource::Base and providing a <tt>site</tt> class variable to it:
 
    class Person < ActiveResource::Base
-     self.site = "http://api.people.com:3000/"
+     self.site = "http://api.people.com:3000"
    end
 
 Now the Person class is REST enabled and can invoke REST services very similarly to how Active Record invokes
@@ -125,8 +135,8 @@ as the id of the ARes object.
 
 ==== Update
 
-'save' is also used to update an existing resource - and follows the same protocol as creating a resource
-with the exception that no response headers are needed - just an empty response when the update on the
+'save' is also used to update an existing resource and follows the same protocol as creating a resource
+with the exception that no response headers are needed -- just an empty response when the update on the
 server side was successful.
 
   # <person><first>Ryan</first></person>
@@ -160,6 +170,18 @@ Destruction of a resource can be invoked as a class and instance method of the r
   Person.delete(2)  # => true
   Person.exists?(2) # => false
 
+== License
+
+Active Support is released under the MIT license.
+
+== Support
+
+API documentation is at
+
+* http://api.rubyonrails.org
+
+Bug reports and feature requests can be filed with the rest for the Ruby on Rails project here:
+
+* https://github.com/rails/rails/issues
 
 You can find more usage information in the ActiveResource::Base documentation.
-

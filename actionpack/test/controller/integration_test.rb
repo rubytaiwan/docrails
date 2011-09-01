@@ -492,6 +492,8 @@ class ApplicationIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   routes.draw do
+    match '',    :to => 'application_integration_test/test#index', :as => :empty_string
+    
     match 'foo', :to => 'application_integration_test/test#index', :as => :foo
     match 'bar', :to => 'application_integration_test/test#index', :as => :bar
   end
@@ -501,11 +503,15 @@ class ApplicationIntegrationTest < ActionDispatch::IntegrationTest
   end
 
   test "includes route helpers" do
+    assert_equal '/', empty_string_path
     assert_equal '/foo', foo_path
     assert_equal '/bar', bar_path
   end
 
   test "route helpers after controller access" do
+    get '/'
+    assert_equal '/', empty_string_path
+    
     get '/foo'
     assert_equal '/foo', foo_path
 
@@ -520,5 +526,13 @@ class ApplicationIntegrationTest < ActionDispatch::IntegrationTest
   test "missing route helper after controller access" do
     get '/foo'
     assert_raise(NameError) { missing_path }
+  end
+
+  test "process reuse the env we pass as argument" do
+    env = { :SERVER_NAME => 'server', 'action_dispatch.custom' => 'custom' }
+    get '/foo', nil, env
+    assert_equal :get, env[:method]
+    assert_equal 'server', env[:SERVER_NAME]
+    assert_equal 'custom', env['action_dispatch.custom']
   end
 end

@@ -30,27 +30,39 @@ module ActionView
   extend ActiveSupport::Autoload
 
   eager_autoload do
+    autoload :AssetPaths
     autoload :Base
     autoload :Context
     autoload :Helpers
     autoload :LookupContext
-    autoload :Partials
     autoload :PathSet
-    autoload :Rendering
     autoload :Template
     autoload :TestCase
 
     autoload_under "renderer" do
+      autoload :Renderer
       autoload :AbstractRenderer
       autoload :PartialRenderer
       autoload :TemplateRenderer
+      autoload :StreamingTemplateRenderer
     end
 
     autoload_at "action_view/template/resolver" do
       autoload :Resolver
       autoload :PathResolver
       autoload :FileSystemResolver
+      autoload :OptimizedFileSystemResolver
       autoload :FallbackFileSystemResolver
+    end
+
+    autoload_at "action_view/buffers" do
+      autoload :OutputBuffer
+      autoload :StreamingBuffer
+    end
+
+    autoload_at "action_view/flows" do
+      autoload :OutputFlow
+      autoload :StreamingFlow
     end
 
     autoload_at "action_view/template/error" do
@@ -59,11 +71,6 @@ module ActionView
       autoload :EncodingError
       autoload :TemplateError
       autoload :WrongEncodingError
-    end
-
-    autoload_at "action_view/template" do
-      autoload :TemplateHandler
-      autoload :TemplateHandlers
     end
   end
 

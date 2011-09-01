@@ -62,6 +62,7 @@ module ActiveRecord
         def join_to(relation)
           tables        = @tables.dup
           foreign_table = parent_table
+          foreign_klass = parent.active_record
 
           # The chain starts with the target table, but we want to end with it here (makes
           # more sense in this context), so we reverse
@@ -89,26 +90,35 @@ module ActiveRecord
               foreign_key = reflection.active_record_primary_key
             end
 
-            constraint = table[key].eq(foreign_table[foreign_key])
+            constraint = build_constraint(reflection, table, key, foreign_table, foreign_key)
 
-            if reflection.klass.finder_needs_type_condition?
-              constraint = table.create_and([
-                constraint,
-                reflection.klass.send(:type_condition, table)
-              ])
+            conditions = self.conditions[i].dup
+            conditions << { reflection.type => foreign_klass.base_class.name } if reflection.type
+
+            unless conditions.empty?
+              constraint = constraint.and(sanitize(conditions, table))
             end
 
             relation.from(join(table, constraint))
 
-            unless conditions[i].empty?
-              relation.where(sanitize(conditions[i], table))
-            end
-
             # The current table in this iteration becomes the foreign table in the next
-            foreign_table = table
+            foreign_table, foreign_klass = table, reflection.klass
           end
 
           relation
+        end
+
+        def build_constraint(reflection, table, key, foreign_table, foreign_key)
+          constraint = table[key].eq(foreign_table[foreign_key])
+
+          if reflection.klass.finder_needs_type_condition?
+            constraint = table.create_and([
+              constraint,
+              reflection.klass.send(:type_condition, table)
+            ])
+          end
+
+          constraint
         end
 
         def join_relation(joining_relation)

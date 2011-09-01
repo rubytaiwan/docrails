@@ -4,6 +4,7 @@ require 'pathname'
 
 require 'active_support'
 require 'active_support/core_ext/kernel/reporting'
+require 'active_support/core_ext/array/extract_options'
 require 'active_support/core_ext/logger'
 
 require 'rails/application'
@@ -14,15 +15,17 @@ require 'action_dispatch/railtie'
 
 # For Ruby 1.8, this initialization sets $KCODE to 'u' to enable the
 # multibyte safe operations. Plugin authors supporting other encodings
-# should override this behaviour and set the relevant +default_charset+
+# should override this behavior and set the relevant +default_charset+
 # on ActionController::Base.
 #
 # For Ruby 1.9, UTF-8 is the default internal and external encoding.
 if RUBY_VERSION < '1.9'
   $KCODE='u'
 else
-  Encoding.default_external = Encoding::UTF_8
-  Encoding.default_internal = Encoding::UTF_8
+  silence_warnings do
+    Encoding.default_external = Encoding::UTF_8
+    Encoding.default_internal = Encoding::UTF_8
+  end
 end
 
 module Rails
@@ -85,6 +88,31 @@ module Rails
 
     def cache
       RAILS_CACHE
+    end
+
+    # Returns all rails groups for loading based on:
+    #
+    # * The Rails environment;
+    # * The environment variable RAILS_GROUPS;
+    # * The optional envs given as argument and the hash with group dependencies;
+    #
+    # == Examples
+    #
+    #   groups :assets => [:development, :test]
+    #
+    #   # Returns
+    #   # => [:default, :development, :assets] for Rails.env == "development"
+    #   # => [:default, :production]           for Rails.env == "production"
+    #
+    def groups(*groups)
+      hash = groups.extract_options!
+      env = Rails.env
+      groups.unshift(:default, env)
+      groups.concat ENV["RAILS_GROUPS"].to_s.split(",")
+      groups.concat hash.map { |k,v| k if v.map(&:to_s).include?(env) }
+      groups.compact!
+      groups.uniq!
+      groups
     end
 
     def version

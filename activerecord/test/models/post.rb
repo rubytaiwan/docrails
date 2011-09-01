@@ -7,6 +7,7 @@ class Post < ActiveRecord::Base
 
   scope :containing_the_letter_a, where("body LIKE '%a%'")
   scope :ranked_by_comments, order("comments_count DESC")
+
   scope :limit_by, lambda {|l| limit(l) }
   scope :with_authors_at_address, lambda { |address| {
       :conditions => [ 'authors.author_address_id = ?', address.id ],
@@ -34,6 +35,10 @@ class Post < ActiveRecord::Base
   has_many   :comments do
     def find_most_recent
       find(:first, :order => "id DESC")
+    end
+
+    def newest
+      created.last
     end
   end
 
@@ -142,20 +147,28 @@ class SubStiPost < StiPost
   self.table_name = Post.table_name
 end
 
-class PostWithComment < ActiveRecord::Base
-  self.table_name = 'posts'
-  default_scope where("posts.comments_count > 0").order("posts.comments_count ASC")
+ActiveSupport::Deprecation.silence do
+  class DeprecatedPostWithComment < ActiveRecord::Base
+    self.table_name = 'posts'
+    default_scope where("posts.comments_count > 0").order("posts.comments_count ASC")
+  end
 end
 
 class PostForAuthor < ActiveRecord::Base
   self.table_name = 'posts'
   cattr_accessor :selected_author
-  default_scope lambda { where(:author_id => PostForAuthor.selected_author) }
 end
 
 class FirstPost < ActiveRecord::Base
   self.table_name = 'posts'
   default_scope where(:id => 1)
+
   has_many :comments, :foreign_key => :post_id
   has_one  :comment,  :foreign_key => :post_id
+end
+
+class PostWithDefaultInclude < ActiveRecord::Base
+  self.table_name = 'posts'
+  default_scope includes(:comments)
+  has_many :comments, :foreign_key => :post_id
 end

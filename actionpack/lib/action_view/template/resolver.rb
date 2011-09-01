@@ -1,5 +1,6 @@
 require "pathname"
 require "active_support/core_ext/class"
+require "active_support/core_ext/io"
 require "action_view/template"
 
 module ActionView
@@ -10,17 +11,16 @@ module ActionView
       attr_reader :name, :prefix, :partial, :virtual
       alias_method :partial?, :partial
 
-      def initialize(name, prefix, partial)
-        @name, @prefix, @partial = name, prefix, partial
-        rebuild(@name, @prefix, @partial)
+      def self.build(name, prefix, partial)
+        virtual = ""
+        virtual << "#{prefix}/" unless prefix.empty?
+        virtual << (partial ? "_#{name}" : name)
+        new name, prefix, partial, virtual
       end
 
-      def rebuild(name, prefix, partial)
-        @virtual = ""
-        @virtual << "#{prefix}/" unless prefix.empty?
-        @virtual << (partial ? "_#{name}" : name)
-
-        self.replace(@virtual)
+      def initialize(name, prefix, partial, virtual)
+        @name, @prefix, @partial = name, prefix, partial
+        super(virtual)
       end
     end
 
@@ -60,7 +60,7 @@ module ActionView
 
     # Helpers that builds a path. Useful for building virtual paths.
     def build_path(name, prefix, partial)
-      Path.new(name, prefix, partial)
+      Path.build(name, prefix, partial)
     end
 
     # Handles templates caching. If a key is given and caching is on
@@ -69,7 +69,7 @@ module ActionView
     # before returning it.
     def cached(key, path_info, details, locals) #:nodoc:
       name, prefix, partial = path_info
-      locals = sort_locals(locals)
+      locals = locals.map { |x| x.to_s }.sort!
 
       if key && caching?
         @cached[key][name][prefix][partial][locals] ||= decorate(yield, path_info, details, locals)
@@ -98,21 +98,10 @@ module ActionView
         t.virtual_path ||= (cached ||= build_path(*path_info))
       end
     end
-
-    if :symbol.respond_to?("<=>")
-      def sort_locals(locals) #:nodoc:
-        locals.sort.freeze
-      end
-    else
-      def sort_locals(locals) #:nodoc:
-        locals = locals.map{ |l| l.to_s }
-        locals.sort!
-        locals.freeze
-      end
-    end
   end
 
-  class PathResolver < Resolver
+  # An abstract class that implements a Resolver with path semantics.
+  class PathResolver < Resolver #:nodoc:
     EXTENSIONS = [:locale, :formats, :handlers]
     DEFAULT_PATTERN = ":prefix/:action{.:locale,}{.:formats,}{.:handlers,}"
 
@@ -124,48 +113,56 @@ module ActionView
     private
 
     def find_templates(name, prefix, partial, details)
-      path = build_path(name, prefix, partial)
-      extensions = Hash[EXTENSIONS.map { |ext| [ext, details[ext]] }.flatten(0)]
-      query(path, extensions, details[:formats])
+      path = Path.build(name, prefix, partial)
+      query(path, details, details[:formats])
     end
 
-    def query(path, exts, formats)
-      query = build_query(path, exts)
-      templates = []
-      sanitizer = Hash.new { |h,k| h[k] = Dir["#{File.dirname(k)}/*"] }
+    def query(path, details, formats)
+      query = build_query(path, details)
 
-      Dir[query].each do |p|
-        next if File.directory?(p) || !sanitizer[p].include?(p)
+      # deals with case-insensitive file systems.
+      sanitizer = Hash.new { |h,dir| h[dir] = Dir["#{dir}/*"] }
 
-        handler, format = extract_handler_and_format(p, formats)
-        contents = File.open(p, "rb") {|io| io.read }
-
-        templates << Template.new(contents, File.expand_path(p), handler,
-          :virtual_path => path.virtual, :format => format, :updated_at => mtime(p))
-      end
-
-      templates
-    end
-
-    # Helper for building query glob string based on resolver's pattern. 
-    def build_query(path, exts)
-      query = @pattern.dup
-      query.gsub!(/\:prefix(\/)?/, path.prefix.empty? ? "" : "#{path.prefix}\\1") # prefix can be empty...
-      query.gsub!(/\:action/, path.partial? ? "_#{path.name}" : path.name)
-
-      exts.each { |ext, variants|
-        query.gsub!(/\:#{ext}/, "{#{variants.compact.uniq.join(',')}}")
+      template_paths = Dir[query].reject { |filename|
+        File.directory?(filename) ||
+          !sanitizer[File.dirname(filename)].include?(filename)
       }
 
-      query.gsub!('.{html,', '.{html,text.html,')
-      query.gsub!('.{text,', '.{text,text.plain,')
+      template_paths.map { |template|
+        handler, format = extract_handler_and_format(template, formats)
+        contents = File.binread template
+
+        Template.new(contents, File.expand_path(template), handler,
+          :virtual_path => path.virtual,
+          :format       => format,
+          :updated_at   => mtime(template))
+      }
+    end
+
+    # Helper for building query glob string based on resolver's pattern.
+    def build_query(path, details)
+      query = @pattern.dup
+
+      prefix = path.prefix.empty? ? "" : "#{escape_entry(path.prefix)}\\1"
+      query.gsub!(/\:prefix(\/)?/, prefix)
+
+      partial = escape_entry(path.partial? ? "_#{path.name}" : path.name)
+      query.gsub!(/\:action/, partial)
+
+      details.each do |ext, variants|
+        query.gsub!(/\:#{ext}/, "{#{variants.compact.uniq.join(',')}}")
+      end
 
       File.expand_path(query, @path)
     end
 
+    def escape_entry(entry)
+      entry.gsub(/[*?{}\[\]]/, '\\\\\\&')
+    end
+
     # Returns the file mtime from the filesystem.
     def mtime(p)
-      File.stat(p).mtime
+      File.mtime(p)
     end
 
     # Extract handler and formats from path. If a format cannot be a found neither
@@ -186,7 +183,7 @@ module ActionView
   # ==== Examples
   #
   # Default pattern, loads views the same way as previous versions of rails, eg. when you're
-  # looking for `users/new` it will produce query glob: `users/new{.{en},}{.{html,js},}{.{erb,haml,rjs},}`
+  # looking for `users/new` it will produce query glob: `users/new{.{en},}{.{html,js},}{.{erb,haml},}`
   #
   #   FileSystemResolver.new("/path/to/views", ":prefix/:action{.:locale,}{.:formats,}{.:handlers,}")
   #
@@ -235,9 +232,21 @@ module ActionView
     alias :== :eql?
   end
 
+  # An Optimized resolver for Rails' most common case.
+  class OptimizedFileSystemResolver < FileSystemResolver #:nodoc:
+    def build_query(path, details)
+      exts = EXTENSIONS.map { |ext| details[ext] }
+      query = escape_entry(File.join(@path, path))
+
+      query + exts.map { |ext|
+        "{#{ext.compact.uniq.map { |e| ".#{e}," }.join}}"
+      }.join
+    end
+  end
+
   # The same as FileSystemResolver but does not allow templates to store
   # a virtual path since it is invalid for such resolvers.
-  class FallbackFileSystemResolver < FileSystemResolver
+  class FallbackFileSystemResolver < FileSystemResolver #:nodoc:
     def self.instances
       [new(""), new("/")]
     end

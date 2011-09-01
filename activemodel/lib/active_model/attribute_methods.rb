@@ -56,6 +56,8 @@ module ActiveModel
   module AttributeMethods
     extend ActiveSupport::Concern
 
+    COMPILABLE_REGEXP = /\A[a-zA-Z_]\w*[!?=]?\z/
+
     included do
       class_attribute :attribute_method_matchers, :instance_writer => false
       self.attribute_method_matchers = []
@@ -106,10 +108,13 @@ module ActiveModel
         if block_given?
           sing.send :define_method, name, &block
         else
-          if name =~ /^[a-zA-Z_]\w*[!?=]?$/
-            sing.class_eval <<-eorb, __FILE__, __LINE__ + 1
-                def #{name}; #{value.nil? ? 'nil' : value.to_s.inspect}; end
-            eorb
+          # If we can compile the method name, do it. Otherwise use define_method.
+          # This is an important *optimization*, please don't change it. define_method
+          # has slower dispatch and consumes more memory.
+          if name =~ COMPILABLE_REGEXP
+            sing.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+              def #{name}; #{value.nil? ? 'nil' : value.to_s.inspect}; end
+            RUBY
           else
             value = value.to_s if value
             sing.send(:define_method, name) { value }
@@ -232,8 +237,19 @@ module ActiveModel
 
       def alias_attribute(new_name, old_name)
         attribute_method_matchers.each do |matcher|
-          define_method(matcher.method_name(new_name)) do |*args|
-            send(matcher.method_name(old_name), *args)
+          matcher_new = matcher.method_name(new_name).to_s
+          matcher_old = matcher.method_name(old_name).to_s
+
+          if matcher_new =~ COMPILABLE_REGEXP && matcher_old =~ COMPILABLE_REGEXP
+            module_eval <<-RUBY, __FILE__, __LINE__ + 1
+              def #{matcher_new}(*args)
+                send(:#{matcher_old}, *args)
+              end
+            RUBY
+          else
+            define_method(matcher_new) do |*args|
+              send(matcher_old, *args)
+            end
           end
         end
       end
@@ -276,17 +292,29 @@ module ActiveModel
             else
               method_name = matcher.method_name(attr_name)
 
-              generated_attribute_methods.module_eval <<-STR, __FILE__, __LINE__ + 1
+              generated_attribute_methods.module_eval <<-RUBY, __FILE__, __LINE__ + 1
                 if method_defined?('#{method_name}')
                   undef :'#{method_name}'
                 end
-                define_method('#{method_name}') do |*args|
-                  send('#{matcher.method_missing_target}', '#{attr_name}', *args)
-                end
-              STR
+              RUBY
+
+              if method_name.to_s =~ COMPILABLE_REGEXP
+                generated_attribute_methods.module_eval <<-RUBY, __FILE__, __LINE__ + 1
+                  def #{method_name}(*args)
+                    send(:#{matcher.method_missing_target}, '#{attr_name}', *args)
+                  end
+                RUBY
+              else
+                generated_attribute_methods.module_eval <<-RUBY, __FILE__, __LINE__ + 1
+                  define_method('#{method_name}') do |*args|
+                    send('#{matcher.method_missing_target}', '#{attr_name}', *args)
+                  end
+                RUBY
+              end
             end
           end
         end
+        attribute_method_matchers_cache.clear
       end
 
       # Removes all the previously dynamically defined methods from the class
@@ -294,6 +322,7 @@ module ActiveModel
         generated_attribute_methods.module_eval do
           instance_methods.each { |m| undef_method(m) }
         end
+        attribute_method_matchers_cache.clear
       end
 
       # Returns true if the attribute methods defined have been generated.
@@ -311,6 +340,29 @@ module ActiveModel
         end
 
       private
+        # The methods +method_missing+ and +respond_to?+ of this module are
+        # invoked often in a typical rails, both of which invoke the method
+        # +match_attribute_method?+. The latter method iterates through an
+        # array doing regular expression matches, which results in a lot of
+        # object creations. Most of the times it returns a +nil+ match. As the
+        # match result is always the same given a +method_name+, this cache is
+        # used to alleviate the GC, which ultimately also speeds up the app
+        # significantly (in our case our test suite finishes 10% faster with
+        # this cache).
+        def attribute_method_matchers_cache
+          @attribute_method_matchers_cache ||= {}
+        end
+
+        def attribute_method_matcher(method_name)
+          if attribute_method_matchers_cache.key?(method_name)
+            attribute_method_matchers_cache[method_name]
+          else
+            match = nil
+            attribute_method_matchers.detect { |method| match = method.match(method_name) }
+            attribute_method_matchers_cache[method_name] = match
+          end
+        end
+
         class AttributeMethodMatcher
           attr_reader :prefix, :suffix, :method_missing_target
 
@@ -384,12 +436,8 @@ module ActiveModel
       # Returns a struct representing the matching attribute method.
       # The struct's attributes are prefix, base and suffix.
       def match_attribute_method?(method_name)
-        self.class.attribute_method_matchers.each do |method|
-          if (match = method.match(method_name)) && attribute_method?(match.attr_name)
-            return match
-          end
-        end
-        nil
+        match = self.class.send(:attribute_method_matcher, method_name)
+        match && attribute_method?(match.attr_name) ? match : nil
       end
 
       # prevent method_missing from calling private methods with #send

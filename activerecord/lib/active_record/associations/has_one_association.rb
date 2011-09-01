@@ -1,3 +1,5 @@
+require 'active_support/core_ext/object/inclusion'
+
 module ActiveRecord
   # = Active Record Belongs To Has One Association
   module Associations
@@ -8,16 +10,16 @@ module ActiveRecord
 
         reflection.klass.transaction do
           if target && target != record
-            remove_target!(options[:dependent])
+            remove_target!(options[:dependent]) unless target.destroyed?
           end
 
           if record
-            set_inverse_instance(record)
             set_owner_attributes(record)
+            set_inverse_instance(record)
 
             if owner.persisted? && save && !record.save
               nullify_owner_attributes(record)
-              set_owner_attributes(target)
+              set_owner_attributes(target) if target
               raise RecordNotSaved, "Failed to save the new associated #{reflection.name}."
             end
           end
@@ -34,8 +36,7 @@ module ActiveRecord
             when :destroy
               target.destroy
             when :nullify
-              target.send("#{reflection.foreign_key}=", nil)
-              target.save(:validations => false)
+              target.update_attribute(reflection.foreign_key, nil)
           end
         end
       end
@@ -51,7 +52,7 @@ module ActiveRecord
         end
 
         def remove_target!(method)
-          if [:delete, :destroy].include?(method)
+          if method.in?([:delete, :destroy])
             target.send(method)
           else
             nullify_owner_attributes(target)

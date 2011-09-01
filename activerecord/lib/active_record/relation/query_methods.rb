@@ -8,7 +8,8 @@ module ActiveRecord
     attr_accessor :includes_values, :eager_load_values, :preload_values,
                   :select_values, :group_values, :order_values, :joins_values,
                   :where_values, :having_values, :bind_values,
-                  :limit_value, :offset_value, :lock_value, :readonly_value, :create_with_value, :from_value
+                  :limit_value, :offset_value, :lock_value, :readonly_value, :create_with_value,
+                  :from_value, :reorder_value, :reverse_order_value
 
     def includes(*args)
       args.reject! {|a| a.blank? }
@@ -62,6 +63,14 @@ module ActiveRecord
       relation
     end
 
+    def reorder(*args)
+      return self if args.blank?
+
+      relation = clone
+      relation.reorder_value = args.flatten
+      relation
+    end
+
     def joins(*args)
       return self if args.compact.blank?
 
@@ -87,11 +96,11 @@ module ActiveRecord
       relation
     end
 
-    def having(*args)
-      return self if args.blank?
+    def having(opts, *rest)
+      return self if opts.blank?
 
       relation = clone
-      relation.having_values += build_where(*args)
+      relation.having_values += build_where(opts, rest)
       relation
     end
 
@@ -128,7 +137,7 @@ module ActiveRecord
 
     def create_with(value)
       relation = clone
-      relation.create_with_value = value && (@create_with_value || {}).merge(value)
+      relation.create_with_value = value ? create_with_value.merge(value) : {}
       relation
     end
 
@@ -149,17 +158,13 @@ module ActiveRecord
     end
 
     def reverse_order
-      order_clause = arel.order_clauses
-
-      order = order_clause.empty? ?
-        "#{table_name}.#{primary_key} DESC" :
-        reverse_sql_order(order_clause).join(', ')
-
-      except(:order).order(Arel.sql(order))
+      relation = clone
+      relation.reverse_order_value = !relation.reverse_order_value
+      relation
     end
 
     def arel
-      @arel ||= build_arel
+      @arel ||= with_default_scope.build_arel
     end
 
     def build_arel
@@ -176,7 +181,9 @@ module ActiveRecord
 
       arel.group(*@group_values.uniq.reject{|g| g.blank?}) unless @group_values.empty?
 
-      arel.order(*@order_values.uniq.reject{|o| o.blank?}) unless @order_values.empty?
+      order = @reorder_value ? @reorder_value : @order_values
+      order = reverse_sql_order(order) if @reverse_order_value
+      arel.order(*order.uniq.reject{|o| o.blank?}) unless order.empty?
 
       build_select(arel, @select_values.uniq)
 
@@ -247,22 +254,18 @@ module ActiveRecord
 
       association_joins         = buckets['association_join'] || []
       stashed_association_joins = buckets['stashed_join'] || []
-      join_nodes                = buckets['join_node'] || []
+      join_nodes                = (buckets['join_node'] || []).uniq
       string_joins              = (buckets['string_join'] || []).map { |x|
         x.strip
       }.uniq
 
-      join_list = custom_join_ast(manager, string_joins)
+      join_list = join_nodes + custom_join_ast(manager, string_joins)
 
       join_dependency = ActiveRecord::Associations::JoinDependency.new(
         @klass,
         association_joins,
         join_list
       )
-
-      join_nodes.each do |join|
-        join_dependency.alias_tracker.aliased_name_for(join.left.name.downcase)
-      end
 
       join_dependency.graft(*stashed_association_joins)
 
@@ -273,7 +276,6 @@ module ActiveRecord
         association.join_to(manager)
       end
 
-      manager.join_sources.concat join_nodes.uniq
       manager.join_sources.concat join_list
 
       manager
@@ -296,9 +298,21 @@ module ActiveRecord
     end
 
     def reverse_sql_order(order_query)
-      order_query.join(', ').split(',').collect do |s|
-        s.gsub!(/\sasc\Z/i, ' DESC') || s.gsub!(/\sdesc\Z/i, ' ASC') || s.concat(' DESC')
-      end
+      order_query = ["#{quoted_table_name}.#{quoted_primary_key} ASC"] if order_query.empty?
+
+      order_query.map do |o|
+        case o
+        when Arel::Nodes::Ordering
+          o.reverse
+        when String, Symbol
+          o.to_s.split(',').collect do |s|
+            s.strip!
+            s.gsub!(/\sasc\Z/i, ' DESC') || s.gsub!(/\sdesc\Z/i, ' ASC') || s.concat(' DESC')
+          end
+        else
+          o
+        end
+      end.flatten
     end
 
     def array_of_strings?(o)

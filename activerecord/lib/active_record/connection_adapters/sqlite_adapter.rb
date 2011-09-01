@@ -1,5 +1,4 @@
 require 'active_record/connection_adapters/abstract_adapter'
-require 'active_support/core_ext/kernel/requires'
 
 module ActiveRecord
   module ConnectionAdapters #:nodoc:
@@ -54,28 +53,36 @@ module ActiveRecord
         @config = config
       end
 
+      def self.visitor_for(pool) # :nodoc:
+        Arel::Visitors::SQLite.new(pool)
+      end
+
       def adapter_name #:nodoc:
         'SQLite'
       end
 
+      # Returns true if SQLite version is '2.0.0' or greater, false otherwise.
       def supports_ddl_transactions?
         sqlite_version >= '2.0.0'
       end
 
+      # Returns true if SQLite version is '3.6.8' or greater, false otherwise.
       def supports_savepoints?
         sqlite_version >= '3.6.8'
       end
 
-      # Returns +true+ when the connection adapter supports prepared statement
-      # caching, otherwise returns +false+
+      # Returns true, since this connection adapter supports prepared statement
+      # caching.
       def supports_statement_cache?
         true
       end
 
+      # Returns true, since this connection adapter supports migrations.
       def supports_migrations? #:nodoc:
         true
       end
 
+      # Returns true.
       def supports_primary_key? #:nodoc:
         true
       end
@@ -84,24 +91,34 @@ module ActiveRecord
         true
       end
 
+      # Returns true if SQLite version is '3.1.6' or greater, false otherwise.
       def supports_add_column?
         sqlite_version >= '3.1.6'
       end
 
+      # Disconnects from the database if already connected. Otherwise, this
+      # method does nothing.
       def disconnect!
         super
         clear_cache!
         @connection.close rescue nil
       end
 
+      # Clears the prepared statements cache.
       def clear_cache!
+        @statements.values.map { |hash| hash[:stmt] }.each { |stmt|
+          stmt.close unless stmt.closed?
+        }
+
         @statements.clear
       end
 
+      # Returns true if SQLite version is '3.2.6' or greater, false otherwise.
       def supports_count_distinct? #:nodoc:
         sqlite_version >= '3.2.6'
       end
 
+      # Returns true if SQLite version is '3.1.0' or greater, false otherwise.
       def supports_autoincrement? #:nodoc:
         sqlite_version >= '3.1.0'
       end
@@ -131,7 +148,7 @@ module ActiveRecord
       end
 
       def quote_column_name(name) #:nodoc:
-        %Q("#{name}")
+        %Q("#{name.to_s.gsub('"', '""')}")
       end
 
       # Quote date/time values for use in SQL input. Includes microseconds
@@ -144,6 +161,26 @@ module ActiveRecord
         end
       end
 
+      if "<3".encoding_aware?
+        def type_cast(value, column) # :nodoc:
+          return value.to_f if BigDecimal === value
+          return super unless String === value
+          return super unless column && value
+
+          value = super
+          if column.type == :string && value.encoding == Encoding::ASCII_8BIT
+            @logger.error "Binary data inserted for `string` type on column `#{column.name}`"
+            value.encode! 'utf-8'
+          end
+          value
+        end
+      else
+        def type_cast(value, column) # :nodoc:
+          return super unless BigDecimal === value
+
+          value.to_f
+        end
+      end
 
       # DATABASE STATEMENTS ======================================
 
@@ -165,12 +202,22 @@ module ActiveRecord
             cols = cache[:cols] ||= stmt.columns
             stmt.reset!
             stmt.bind_params binds.map { |col, val|
-              col ? col.type_cast(val) : val
+              type_cast(val, col)
             }
           end
 
           ActiveRecord::Result.new(cols, stmt.to_a)
         end
+      end
+
+      def exec_delete(sql, name = 'SQL', binds = [])
+        exec_query(sql, name, binds)
+        @connection.changes
+      end
+      alias :exec_update :exec_delete
+
+      def last_inserted_id(result)
+        @connection.last_insert_row_id
       end
 
       def execute(sql, name = nil) #:nodoc:
@@ -188,7 +235,8 @@ module ActiveRecord
       end
 
       def insert_sql(sql, name = nil, pk = nil, id_value = nil, sequence_name = nil) #:nodoc:
-        super || @connection.last_insert_row_id
+        super
+        id_value || @connection.last_insert_row_id
       end
       alias :create :insert_sql
 
@@ -209,20 +257,20 @@ module ActiveRecord
       end
 
       def begin_db_transaction #:nodoc:
-        @connection.transaction
+        log('begin transaction',nil) { @connection.transaction }
       end
 
       def commit_db_transaction #:nodoc:
-        @connection.commit
+        log('commit transaction',nil) { @connection.commit }
       end
 
       def rollback_db_transaction #:nodoc:
-        @connection.rollback
+        log('rollback transaction',nil) { @connection.rollback }
       end
 
       # SCHEMA STATEMENTS ========================================
 
-      def tables(name = nil) #:nodoc:
+      def tables(name = 'SCHEMA') #:nodoc:
         sql = <<-SQL
           SELECT name
           FROM sqlite_master
@@ -234,6 +282,7 @@ module ActiveRecord
         end
       end
 
+      # Returns an array of +SQLiteColumn+ objects for the table specified by +table_name+.
       def columns(table_name, name = nil) #:nodoc:
         table_structure(table_name).map do |field|
           case field["dflt_value"]
@@ -249,6 +298,7 @@ module ActiveRecord
         end
       end
 
+      # Returns an array of indexes for the given table.
       def indexes(table_name, name = nil) #:nodoc:
         exec_query("PRAGMA index_list(#{quote_table_name(table_name)})", name).map do |row|
           IndexDefinition.new(
@@ -272,6 +322,10 @@ module ActiveRecord
         exec_query "DROP INDEX #{quote_column_name(index_name)}"
       end
 
+      # Renames a table.
+      #
+      # Example:
+      #   rename_table('octopuses', 'octopi')
       def rename_table(name, new_name)
         exec_query "ALTER TABLE #{quote_table_name(name)} RENAME TO #{quote_table_name(new_name)}"
       end
@@ -293,7 +347,7 @@ module ActiveRecord
       end
 
       def remove_column(table_name, *column_names) #:nodoc:
-        raise ArgumentError.new("You must specify at least one column name.  Example: remove_column(:people, :first_name)") if column_names.empty?
+        raise ArgumentError.new("You must specify at least one column name. Example: remove_column(:people, :first_name)") if column_names.empty?
         column_names.flatten.each do |column_name|
           alter_table(table_name) do |definition|
             definition.columns.delete(definition[column_name])
@@ -336,10 +390,6 @@ module ActiveRecord
         alter_table(table_name, :rename => {column_name.to_s => new_column_name.to_s})
       end
 
-      def null_insert_value
-        Arel.sql 'NULL'
-      end
-
       def empty_insert_statement_value
         "VALUES(NULL)"
       end
@@ -350,7 +400,7 @@ module ActiveRecord
         end
 
         def table_structure(table_name)
-          structure = exec_query("PRAGMA table_info(#{quote_table_name(table_name)})").to_hash
+          structure = exec_query("PRAGMA table_info(#{quote_table_name(table_name)})", 'SCHEMA').to_hash
           raise(ActiveRecord::StatementInvalid, "Could not find table '#{table_name}'") if structure.empty?
           structure
         end

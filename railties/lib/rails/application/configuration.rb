@@ -1,17 +1,19 @@
 require 'active_support/core_ext/string/encoding'
+require 'active_support/core_ext/kernel/reporting'
 require 'rails/engine/configuration'
 
 module Rails
   class Application
     class Configuration < ::Rails::Engine::Configuration
-      attr_accessor :allow_concurrency, :asset_host, :cache_classes, :cache_store,
-                    :encoding, :consider_all_requests_local, :dependency_loading,
-                    :filter_parameters, :helpers_paths, :logger,
-                    :preload_frameworks, :reload_plugins,
-                    :secret_token, :serve_static_assets, :session_options,
-                    :time_zone, :whiny_nils, :force_ssl
+      attr_accessor :allow_concurrency, :asset_host, :asset_path, :assets,
+                    :cache_classes, :cache_store, :consider_all_requests_local,
+                    :dependency_loading, :filter_parameters,
+                    :force_ssl, :helpers_paths, :logger, :preload_frameworks,
+                    :reload_plugins, :secret_token, :serve_static_assets,
+                    :static_cache_control, :session_options, :time_zone, :whiny_nils
 
       attr_writer :log_level
+      attr_reader :encoding
 
       def initialize(*)
         super
@@ -22,6 +24,7 @@ module Rails
         @helpers_paths               = []
         @dependency_loading          = true
         @serve_static_assets         = true
+        @static_cache_control        = nil
         @force_ssl                   = false
         @session_store               = :cookie_store
         @session_options             = {}
@@ -29,6 +32,21 @@ module Rails
         @log_level                   = nil
         @middleware                  = app_middleware
         @generators                  = app_generators
+        @cache_store                 = [ :file_store, "#{root}/tmp/cache/" ]
+
+        @assets = ActiveSupport::OrderedOptions.new
+        @assets.enabled         = false
+        @assets.paths           = []
+        @assets.precompile      = [ /\w+\.(?!js|css).+/, /application.(css|js)$/ ]
+        @assets.prefix          = "/assets"
+        @assets.version         = ''
+        @assets.debug           = false
+        @assets.compile         = true
+        @assets.digest          = false
+        @assets.manifest        = "#{root}/public#{@assets.prefix}"
+        @assets.cache_store     = [ :file_store, "#{root}/tmp/cache/assets/" ]
+        @assets.js_compressor   = nil
+        @assets.css_compressor  = nil
       end
 
       def compiled_asset_path
@@ -38,8 +56,10 @@ module Rails
       def encoding=(value)
         @encoding = value
         if "ruby".encoding_aware?
-          Encoding.default_external = value
-          Encoding.default_internal = value
+          silence_warnings do
+            Encoding.default_external = value
+            Encoding.default_internal = value
+          end
         else
           $KCODE = value
           if $KCODE == "NONE"
@@ -56,8 +76,10 @@ module Rails
           paths.add "config/environment", :with => "config/environment.rb"
           paths.add "lib/templates"
           paths.add "log",                :with => "log/#{Rails.env}.log"
+          paths.add "public"
+          paths.add "public/javascripts"
+          paths.add "public/stylesheets"
           paths.add "tmp"
-          paths.add "tmp/cache"
           paths
         end
       end
@@ -80,16 +102,6 @@ module Rails
       def database_configuration
         require 'erb'
         YAML::load(ERB.new(IO.read(paths["config/database"].first)).result)
-      end
-
-      def cache_store
-        @cache_store ||= begin
-          if File.exist?("#{root}/tmp/cache/")
-            [ :file_store, "#{root}/tmp/cache/" ]
-          else
-            :memory_store
-          end
-        end
       end
 
       def log_level

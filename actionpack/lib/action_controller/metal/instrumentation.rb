@@ -14,12 +14,12 @@ module ActionController
 
     attr_internal :view_runtime
 
-    def process_action(action, *args)
+    def process_action(*args)
       raw_payload = {
         :controller => self.class.name,
         :action     => self.action_name,
         :params     => request.filtered_parameters,
-        :formats    => request.formats.map(&:to_sym),
+        :format     => request.format.try(:ref),
         :method     => request.method,
         :path       => (request.fullpath rescue "unknown")
       }
@@ -58,8 +58,8 @@ module ActionController
     def redirect_to(*args)
       ActiveSupport::Notifications.instrument("redirect_to.action_controller") do |payload|
         result = super
-        payload[:status]   = self.status
-        payload[:location] = self.location
+        payload[:status]   = response.status
+        payload[:location] = response.location
         result
       end
     end

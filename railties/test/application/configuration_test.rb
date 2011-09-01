@@ -1,5 +1,17 @@
 require "isolation/abstract_unit"
 
+class ::MyMailInterceptor
+  def self.delivering_email(email); email; end
+end
+
+class ::MyOtherMailInterceptor < ::MyMailInterceptor; end
+
+class ::MyMailObserver
+  def self.delivered_email(email); email; end
+end
+
+class ::MyOtherMailObserver < ::MyMailObserver; end
+
 module ApplicationTests
   class ConfigurationTest < Test::Unit::TestCase
     include ActiveSupport::Testing::Isolation
@@ -23,7 +35,23 @@ module ApplicationTests
     end
 
     def teardown
+      teardown_app
       FileUtils.rm_rf(new_app) if File.directory?(new_app)
+    end
+
+    test "Rails.groups returns available groups" do
+      require "rails"
+
+      Rails.env = "development"
+      assert_equal [:default, "development"], Rails.groups
+      assert_equal [:default, "development", :assets], Rails.groups(:assets => [:development])
+      assert_equal [:default, "development", :another, :assets], Rails.groups(:another, :assets => %w(development))
+
+      Rails.env = "test"
+      assert_equal [:default, "test"], Rails.groups(:assets => [:development])
+
+      ENV["RAILS_GROUPS"] = "javascripts,stylesheets"
+      assert_equal [:default, "test", "javascripts", "stylesheets"], Rails.groups
     end
 
     test "Rails.application is nil until app is initialized" do
@@ -213,8 +241,6 @@ module ApplicationTests
       make_basic_app
 
       class ::OmgController < ActionController::Base
-        protect_from_forgery
-
         def index
           render :inline => "<%= csrf_meta_tags %>"
         end
@@ -222,6 +248,21 @@ module ApplicationTests
 
       get "/"
       assert last_response.body =~ /csrf\-param/
+    end
+
+    test "request forgery token param can be changed" do
+      make_basic_app do
+        app.config.action_controller.request_forgery_protection_token = '_xsrf_token_here'
+      end
+
+      class ::OmgController < ActionController::Base
+        def index
+          render :inline => "<%= csrf_meta_tags %>"
+        end
+      end
+
+      get "/"
+      assert last_response.body =~ /_xsrf_token_here/
     end
 
     test "config.action_controller.perform_caching = true" do
@@ -243,6 +284,92 @@ module ApplicationTests
       res = last_response.body
       get "/"
       assert_equal res, last_response.body # value should be unchanged
+    end
+
+    test "sets all Active Record models to whitelist all attributes by default" do
+      add_to_config <<-RUBY
+        config.active_record.whitelist_attributes = true
+      RUBY
+
+      require "#{app_path}/config/environment"
+
+      assert_equal ActiveModel::MassAssignmentSecurity::WhiteList,
+                   ActiveRecord::Base.active_authorizers[:default].class
+      assert_equal [""], ActiveRecord::Base.active_authorizers[:default].to_a
+    end
+
+    test "registers interceptors with ActionMailer" do
+      add_to_config <<-RUBY
+        config.action_mailer.interceptors = MyMailInterceptor
+      RUBY
+
+      require "#{app_path}/config/environment"
+      require "mail"
+
+      ActionMailer::Base
+
+      assert_equal [::MyMailInterceptor], ::Mail.send(:class_variable_get, "@@delivery_interceptors")
+    end
+
+    test "registers multiple interceptors with ActionMailer" do
+      add_to_config <<-RUBY
+        config.action_mailer.interceptors = [MyMailInterceptor, "MyOtherMailInterceptor"]
+      RUBY
+
+      require "#{app_path}/config/environment"
+      require "mail"
+
+      ActionMailer::Base
+
+      assert_equal [::MyMailInterceptor, ::MyOtherMailInterceptor], ::Mail.send(:class_variable_get, "@@delivery_interceptors")
+    end
+
+    test "registers observers with ActionMailer" do
+      add_to_config <<-RUBY
+        config.action_mailer.observers = MyMailObserver
+      RUBY
+
+      require "#{app_path}/config/environment"
+      require "mail"
+
+      ActionMailer::Base
+
+      assert_equal [::MyMailObserver], ::Mail.send(:class_variable_get, "@@delivery_notification_observers")
+    end
+
+    test "registers multiple observers with ActionMailer" do
+      add_to_config <<-RUBY
+        config.action_mailer.observers = [MyMailObserver, "MyOtherMailObserver"]
+      RUBY
+
+      require "#{app_path}/config/environment"
+      require "mail"
+
+      ActionMailer::Base
+
+      assert_equal [::MyMailObserver, ::MyOtherMailObserver], ::Mail.send(:class_variable_get, "@@delivery_notification_observers")
+    end
+
+    test "valid timezone is setup correctly" do
+      add_to_config <<-RUBY
+        config.root = "#{app_path}"
+          config.time_zone = "Wellington"
+      RUBY
+
+      require "#{app_path}/config/environment"
+
+      assert_equal "Wellington", Rails.application.config.time_zone
+    end
+
+    test "raises when an invalid timezone is defined in the config" do
+      add_to_config <<-RUBY
+        config.root = "#{app_path}"
+          config.time_zone = "That big hill over yonder hill"
+      RUBY
+
+      assert_raise(ArgumentError) do
+        require "#{app_path}/config/environment"
+      end
     end
 
     test "config.action_controller.perform_caching = false" do
@@ -332,6 +459,71 @@ module ApplicationTests
 
       get "/"
       assert_equal 'true', last_response.body
+    end
+
+    test "config.action_controller.wrap_parameters is set in ActionController::Base" do
+      app_file 'config/initializers/wrap_parameters.rb', <<-RUBY
+        ActionController::Base.wrap_parameters :format => [:json]
+      RUBY
+
+      app_file 'app/models/post.rb', <<-RUBY
+      class Post
+        def self.attribute_names
+          %w(title)
+        end
+      end
+      RUBY
+
+      app_file 'app/controllers/posts_controller.rb', <<-RUBY
+      class PostsController < ApplicationController
+        def index
+          render :text => params[:post].inspect
+        end
+      end
+      RUBY
+
+      add_to_config <<-RUBY
+        routes.append do
+          resources :posts
+        end
+      RUBY
+
+      require "#{app_path}/config/environment"
+      require "rack/test"
+      extend Rack::Test::Methods
+
+      post "/posts.json", '{ "title": "foo", "name": "bar" }', "CONTENT_TYPE" => "application/json"
+      assert_equal '{"title"=>"foo"}', last_response.body
+    end
+
+    test "config.action_dispatch.ignore_accept_header" do
+      make_basic_app do |app|
+        app.config.action_dispatch.ignore_accept_header = true
+      end
+
+      class ::OmgController < ActionController::Base
+        def index
+          respond_to do |format|
+            format.html { render :text => "HTML" }
+            format.xml { render :text => "XML" }
+          end
+        end
+      end
+
+      get "/", {}, "HTTP_ACCEPT" => "application/xml"
+      assert_equal 'HTML', last_response.body
+
+      get "/", { :format => :xml }, "HTTP_ACCEPT" => "application/xml"
+      assert_equal 'XML', last_response.body
+    end
+
+    test "Rails.application#env_config exists and include some existing parameters" do
+      make_basic_app
+
+      assert_respond_to app, :env_config
+      assert_equal      app.env_config['action_dispatch.parameter_filter'], app.config.filter_parameters
+      assert_equal      app.env_config['action_dispatch.secret_token'],     app.config.secret_token
+      assert_equal      app.env_config['action_dispatch.show_exceptions'],  app.config.action_dispatch.show_exceptions
     end
   end
 end

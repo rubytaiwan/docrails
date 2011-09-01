@@ -1,4 +1,5 @@
 require "cases/helper"
+
 require 'models/developer'
 require 'models/project'
 require 'models/company'
@@ -90,6 +91,13 @@ class IdentityMapTest < ActiveRecord::TestCase
     )
   end
 
+  def test_queries_are_not_executed_when_finding_by_id
+    Post.find 1
+    assert_no_queries do
+      Post.find 1
+    end
+  end
+
   ##############################################################################
   # Tests checking if IM is functioning properly on more advanced finds        #
   # and associations                                                           #
@@ -121,7 +129,42 @@ class IdentityMapTest < ActiveRecord::TestCase
   end
 
   ##############################################################################
-  # Tests checking dirty attribute behaviour with IM                           #
+  # Tests checking if IM is functioning properly on classes with multiple      #
+  # types of inheritance                                                       #
+  ##############################################################################
+
+  def test_inherited_without_type_attribute_without_identity_map
+    ActiveRecord::IdentityMap.without do
+      p1 = DestructivePirate.create!(:catchphrase => "I'm not a regular Pirate")
+      p2 = Pirate.find(p1.id)
+      assert_not_same(p1, p2)
+    end
+  end
+
+  def test_inherited_with_type_attribute_without_identity_map
+    ActiveRecord::IdentityMap.without do
+      c = comments(:sub_special_comment)
+      c1 = SubSpecialComment.find(c.id)
+      c2 = Comment.find(c.id)
+      assert_same(c1.class, c2.class)
+    end
+  end
+
+  def test_inherited_without_type_attribute
+    p1 = DestructivePirate.create!(:catchphrase => "I'm not a regular Pirate")
+    p2 = Pirate.find(p1.id)
+    assert_not_same(p1, p2)
+  end
+
+  def test_inherited_with_type_attribute
+    c = comments(:sub_special_comment)
+    c1 = SubSpecialComment.find(c.id)
+    c2 = Comment.find(c.id)
+    assert_same(c1, c2)
+  end
+
+  ##############################################################################
+  # Tests checking dirty attribute behavior with IM                            #
   ##############################################################################
 
   def test_loading_new_instance_should_not_update_dirty_attributes
@@ -129,8 +172,6 @@ class IdentityMapTest < ActiveRecord::TestCase
     swistak.name = "Swistak Sreberkowiec"
     assert_equal(["name"], swistak.changed)
     assert_equal({"name" => ["Marcin Raczkowski", "Swistak Sreberkowiec"]}, swistak.changes)
-
-    s = Subscriber.find('swistak')
 
     assert swistak.name_changed?
     assert_equal("Swistak Sreberkowiec", swistak.name)
@@ -142,9 +183,7 @@ class IdentityMapTest < ActiveRecord::TestCase
 
     Subscriber.update_all({:name => "Raczkowski Marcin"}, {:name => "Marcin Raczkowski"})
 
-    s = Subscriber.find('swistak')
-
-    assert_equal({'name' => ["Raczkowski Marcin", "Swistak Sreberkowiec"]}, swistak.changes)
+    assert_equal({"name"=>["Marcin Raczkowski", "Swistak Sreberkowiec"]}, swistak.changes)
     assert_equal("Swistak Sreberkowiec", swistak.name)
   end
 
@@ -156,11 +195,9 @@ class IdentityMapTest < ActiveRecord::TestCase
 
     Subscriber.update_all({:name => "Swistak Sreberkowiec"}, {:name => "Marcin Raczkowski"})
 
-    s = Subscriber.find('swistak')
-
     assert_equal("Swistak Sreberkowiec", swistak.name)
-    assert_equal({}, swistak.changes)
-    assert !swistak.name_changed?
+    assert_equal({"name"=>["Marcin Raczkowski", "Swistak Sreberkowiec"]}, swistak.changes)
+    assert swistak.name_changed?
   end
 
   def test_has_many_associations
@@ -168,7 +205,7 @@ class IdentityMapTest < ActiveRecord::TestCase
     pirate.birds.create!(:name => 'Posideons Killer')
     pirate.birds.create!(:name => 'Killer bandita Dionne')
 
-    posideons, killer = pirate.birds
+    posideons, _ = pirate.birds
 
     pirate.reload
 
@@ -201,7 +238,7 @@ class IdentityMapTest < ActiveRecord::TestCase
   end
 
   ##############################################################################
-  # Tests checking Identity Map behaviour with preloaded associations, joins,  #
+  # Tests checking Identity Map behavior with preloaded associations, joins,   #
   # includes etc.                                                              #
   ##############################################################################
 

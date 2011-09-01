@@ -85,7 +85,7 @@ class AssociationsTest < ActiveRecord::TestCase
 
   def test_should_construct_new_finder_sql_after_create
     person = Person.new :first_name => 'clark'
-    assert_equal [], person.readers.find(:all)
+    assert_equal [], person.readers.all
     person.save!
     reader = Reader.create! :person => person, :post => Post.new(:title => "foo", :body => "bar")
     assert person.readers.find(reader.id)
@@ -202,6 +202,11 @@ class AssociationProxyTest < ActiveRecord::TestCase
     assert_nothing_raised do
       assert_equal david.projects, david.projects.reload.reload
     end
+  end
+
+  def test_proxy_association_accessor
+    david = developers(:david)
+    assert_equal david.association(:projects), david.projects.proxy_association
   end
 end
 

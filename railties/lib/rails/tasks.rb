@@ -11,7 +11,6 @@ $VERBOSE = nil
   routes
   statistics
   tmp
-  railties
 ).each do |task|
   load "rails/tasks/#{task}.rake"
 end

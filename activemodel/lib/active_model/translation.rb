@@ -18,12 +18,12 @@ module ActiveModel
   #
   # This also provides the required class methods for hooking into the
   # Rails internationalization API, including being able to define a
-  # class based i18n_scope and lookup_ancestors to find translations in
+  # class based +i18n_scope+ and +lookup_ancestors+ to find translations in
   # parent classes.
   module Translation
     include ActiveModel::Naming
 
-    # Returns the i18n_scope for the class. Overwrite if you want custom lookup.
+    # Returns the +i18n_scope+ for the class. Overwrite if you want custom lookup.
     def i18n_scope
       :activemodel
     end
@@ -44,7 +44,7 @@ module ActiveModel
     # Specify +options+ with additional translating options.
     def human_attribute_name(attribute, options = {})
       defaults = lookup_ancestors.map do |klass|
-        :"#{self.i18n_scope}.attributes.#{klass.model_name.underscore}.#{attribute}"
+        :"#{self.i18n_scope}.attributes.#{klass.model_name.i18n_key}.#{attribute}"
       end
 
       defaults << :"attributes.#{attribute}"

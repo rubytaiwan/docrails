@@ -1,4 +1,5 @@
 require 'abstract_unit'
+require 'active_support/core_ext/object/inclusion'
 
 class FormTagHelperTest < ActionView::TestCase
   tests ActionView::Helpers::FormTagHelper
@@ -8,12 +9,12 @@ class FormTagHelperTest < ActionView::TestCase
     @controller = BasicController.new
   end
 
-  def snowman(options = {})
+  def hidden_fields(options = {})
     method = options[:method]
 
     txt =  %{<div style="margin:0;padding:0;display:inline">}
     txt << %{<input name="utf8" type="hidden" value="&#x2713;" />}
-    if (method && !['get','post'].include?(method.to_s))
+    if method && !method.to_s.in?(['get','post'])
       txt << %{<input name="_method" type="hidden" value="#{method}" />}
     end
     txt << %{</div>}
@@ -33,7 +34,7 @@ class FormTagHelperTest < ActionView::TestCase
   end
 
   def whole_form(action = "http://www.example.com", options = {})
-    out = form_text(action, options) + snowman(options)
+    out = form_text(action, options) + hidden_fields(options)
 
     if block_given?
       out << yield << "</form>"
@@ -199,9 +200,15 @@ class FormTagHelperTest < ActionView::TestCase
     assert_dom_equal expected, actual
   end
 
-  def test_select_tag_with_include_blank_with_string
-    actual = select_tag "places", "<option>Home</option><option>Work</option><option>Pub</option>".html_safe, :include_blank => "string"
+  def test_select_tag_with_prompt
+    actual = select_tag "places", "<option>Home</option><option>Work</option><option>Pub</option>".html_safe, :prompt => "string"
     expected = %(<select id="places" name="places"><option value="">string</option><option>Home</option><option>Work</option><option>Pub</option></select>)
+    assert_dom_equal expected, actual
+  end
+
+  def test_select_tag_with_prompt_and_include_blank
+    actual = select_tag "places", "<option>Home</option><option>Work</option><option>Pub</option>".html_safe, :prompt => "string", :include_blank => true
+    expected = %(<select name="places" id="places"><option value="">string</option><option value=""></option><option>Home</option><option>Work</option><option>Pub</option></select>)
     assert_dom_equal expected, actual
   end
 
@@ -497,6 +504,36 @@ class FormTagHelperTest < ActionView::TestCase
 
     expected = %(<fieldset class="format">Hello world!</fieldset>)
     assert_dom_equal expected, output_buffer
+  end
+  
+  def test_text_area_tag_options_symbolize_keys_side_effects
+    options = { :option => "random_option" }
+    text_area_tag "body", "hello world", options
+    assert_equal options, { :option => "random_option" }
+  end
+
+  def test_submit_tag_options_symbolize_keys_side_effects
+    options = { :option => "random_option" }
+    submit_tag "submit value", options
+    assert_equal options, { :option => "random_option" }
+  end
+
+  def test_button_tag_options_symbolize_keys_side_effects
+    options = { :option => "random_option" }
+    button_tag "button value", options
+    assert_equal options, { :option => "random_option" }
+  end
+
+  def test_image_submit_tag_options_symbolize_keys_side_effects
+    options = { :option => "random_option" }
+    image_submit_tag "submit source", options
+    assert_equal options, { :option => "random_option" }
+  end
+
+  def test_image_label_tag_options_symbolize_keys_side_effects
+    options = { :option => "random_option" }
+    label_tag "submit source", "title", options
+    assert_equal options, { :option => "random_option" }
   end
 
   def protect_against_forgery?

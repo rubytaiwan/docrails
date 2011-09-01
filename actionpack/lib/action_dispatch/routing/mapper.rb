@@ -1,6 +1,6 @@
-require 'erb'
 require 'active_support/core_ext/hash/except'
 require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/object/inclusion'
 require 'active_support/inflector'
 require 'action_dispatch/routing/redirection'
 
@@ -48,6 +48,9 @@ module ActionDispatch
 
       class Mapping #:nodoc:
         IGNORE_OPTIONS = [:to, :as, :via, :on, :constraints, :defaults, :only, :except, :anchor, :shallow, :shallow_path, :shallow_prefix]
+        ANCHOR_CHARACTERS_REGEX = %r{\A(\\A|\^)|(\\Z|\\z|\$)\Z}
+        SHORTHAND_REGEX = %r{^/[\w/]+$}
+        WILDCARD_PATH = %r{\*([^/\)]+)\)?$}
 
         def initialize(set, scope, path, options)
           @set, @scope = set, scope
@@ -76,7 +79,7 @@ module ActionDispatch
               # segment_keys.include?(k.to_s) || k == :controller
               next unless Regexp === requirement && !constraints[name]
 
-              if requirement.source =~ %r{\A(\\A|\^)|(\\Z|\\z|\$)\Z}
+              if requirement.source =~ ANCHOR_CHARACTERS_REGEX
                 raise ArgumentError, "Regexp anchor characters are not allowed in routing requirements: #{requirement.inspect}"
               end
               if requirement.multiline?
@@ -87,7 +90,7 @@ module ActionDispatch
 
           # match "account/overview"
           def using_match_shorthand?(path, options)
-            path && options.except(:via, :anchor, :to, :as).empty? && path =~ %r{^/[\w\/]+$}
+            path && options.except(:via, :anchor, :to, :as).empty? && path =~ SHORTHAND_REGEX
           end
 
           def normalize_path(path)
@@ -101,14 +104,22 @@ module ActionDispatch
               # controllers with default routes like :controller/:action/:id(.:format), e.g:
               # GET /admin/products/show/1
               # => { :controller => 'admin/products', :action => 'show', :id => '1' }
-              @options.reverse_merge!(:controller => /.+?/)
+              @options[:controller] ||= /.+?/
+            end
+
+            # Add a constraint for wildcard route to make it non-greedy and match the
+            # optional format part of the route by default
+            if path.match(WILDCARD_PATH) && @options[:format] != false
+              @options[$1.to_sym] ||= /.+?/
             end
 
             if @options[:format] == false
               @options.delete(:format)
               path
-            elsif path.include?(":format") || path.end_with?('/') || path.match(/^\/?\*/)
+            elsif path.include?(":format") || path.end_with?('/')
               path
+            elsif @options[:format] == true
+              "#{path}.:format"
             else
               "#{path}(.:format)"
             end
@@ -180,13 +191,12 @@ module ActionDispatch
           end
 
           def blocks
-            block = @scope[:blocks] || []
-
-            if @options[:constraints].present? && !@options[:constraints].is_a?(Hash)
-              block << @options[:constraints]
+            constraints = @options[:constraints]
+            if constraints.present? && !constraints.is_a?(Hash)
+              [constraints]
+            else
+              @scope[:blocks] || []
             end
-
-            block
           end
 
           def constraints
@@ -213,19 +223,11 @@ module ActionDispatch
           end
 
           def default_controller
-            if @options[:controller]
-              @options[:controller]
-            elsif @scope[:controller]
-              @scope[:controller]
-            end
+            @options[:controller] || @scope[:controller]
           end
 
           def default_action
-            if @options[:action]
-              @options[:action]
-            elsif @scope[:action]
-              @scope[:action]
-            end
+            @options[:action] || @scope[:action]
           end
       end
 
@@ -253,7 +255,7 @@ module ActionDispatch
         # because this means it will be matched first. As this is the most popular route
         # of most Rails applications, this is beneficial.
         def root(options = {})
-          match '/', options.reverse_merge(:as => :root)
+          match '/', { :as => :root }.merge(options)
         end
 
         # Matches a url pattern to one or more routes. Any symbols in a pattern
@@ -328,7 +330,7 @@ module ActionDispatch
         #
         # [:on]
         #   Shorthand for wrapping routes in a specific RESTful context. Valid
-        #   values are :member, :collection, and :new.  Only use within
+        #   values are +:member+, +:collection+, and +:new+. Only use within
         #   <tt>resource(s)</tt> block. For example:
         #
         #      resource :bar do
@@ -345,7 +347,7 @@ module ActionDispatch
         #
         # [:constraints]
         #   Constrains parameters with a hash of regular expressions or an
-        #   object that responds to #matches?
+        #   object that responds to <tt>matches?</tt>
         #
         #     match 'path/:id', :constraints => { :id => /[A-Z]\d{5}/ }
         #
@@ -366,7 +368,7 @@ module ActionDispatch
         #   See <tt>Scoping#defaults</tt> for its scope equivalent.
         #
         # [:anchor]
-        #   Boolean to anchor a #match pattern. Default is true. When set to
+        #   Boolean to anchor a <tt>match</tt> pattern. Default is true. When set to
         #   false, the pattern matches any request prefixed with the given path.
         #
         #     # Matches any request starting with 'path'
@@ -510,15 +512,15 @@ module ActionDispatch
       # You may wish to organize groups of controllers under a namespace.
       # Most commonly, you might group a number of administrative controllers
       # under an +admin+ namespace. You would place these controllers under
-      # the app/controllers/admin directory, and you can group them together
-      # in your router:
+      # the <tt>app/controllers/admin</tt> directory, and you can group them
+      # together in your router:
       #
       #   namespace "admin" do
       #     resources :posts, :comments
       #   end
       #
       # This will create a number of routes for each of the posts and comments
-      # controller. For Admin::PostsController, Rails will create:
+      # controller. For <tt>Admin::PostsController</tt>, Rails will create:
       #
       #   GET	    /admin/posts
       #   GET	    /admin/posts/new
@@ -529,7 +531,7 @@ module ActionDispatch
       #   DELETE  /admin/posts/1
       #
       # If you want to route /posts (without the prefix /admin) to
-      # Admin::PostsController, you could use
+      # <tt>Admin::PostsController</tt>, you could use
       #
       #   scope :module => "admin" do
       #     resources :posts
@@ -539,7 +541,7 @@ module ActionDispatch
       #
       #   resources :posts, :module => "admin"
       #
-      # If you want to route /admin/posts to PostsController
+      # If you want to route /admin/posts to +PostsController+
       # (without the Admin:: module prefix), you could use
       #
       #   scope "/admin" do
@@ -548,11 +550,11 @@ module ActionDispatch
       #
       # or, for a single case
       #
-      #   resources :posts, :path => "/admin"
+      #   resources :posts, :path => "/admin/posts"
       #
       # In each of these cases, the named routes remain the same as if you did
       # not use scope. In the last case, the following paths map to
-      # PostsController:
+      # +PostsController+:
       #
       #   GET	    /admin/posts
       #   GET	    /admin/posts/new
@@ -571,8 +573,8 @@ module ActionDispatch
         #   end
         #
         # This generates helpers such as +account_projects_path+, just like +resources+ does.
-        # The difference here being that the routes generated are like /rails/projects/2,
-        # rather than /accounts/rails/projects/2.
+        # The difference here being that the routes generated are like /:account_id/projects,
+        # rather than /accounts/:account_id/projects.
         #
         # === Options
         #
@@ -580,7 +582,7 @@ module ActionDispatch
         #
         # === Examples
         #
-        #   # route /posts (without the prefix /admin) to Admin::PostsController
+        #   # route /posts (without the prefix /admin) to <tt>Admin::PostsController</tt>
         #   scope :module => "admin" do
         #     resources :posts
         #   end
@@ -590,7 +592,7 @@ module ActionDispatch
         #     resources :posts
         #   end
         #
-        #   # prefix the routing helper name: sekret_posts_path instead of posts_path
+        #   # prefix the routing helper name: +sekret_posts_path+ instead of +posts_path+
         #   scope :as => "sekret" do
         #     resources :posts
         #   end
@@ -649,13 +651,13 @@ module ActionDispatch
         #
         # This generates the following routes:
         #
-        #       admin_posts GET    /admin/posts(.:format)          {:action=>"index", :controller=>"admin/posts"}
-        #       admin_posts POST   /admin/posts(.:format)          {:action=>"create", :controller=>"admin/posts"}
-        #    new_admin_post GET    /admin/posts/new(.:format)      {:action=>"new", :controller=>"admin/posts"}
-        #   edit_admin_post GET    /admin/posts/:id/edit(.:format) {:action=>"edit", :controller=>"admin/posts"}
-        #        admin_post GET    /admin/posts/:id(.:format)      {:action=>"show", :controller=>"admin/posts"}
-        #        admin_post PUT    /admin/posts/:id(.:format)      {:action=>"update", :controller=>"admin/posts"}
-        #        admin_post DELETE /admin/posts/:id(.:format)      {:action=>"destroy", :controller=>"admin/posts"}
+        #       admin_posts GET    /admin/posts(.:format)          admin/posts#index
+        #       admin_posts POST   /admin/posts(.:format)          admin/posts#create
+        #    new_admin_post GET    /admin/posts/new(.:format)      admin/posts#new
+        #   edit_admin_post GET    /admin/posts/:id/edit(.:format) admin/posts#edit
+        #        admin_post GET    /admin/posts/:id(.:format)      admin/posts#show
+        #        admin_post PUT    /admin/posts/:id(.:format)      admin/posts#update
+        #        admin_post DELETE /admin/posts/:id(.:format)      admin/posts#destroy
         #
         # === Options
         #
@@ -672,12 +674,12 @@ module ActionDispatch
         #     resources :posts
         #   end
         #
-        #   # maps to Sekret::PostsController rather than Admin::PostsController
+        #   # maps to <tt>Sekret::PostsController</tt> rather than <tt>Admin::PostsController</tt>
         #   namespace :admin, :module => "sekret" do
         #     resources :posts
         #   end
         #
-        #   # generates sekret_posts_path rather than admin_posts_path
+        #   # generates +sekret_posts_path+ rather than +admin_posts_path+
         #   namespace :admin, :as => "sekret" do
         #     resources :posts
         #   end
@@ -705,6 +707,7 @@ module ActionDispatch
         #     constraints(:post_id => /\d+\.\d+) do
         #       resources :comments
         #     end
+        #   end
         #
         # === Restricting based on IP
         #
@@ -839,20 +842,20 @@ module ActionDispatch
       # You may wish to organize groups of controllers under a namespace. Most
       # commonly, you might group a number of administrative controllers under
       # an +admin+ namespace. You would place these controllers under the
-      # app/controllers/admin directory, and you can group them together in your
-      # router:
+      # <tt>app/controllers/admin</tt> directory, and you can group them together
+      # in your router:
       #
       #   namespace "admin" do
       #     resources :posts, :comments
       #   end
       #
-      # By default the :id parameter doesn't accept dots. If you need to
-      # use dots as part of the :id parameter add a constraint which
+      # By default the +:id+ parameter doesn't accept dots. If you need to
+      # use dots as part of the +:id+ parameter add a constraint which
       # overrides this restriction, e.g:
       #
       #   resources :articles, :id => /[^\/]+/
       #
-      # This allows any character other than a slash as part of your :id.
+      # This allows any character other than a slash as part of your +:id+.
       #
       module Resources
         # CANONICAL_ACTIONS holds all actions that does not need a prefix or
@@ -868,9 +871,9 @@ module ActionDispatch
 
           def initialize(entities, options = {})
             @name       = entities.to_s
-            @path       = (options.delete(:path) || @name).to_s
-            @controller = (options.delete(:controller) || @name).to_s
-            @as         = options.delete(:as)
+            @path       = (options[:path] || @name).to_s
+            @controller = (options[:controller] || @name).to_s
+            @as         = options[:as]
             @options    = options
           end
 
@@ -902,7 +905,7 @@ module ActionDispatch
 
           alias :member_name :singular
 
-          # Checks for uncountable plurals, and appends "_index" if the plural 
+          # Checks for uncountable plurals, and appends "_index" if the plural
           # and singular form are the same.
           def collection_name
             singular == plural ? "#{plural}_index" : plural
@@ -932,12 +935,11 @@ module ActionDispatch
           DEFAULT_ACTIONS = [:show, :create, :update, :destroy, :new, :edit]
 
           def initialize(entities, options)
+            super
+
             @as         = nil
-            @name       = entities.to_s
-            @path       = (options.delete(:path) || @name).to_s
-            @controller = (options.delete(:controller) || plural).to_s
-            @as         = options.delete(:as)
-            @options    = options
+            @controller = (options[:controller] || plural).to_s
+            @as         = options[:as]
           end
 
           def plural
@@ -968,7 +970,7 @@ module ActionDispatch
         #   resource :geocoder
         #
         # creates six different routes in your application, all mapping to
-        # the GeoCoders controller (note that the controller is named after
+        # the +GeoCoders+ controller (note that the controller is named after
         # the plural):
         #
         #   GET     /geocoder/new
@@ -1017,7 +1019,7 @@ module ActionDispatch
         #   resources :photos
         #
         # creates seven different routes in your application, all mapping to
-        # the Photos controller:
+        # the +Photos+ controller:
         #
         #   GET     /photos/new
         #   POST    /photos
@@ -1075,24 +1077,28 @@ module ActionDispatch
         #   Is the same as:
         #
         #     resources :posts do
-        #       resources :comments
+        #       resources :comments, :except => [:show, :edit, :update, :destroy]
         #     end
-        #     resources :comments
+        #     resources :comments, :only => [:show, :edit, :update, :destroy]
+        #
+        #   This allows URLs for resources that otherwise would be deeply nested such
+        #   as a comment on a blog post like <tt>/posts/a-long-permalink/comments/1234</tt>
+        #   to be shortened to just <tt>/comments/1234</tt>.
         #
         # [:shallow_path]
         #   Prefixes nested shallow routes with the specified path.
         #
-        #   scope :shallow_path => "sekret" do
-        #     resources :posts do
-        #       resources :comments, :shallow => true
+        #     scope :shallow_path => "sekret" do
+        #       resources :posts do
+        #         resources :comments, :shallow => true
+        #       end
         #     end
-        #   end
         #
         #   The +comments+ resource here will have the following routes generated for it:
         #
-        #     post_comments    GET    /sekret/posts/:post_id/comments(.:format)
-        #     post_comments    POST   /sekret/posts/:post_id/comments(.:format)
-        #     new_post_comment GET    /sekret/posts/:post_id/comments/new(.:format)
+        #     post_comments    GET    /posts/:post_id/comments(.:format)
+        #     post_comments    POST   /posts/:post_id/comments(.:format)
+        #     new_post_comment GET    /posts/:post_id/comments/new(.:format)
         #     edit_comment     GET    /sekret/comments/:id/edit(.:format)
         #     comment          GET    /sekret/comments/:id(.:format)
         #     comment          PUT    /sekret/comments/:id(.:format)
@@ -1100,11 +1106,11 @@ module ActionDispatch
         #
         # === Examples
         #
-        #   # routes call Admin::PostsController
+        #   # routes call <tt>Admin::PostsController</tt>
         #   resources :posts, :module => "admin"
         #
         #   # resource actions are at /admin/posts.
-        #   resources :posts, :path => "admin"
+        #   resources :posts, :path => "admin/posts"
         def resources(*resources, &block)
           options = resources.extract_options!
 
@@ -1144,7 +1150,7 @@ module ActionDispatch
         #   end
         #
         # This will enable Rails to recognize paths such as <tt>/photos/search</tt>
-        # with GET, and route to the search action of PhotosController. It will also
+        # with GET, and route to the search action of +PhotosController+. It will also
         # create the <tt>search_photos_url</tt> and <tt>search_photos_path</tt>
         # route helpers.
         def collection
@@ -1168,7 +1174,7 @@ module ActionDispatch
         #   end
         #
         # This will recognize <tt>/photos/1/preview</tt> with GET, and route to the
-        # preview action of PhotosController. It will also create the
+        # preview action of +PhotosController+. It will also create the
         # <tt>preview_photo_url</tt> and <tt>preview_photo_path</tt> helpers.
         def member
           unless resource_scope?
@@ -1339,11 +1345,11 @@ module ActionDispatch
           end
 
           def resource_scope? #:nodoc:
-            [:resource, :resources].include?(@scope[:scope_level])
+            @scope[:scope_level].in?([:resource, :resources])
           end
 
           def resource_method_scope? #:nodoc:
-            [:collection, :member, :new].include?(@scope[:scope_level])
+            @scope[:scope_level].in?([:collection, :member, :new])
           end
 
           def with_exclusive_scope
@@ -1411,7 +1417,9 @@ module ActionDispatch
           end
 
           def action_path(name, path = nil) #:nodoc:
-            path || @scope[:path_names][name.to_sym] || name.to_s
+            # Ruby 1.8 can't transform empty strings to symbols
+            name = name.to_sym if name.is_a?(String) && !name.empty?
+            path || @scope[:path_names][name] || name.to_s
           end
 
           def prefix_name_for_action(as, action) #:nodoc:

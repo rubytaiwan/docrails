@@ -31,7 +31,7 @@ module ActionController
   # "302 Moved" HTTP response that takes the user to the index action.
   #
   # These two methods represent the two basic action archetypes used in Action Controllers. Get-and-show and do-and-redirect.
-  # Most actions are variations of these themes.
+  # Most actions are variations on these themes.
   #
   # == Requests
   #
@@ -63,7 +63,7 @@ module ActionController
   #
   # == Sessions
   #
-  # Sessions allows you to store objects in between requests. This is useful for objects that are not yet ready to be persisted,
+  # Sessions allow you to store objects in between requests. This is useful for objects that are not yet ready to be persisted,
   # such as a Signup object constructed in a multi-paged process, or objects that don't change much and are needed all the time, such
   # as a User object for a system that requires login. The session should not be used, however, as a cache for objects where it's likely
   # they could be changed unknowingly. It's usually too much work to keep it all synchronized -- something databases already excel at.
@@ -105,7 +105,7 @@ module ActionController
   # == Renders
   #
   # Action Controller sends content to the user by using one of five rendering methods. The most versatile and common is the rendering
-  # of a template. Included in the Action Pack is the Action View, which enables rendering of ERb templates. It's automatically configured.
+  # of a template. Included in the Action Pack is the Action View, which enables rendering of ERB templates. It's automatically configured.
   # The controller passes objects to the view by assigning instance variables:
   #
   #   def show
@@ -116,8 +116,8 @@ module ActionController
   #
   #   Title: <%= @post.title %>
   #
-  # You don't have to rely on the automated rendering. Especially actions that could result in the rendering of different templates will use
-  # the manual rendering methods:
+  # You don't have to rely on the automated rendering. For example, actions that could result in the rendering of different templates 
+  # will use the manual rendering methods:
   #
   #   def search
   #     @results = Search.find(params[:query])
@@ -128,13 +128,13 @@ module ActionController
   #     end
   #   end
   #
-  # Read more about writing ERb and Builder templates in ActionView::Base.
+  # Read more about writing ERB and Builder templates in ActionView::Base.
   #
   # == Redirects
   #
-  # Redirects are used to move from one action to another. For example, after a <tt>create</tt> action, which stores a blog entry to a database,
-  # we might like to show the user the new entry. Because we're following good DRY principles (Don't Repeat Yourself), we're going to reuse (and redirect to)
-  # a <tt>show</tt> action that we'll assume has already been created. The code might look like this:
+  # Redirects are used to move from one action to another. For example, after a <tt>create</tt> action, which stores a blog entry to the
+  # database, we might like to show the user the new entry. Because we're following good DRY principles (Don't Repeat Yourself), we're 
+  # going to reuse (and redirect to) a <tt>show</tt> action that we'll assume has already been created. The code might look like this:
   #
   #   def create
   #     @entry = Entry.new(params[:entry])
@@ -146,7 +146,9 @@ module ActionController
   #     end
   #   end
   #
-  # In this case, after saving our new entry to the database, the user is redirected to the <tt>show</tt> method which is then executed.
+  # In this case, after saving our new entry to the database, the user is redirected to the <tt>show</tt> method, which is then executed.
+  # Note that this is an external HTTP-level redirection which will cause the browser to make a second request (a GET to the show action),
+  # and not some internal re-routing which calls both "create" and then "show" within one request.
   #
   # Learn more about <tt>redirect_to</tt> and what options you have in ActionController::Redirecting.
   #
@@ -200,21 +202,26 @@ module ActionController
       RequestForgeryProtection,
       ForceSSL,
       Streaming,
+      DataStreaming,
       RecordIdentifier,
       HttpAuthentication::Basic::ControllerMethods,
       HttpAuthentication::Digest::ControllerMethods,
       HttpAuthentication::Token::ControllerMethods,
 
-      # Add instrumentations hooks at the bottom, to ensure they instrument
-      # all the methods properly.
-      Instrumentation,
-
       # Before callbacks should also be executed the earliest as possible, so
       # also include them at the bottom.
       AbstractController::Callbacks,
 
-      # The same with rescue, append it at the end to wrap as much as possible.
-      Rescue
+      # Append rescue at the bottom to wrap as much as possible.
+      Rescue,
+
+      # Add instrumentations hooks at the bottom, to ensure they instrument
+      # all the methods properly.
+      Instrumentation,
+
+      # Params wrapper should come before instrumentation so they are
+      # properly showed in logs
+      ParamsWrapper
     ]
 
     MODULES.each do |mod|

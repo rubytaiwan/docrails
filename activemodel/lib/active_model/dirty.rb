@@ -8,7 +8,7 @@ module ActiveModel
   # Provides a way to track changes in your object in the same way as
   # Active Record does.
   #
-  # The requirements to implement ActiveModel::Dirty are to:
+  # The requirements for implementing ActiveModel::Dirty are:
   #
   # * <tt>include ActiveModel::Dirty</tt> in your object
   # * Call <tt>define_attribute_methods</tt> passing each method you want to
@@ -29,7 +29,7 @@ module ActiveModel
   #
   #     include ActiveModel::Dirty
   #
-  #     define_attribute_methods [:name]
+  #     define_attribute_methods = [:name]
   #
   #     def name
   #       @name
@@ -93,7 +93,7 @@ module ActiveModel
       attribute_method_affix :prefix => 'reset_', :suffix => '!'
     end
 
-    # Do any attributes have unsaved changes?
+    # Returns true if any attribute have unsaved changes, false otherwise.
     #   person.changed? # => false
     #   person.name = 'bob'
     #   person.changed? # => true
@@ -156,7 +156,7 @@ module ActiveModel
         rescue TypeError, NoMethodError
         end
 
-        changed_attributes[attr] = value
+        changed_attributes[attr] = value unless changed_attributes.include?(attr)
       end
 
       # Handle <tt>reset_*!</tt> for +method_missing+.

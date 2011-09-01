@@ -5,7 +5,6 @@ require 'active_support/core_ext/module/aliasing'
 require 'active_support/core_ext/module/attribute_accessors'
 require 'active_support/core_ext/module/introspection'
 require 'active_support/core_ext/module/anonymous'
-require 'active_support/core_ext/module/deprecation'
 require 'active_support/core_ext/object/blank'
 require 'active_support/core_ext/load_error'
 require 'active_support/core_ext/name_error'
@@ -230,11 +229,15 @@ module ActiveSupport #:nodoc:
       end
 
       def load(file, *)
-        load_dependency(file) { super }
+        result = false
+        load_dependency(file) { result = super }
+        result
       end
 
       def require(file, *)
-        load_dependency(file) { super }
+        result = false
+        load_dependency(file) { result = super }
+        result
       end
 
       # Mark the given constant as unloadable. Unloadable constants are removed each
@@ -418,7 +421,8 @@ module ActiveSupport #:nodoc:
     end
 
     def load_once_path?(path)
-      autoload_once_paths.any? { |base| path.starts_with? base }
+      # to_s works around a ruby1.9 issue where #starts_with?(Pathname) will always return false
+      autoload_once_paths.any? { |base| path.starts_with? base.to_s }
     end
 
     # Attempt to autoload the provided module name by searching for a directory
@@ -474,14 +478,10 @@ module ActiveSupport #:nodoc:
         raise ArgumentError, "A copy of #{from_mod} has been removed from the module tree but is still active!"
       end
 
-      raise ArgumentError, "#{from_mod} is not missing constant #{const_name}!" if local_const_defined?(from_mod, const_name)
+      raise NameError, "#{from_mod} is not missing constant #{const_name}!" if local_const_defined?(from_mod, const_name)
 
       qualified_name = qualified_name_for from_mod, const_name
       path_suffix = qualified_name.underscore
-
-      trace = caller.reject {|l| l =~ %r{#{Regexp.escape(__FILE__)}}}
-      name_error = NameError.new("uninitialized constant #{qualified_name}")
-      name_error.set_backtrace(trace)
 
       file_path = search_for_file(path_suffix)
 
@@ -501,11 +501,12 @@ module ActiveSupport #:nodoc:
           return parent.const_missing(const_name)
         rescue NameError => e
           raise unless e.missing_name? qualified_name_for(parent, const_name)
-          raise name_error
         end
-      else
-        raise name_error
       end
+
+      raise NameError,
+            "uninitialized constant #{qualified_name}",
+            caller.reject {|l| l.starts_with? __FILE__ }
     end
 
     # Remove the constants that have been autoloaded, and those that have been
@@ -550,23 +551,6 @@ module ActiveSupport #:nodoc:
       end
       alias :get :[]
 
-      class Getter # :nodoc:
-        def initialize(name)
-          @name = name
-        end
-
-        def get
-          Reference.get @name
-        end
-        deprecate :get
-      end
-
-      def new(name)
-        self[name] = name
-        Getter.new(name)
-      end
-      deprecate :new
-
       def store(name)
         self[name] = name
         self
@@ -578,11 +562,6 @@ module ActiveSupport #:nodoc:
     end
 
     Reference = ClassCache.new
-
-    def ref(name)
-      Reference.new(name)
-    end
-    deprecate :ref
 
     # Store a reference to a class +klass+.
     def reference(klass)
@@ -649,17 +628,6 @@ module ActiveSupport #:nodoc:
       end
 
       return []
-    end
-
-    class LoadingModule #:nodoc:
-      # Old style environment.rb referenced this method directly.  Please note, it doesn't
-      # actually *do* anything any more.
-      def self.root(*args)
-        if defined?(Rails) && Rails.logger
-          Rails.logger.warn "Your environment.rb uses the old syntax, it may not continue to work in future releases."
-          Rails.logger.warn "For upgrade instructions please see: http://manuals.rubyonrails.com/read/book/19"
-        end
-      end
     end
 
     # Convert the provided const desc to a qualified constant name (as a string).

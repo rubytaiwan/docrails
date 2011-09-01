@@ -7,12 +7,13 @@ DEFAULT_PLUGIN_FILES = %w(
   .gitignore
   Gemfile
   Rakefile
+  README.rdoc
   bukkits.gemspec
   MIT-LICENSE
   lib
   lib/bukkits.rb
   lib/tasks/bukkits_tasks.rake
-  script/rails
+  lib/bukkits/version.rb
   test/bukkits_test.rb
   test/test_helper.rb
   test/dummy
@@ -22,11 +23,9 @@ class PluginNewGeneratorTest < Rails::Generators::TestCase
   include GeneratorsTestHelper
   destination File.join(Rails.root, "tmp/bukkits")
   arguments [destination_root]
-  include SharedGeneratorTests
 
-  def default_files
-    ::DEFAULT_PLUGIN_FILES
-  end
+  # brings setup, teardown, and some tests
+  include SharedGeneratorTests
 
   def test_invalid_plugin_name_raises_an_error
     content = capture(:stderr){ run_generator [File.join(destination_root, "43-things")] }
@@ -65,16 +64,16 @@ class PluginNewGeneratorTest < Rails::Generators::TestCase
     assert_no_file "test"
   end
 
-  def test_database_entry_is_assed_by_default_in_full_mode
+  def test_database_entry_is_generated_for_sqlite3_by_default_in_full_mode
     run_generator([destination_root, "--full"])
     assert_file "test/dummy/config/database.yml", /sqlite/
-    assert_file "Gemfile", /^gem\s+["']sqlite3["']$/
+    assert_file "bukkits.gemspec", /sqlite3/
   end
 
   def test_config_another_database
     run_generator([destination_root, "-d", "mysql", "--full"])
     assert_file "test/dummy/config/database.yml", /mysql/
-    assert_file "Gemfile", /^gem\s+["']mysql2["']$/
+    assert_file "bukkits.gemspec", /mysql/
   end
 
   def test_active_record_is_removed_from_frameworks_if_skip_active_record_is_given
@@ -93,43 +92,50 @@ class PluginNewGeneratorTest < Rails::Generators::TestCase
     assert_file "test/dummy/config/database.yml", /postgres/
   end
 
+  def test_generation_runs_bundle_install_with_full_and_mountable
+    result = run_generator [destination_root, "--mountable", "--full"]
+    assert_equal 1, result.scan("Your bundle is complete").size
+  end
+
   def test_skipping_javascripts_without_mountable_option
     run_generator
-    assert_no_file "public/javascripts/prototype.js"
-    assert_no_file "public/javascripts/rails.js"
-    assert_no_file "public/javascripts/controls.js"
-    assert_no_file "public/javascripts/dragdrop.js"
-    assert_no_file "public/javascripts/dragdrop.js"
-    assert_no_file "public/javascripts/application.js"
+    assert_no_file "app/assets/javascripts/bukkits/application.js"
+    assert_no_file "vendor/assets/javascripts/jquery.js"
+    assert_no_file "vendor/assets/javascripts/jquery_ujs.js"
   end
 
   def test_javascripts_generation
     run_generator [destination_root, "--mountable"]
-    assert_file "public/javascripts/rails.js"
-    assert_file "public/javascripts/prototype.js"
-    assert_file "public/javascripts/controls.js"
-    assert_file "public/javascripts/dragdrop.js"
-    assert_file "public/javascripts/dragdrop.js"
-    assert_file "public/javascripts/application.js"
+    assert_file "app/assets/javascripts/bukkits/application.js"
+  end
+
+  def test_jquery_is_the_default_javascript_library
+    run_generator [destination_root, "--mountable"]
+    assert_file "app/assets/javascripts/bukkits/application.js" do |contents|
+      assert_match %r{^//= require jquery}, contents
+      assert_match %r{^//= require jquery_ujs}, contents
+    end
+    assert_file 'bukkits.gemspec' do |contents|
+      assert_match(/jquery-rails/, contents)
+    end
+  end
+
+  def test_other_javascript_libraries
+    run_generator [destination_root, "--mountable", '-j', 'prototype']
+    assert_file "app/assets/javascripts/bukkits/application.js" do |contents|
+      assert_match %r{^//= require prototype}, contents
+      assert_match %r{^//= require prototype_ujs}, contents
+    end
+    assert_file 'bukkits.gemspec' do |contents|
+      assert_match(/prototype-rails/, contents)
+    end
   end
 
   def test_skip_javascripts
     run_generator [destination_root, "--skip-javascript", "--mountable"]
-    assert_no_file "public/javascripts/prototype.js"
-    assert_no_file "public/javascripts/rails.js"
-    assert_no_file "public/javascripts/controls.js"
-    assert_no_file "public/javascripts/dragdrop.js"
-    assert_no_file "public/javascripts/dragdrop.js"
-  end
-
-  def test_ensure_that_javascript_option_is_passed_to_app_generator
-    run_generator [destination_root, "--javascript", "jquery"]
-    assert_file "test/dummy/public/javascripts/jquery.js"
-  end
-
-  def test_ensure_that_skip_javascript_option_is_passed_to_app_generator
-    run_generator [destination_root, "--skip_javascript"]
-    assert_no_file "test/dummy/public/javascripts/prototype.js"
+    assert_no_file "app/assets/javascripts/bukkits/application.js"
+    assert_no_file "vendor/assets/javascripts/jquery.js"
+    assert_no_file "vendor/assets/javascripts/jquery_ujs.js"
   end
 
   def test_template_from_dir_pwd
@@ -137,25 +143,42 @@ class PluginNewGeneratorTest < Rails::Generators::TestCase
     assert_match(/It works from file!/, run_generator([destination_root, "-m", "lib/template.rb"]))
   end
 
-  def test_ensure_that_tests_works
+  def test_ensure_that_tests_work
     run_generator
     FileUtils.cd destination_root
-    `bundle install`
+    quietly { system 'bundle install' }
     assert_match(/1 tests, 1 assertions, 0 failures, 0 errors/, `bundle exec rake test`)
   end
 
   def test_ensure_that_tests_works_in_full_mode
     run_generator [destination_root, "--full", "--skip_active_record"]
     FileUtils.cd destination_root
-    `bundle install`
-    assert_match(/2 tests, 2 assertions, 0 failures, 0 errors/, `bundle exec rake test`)
+    quietly { system 'bundle install' }
+    assert_match(/1 tests, 1 assertions, 0 failures, 0 errors/, `bundle exec rake test`)
+  end
+
+  def test_ensure_that_migration_tasks_work_with_mountable_option
+    run_generator [destination_root, "--mountable"]
+    FileUtils.cd destination_root
+    quietly { system 'bundle install' }
+    `bundle exec rake db:migrate`
+    assert_equal 0, $?.exitstatus
   end
 
   def test_creating_engine_in_full_mode
     run_generator [destination_root, "--full"]
+    assert_file "app/assets/javascripts/bukkits"
+    assert_file "app/assets/stylesheets/bukkits"
+    assert_file "app/assets/images/bukkits"
+    assert_file "app/models"
+    assert_file "app/controllers"
+    assert_file "app/views"
+    assert_file "app/helpers"
+    assert_file "app/mailers"
     assert_file "config/routes.rb", /Rails.application.routes.draw do/
-    assert_file "lib/bukkits/engine.rb", /module Bukkits\n  class Engine < Rails::Engine\n  end\nend/
+    assert_file "lib/bukkits/engine.rb", /module Bukkits\n  class Engine < ::Rails::Engine\n  end\nend/
     assert_file "lib/bukkits.rb", /require "bukkits\/engine"/
+    assert_file "script/rails"
   end
 
   def test_being_quiet_while_creating_dummy_application
@@ -164,12 +187,40 @@ class PluginNewGeneratorTest < Rails::Generators::TestCase
 
   def test_create_mountable_application_with_mountable_option
     run_generator [destination_root, "--mountable"]
+    assert_file "app/assets/javascripts/bukkits"
+    assert_file "app/assets/stylesheets/bukkits"
+    assert_file "app/assets/images/bukkits"
     assert_file "config/routes.rb", /Bukkits::Engine.routes.draw do/
     assert_file "lib/bukkits/engine.rb", /isolate_namespace Bukkits/
     assert_file "test/dummy/config/routes.rb", /mount Bukkits::Engine => "\/bukkits"/
     assert_file "app/controllers/bukkits/application_controller.rb", /module Bukkits\n  class ApplicationController < ActionController::Base/
     assert_file "app/helpers/bukkits/application_helper.rb", /module Bukkits\n  module ApplicationHelper/
-    assert_file "app/views/layouts/bukkits/application.html.erb", /<title>Bukkits<\/title>/
+    assert_file "app/views/layouts/bukkits/application.html.erb" do |contents|
+      assert_match "<title>Bukkits</title>", contents
+      assert_match /stylesheet_link_tag\s+['"]bukkits\/application['"]/, contents
+      assert_match /javascript_include_tag\s+['"]bukkits\/application['"]/, contents
+    end
+  end
+
+  def test_creating_gemspec
+    run_generator
+    assert_file "bukkits.gemspec", /s.name\s+= "bukkits"/
+    assert_file "bukkits.gemspec", /s.files = Dir\["\{app,config,db,lib\}\/\*\*\/\*"\]/
+    assert_file "bukkits.gemspec", /s.test_files = Dir\["test\/\*\*\/\*"\]/
+    assert_file "bukkits.gemspec", /s.version\s+ = Bukkits::VERSION/
+  end
+
+  def test_usage_of_engine_commands
+    run_generator [destination_root, "--full"]
+    assert_file "script/rails", /ENGINE_PATH = File.expand_path\('..\/..\/lib\/bukkits\/engine', __FILE__\)/
+    assert_file "script/rails", /ENGINE_ROOT = File.expand_path\('..\/..', __FILE__\)/
+    assert_file "script/rails", /require 'rails\/all'/
+    assert_file "script/rails", /require 'rails\/engine\/commands'/
+  end
+
+  def test_shebang
+    run_generator [destination_root, "--full"]
+    assert_file "script/rails", /#!\/usr\/bin\/env ruby/
   end
 
   def test_passing_dummy_path_as_a_parameter
@@ -177,6 +228,21 @@ class PluginNewGeneratorTest < Rails::Generators::TestCase
     assert_file "spec/dummy"
     assert_file "spec/dummy/config/application.rb"
     assert_no_file "test/dummy"
+  end
+
+  def test_creating_dummy_without_tests_but_with_dummy_path
+    run_generator [destination_root, "--dummy_path", "spec/dummy", "--skip-test-unit"]
+    assert_file "spec/dummy"
+    assert_file "spec/dummy/config/application.rb"
+    assert_no_file "test"
+  end
+
+  def test_skipping_test_unit
+    run_generator [destination_root, "--skip-test-unit"]
+    assert_no_file "test"
+    assert_file "bukkits.gemspec" do |contents|
+      assert_no_match /s.test_files = Dir\["test\/\*\*\/\*"\]/, contents
+    end
   end
 
   def test_skipping_gemspec
@@ -190,6 +256,10 @@ protected
     silence(:stdout){ generator.send(*args, &block) }
   end
 
+protected
+  def default_files
+    ::DEFAULT_PLUGIN_FILES
+  end
 end
 
 class CustomPluginGeneratorTest < Rails::Generators::TestCase
@@ -207,7 +277,6 @@ class CustomPluginGeneratorTest < Rails::Generators::TestCase
     assert_file 'spec/dummy'
     assert_file 'Rakefile', /task :default => :spec/
     assert_file 'Rakefile', /# spec tasks in rakefile/
-    assert_file 'script/rails', %r{spec/dummy}
   end
 
 protected
@@ -227,3 +296,4 @@ protected
     silence(:stdout){ generator.send(*args, &block) }
   end
 end
+

@@ -1,5 +1,6 @@
 require 'active_support/core_ext/file/atomic'
 require 'active_support/core_ext/string/conversions'
+require 'active_support/core_ext/object/inclusion'
 require 'rack/utils'
 
 module ActiveSupport
@@ -15,12 +16,12 @@ module ActiveSupport
 
       def initialize(cache_path, options = nil)
         super(options)
-        @cache_path = cache_path
+        @cache_path = cache_path.to_s
         extend Strategy::LocalCache
       end
 
       def clear(options = nil)
-        root_dirs = Dir.entries(cache_path).reject{|f| ['.', '..'].include?(f)}
+        root_dirs = Dir.entries(cache_path).reject{|f| f.in?(['.', '..'])}
         FileUtils.rm_r(root_dirs.collect{|f| File.join(cache_path, f)})
       end
 
@@ -76,19 +77,7 @@ module ActiveSupport
         def read_entry(key, options)
           file_name = key_file_path(key)
           if File.exist?(file_name)
-            entry = File.open(file_name) { |f| Marshal.load(f) }
-            if entry && !entry.expired? && !entry.expires_in && !self.options[:expires_in]
-              # Check for deprecated use of +:expires_in+ option from versions < 3.0
-              deprecated_expires_in = options[:expires_in]
-              if deprecated_expires_in
-                ActiveSupport::Deprecation.warn('Setting :expires_in on read has been deprecated in favor of setting it on write.', caller)
-                if entry.created_at + deprecated_expires_in.to_f <= Time.now.to_f
-                  delete_entry(key, options)
-                  entry = nil
-                end
-              end
-            end
-            entry
+            File.open(file_name) { |f| Marshal.load(f) }
           end
         rescue
           nil
@@ -120,7 +109,7 @@ module ActiveSupport
         # Lock a file for a block so only one process can modify it at a time.
         def lock_file(file_name, &block) # :nodoc:
           if File.exist?(file_name)
-            File.open(file_name, 'r') do |f|
+            File.open(file_name, 'r+') do |f|
               begin
                 f.flock File::LOCK_EX
                 yield
@@ -161,7 +150,7 @@ module ActiveSupport
         # Delete empty directories in the cache.
         def delete_empty_directories(dir)
           return if dir == cache_path
-          if Dir.entries(dir).reject{|f| ['.', '..'].include?(f)}.empty?
+          if Dir.entries(dir).reject{|f| f.in?(['.', '..'])}.empty?
             File.delete(dir) rescue nil
             delete_empty_directories(File.dirname(dir))
           end

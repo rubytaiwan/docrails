@@ -118,7 +118,7 @@ class SchemaTest < ActiveModel::TestCase
 
   test "with two instances, default schema should match the attributes of the individual instances - even if they differ" do
     matz = Person.find(1)
-    rick = Person.find(5)
+    rick = Person.find(6)
 
     m_attrs = matz.attributes.keys.sort
     r_attrs = rick.attributes.keys.sort
@@ -139,7 +139,7 @@ class SchemaTest < ActiveModel::TestCase
     assert_nothing_raised {
       Person.schema = new_schema
       assert_equal new_schema, Person.schema, "should have saved the schema on the class"
-      assert_equal new_schema, Person.new.schema, "should have mde the schema available to every instance"
+      assert_equal new_schema, Person.new.schema, "should have made the schema available to every instance"
     }
   end
 
@@ -283,8 +283,8 @@ class SchemaTest < ActiveModel::TestCase
     new_attr_name_two = :another_new_schema_attribute
     assert Person.schema.blank?, "sanity check - should have a blank class schema"
 
-    assert !Person.new.respond_do?(new_attr_name), "sanity check - should not respond to the brand-new attribute yet"
-    assert !Person.new.respond_do?(new_attr_name_two), "sanity check - should not respond to the brand-new attribute yet"
+    assert !Person.new.respond_to?(new_attr_name), "sanity check - should not respond to the brand-new attribute yet"
+    assert !Person.new.respond_to?(new_attr_name_two), "sanity check - should not respond to the brand-new attribute yet"
 
     assert_nothing_raised do
       Person.schema = {new_attr_name.to_s => 'string'}
@@ -301,8 +301,8 @@ class SchemaTest < ActiveModel::TestCase
 
     assert Person.schema.blank?, "sanity check - should have a blank class schema"
 
-    assert !Person.new.respond_do?(new_attr_name), "sanity check - should not respond to the brand-new attribute yet"
-    assert !Person.new.respond_do?(new_attr_name_two), "sanity check - should not respond to the brand-new attribute yet"
+    assert !Person.new.respond_to?(new_attr_name), "sanity check - should not respond to the brand-new attribute yet"
+    assert !Person.new.respond_to?(new_attr_name_two), "sanity check - should not respond to the brand-new attribute yet"
 
     assert_nothing_raised do
       Person.schema { string new_attr_name_two }
@@ -376,7 +376,7 @@ class SchemaTest < ActiveModel::TestCase
 
   test "with two instances, known attributes should match the attributes of the individual instances - even if they differ" do
     matz = Person.find(1)
-    rick = Person.find(5)
+    rick = Person.find(6)
 
     m_attrs = matz.attributes.keys.sort
     r_attrs = rick.attributes.keys.sort

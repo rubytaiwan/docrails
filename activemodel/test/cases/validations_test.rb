@@ -212,6 +212,20 @@ class ValidationsTest < ActiveModel::TestCase
     assert_equal 'is too short (minimum is 2 characters)', t.errors[key][0]
   end
 
+  def test_validaton_with_if_and_on
+    Topic.validates_presence_of :title, :if => Proc.new{|x| x.author_name = "bad"; true }, :on => :update
+
+    t = Topic.new(:title => "")
+
+    # If block should not fire
+    assert t.valid?
+    assert t.author_name.nil?
+
+    # If block should fire
+    assert t.invalid?(:update)
+    assert t.author_name == "bad"
+  end
+
   def test_invalid_should_be_the_opposite_of_valid
     Topic.validates_presence_of :title
 
@@ -282,5 +296,38 @@ class ValidationsTest < ActiveModel::TestCase
     auto.model = 'Corolla'
 
     assert auto.valid?
+  end
+
+  def test_strict_validation_in_validates
+    Topic.validates :title, :strict => true, :presence => true
+    assert_raises ActiveModel::StrictValidationFailed do
+      Topic.new.valid?
+    end
+  end
+
+  def test_strict_validation_not_fails
+    Topic.validates :title, :strict => true, :presence => true
+    assert Topic.new(:title => "hello").valid?
+  end
+
+  def test_strict_validation_particular_validator
+    Topic.validates :title,  :presence => {:strict => true}
+    assert_raises ActiveModel::StrictValidationFailed do
+      Topic.new.valid?
+    end
+  end
+
+  def test_strict_validation_in_custom_validator_helper
+    Topic.validates_presence_of :title, :strict => true
+    assert_raises ActiveModel::StrictValidationFailed do
+      Topic.new.valid?
+    end
+  end
+
+  def test_validates_with_bang
+    Topic.validates! :title,  :presence => true
+    assert_raises ActiveModel::StrictValidationFailed do
+      Topic.new.valid?
+    end
   end
 end

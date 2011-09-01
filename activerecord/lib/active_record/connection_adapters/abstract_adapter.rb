@@ -2,21 +2,33 @@ require 'date'
 require 'bigdecimal'
 require 'bigdecimal/util'
 require 'active_support/core_ext/benchmark'
-
-# TODO: Autoload these files
-require 'active_record/connection_adapters/column'
-require 'active_record/connection_adapters/abstract/schema_definitions'
-require 'active_record/connection_adapters/abstract/schema_statements'
-require 'active_record/connection_adapters/abstract/database_statements'
-require 'active_record/connection_adapters/abstract/quoting'
-require 'active_record/connection_adapters/abstract/connection_pool'
-require 'active_record/connection_adapters/abstract/connection_specification'
-require 'active_record/connection_adapters/abstract/query_cache'
-require 'active_record/connection_adapters/abstract/database_limits'
-require 'active_record/result'
+require 'active_support/deprecation'
 
 module ActiveRecord
   module ConnectionAdapters # :nodoc:
+    extend ActiveSupport::Autoload
+
+    autoload :Column
+
+    autoload_under 'abstract' do
+      autoload :IndexDefinition,  'active_record/connection_adapters/abstract/schema_definitions'
+      autoload :ColumnDefinition, 'active_record/connection_adapters/abstract/schema_definitions'
+      autoload :TableDefinition,  'active_record/connection_adapters/abstract/schema_definitions'
+      autoload :Table,            'active_record/connection_adapters/abstract/schema_definitions'
+
+      autoload :SchemaStatements
+      autoload :DatabaseStatements
+      autoload :DatabaseLimits
+      autoload :Quoting
+
+      autoload :ConnectionPool
+      autoload :ConnectionHandler,       'active_record/connection_adapters/abstract/connection_pool'
+      autoload :ConnectionManagement,    'active_record/connection_adapters/abstract/connection_pool'
+      autoload :ConnectionSpecification
+
+      autoload :QueryCache
+    end
+
     # Active Record supports multiple database systems. AbstractAdapter and
     # related classes form the abstraction layer which makes this possible.
     # An AbstractAdapter represents a connection to a database, and provides an
@@ -38,42 +50,64 @@ module ActiveRecord
 
       define_callbacks :checkout, :checkin
 
+      attr_accessor :visitor
+
       def initialize(connection, logger = nil) #:nodoc:
         @active = nil
         @connection, @logger = connection, logger
         @query_cache_enabled = false
         @query_cache = Hash.new { |h,sql| h[sql] = {} }
+        @open_transactions = 0
         @instrumenter = ActiveSupport::Notifications.instrumenter
+        @visitor = nil
       end
 
-      # Returns the human-readable name of the adapter.  Use mixed case - one
+      # Returns a visitor instance for this adaptor, which conforms to the Arel::ToSql interface
+      def self.visitor_for(pool) # :nodoc:
+        adapter = pool.spec.config[:adapter]
+
+        if Arel::Visitors::VISITORS[adapter]
+          ActiveSupport::Deprecation.warn(
+            "Arel::Visitors::VISITORS is deprecated and will be removed. Database adapters " \
+            "should define a visitor_for method which returns the appropriate visitor for " \
+            "the database. For example, MysqlAdapter.visitor_for(pool) returns " \
+            "Arel::Visitors::MySQL.new(pool)."
+          )
+
+          Arel::Visitors::VISITORS[adapter].new(pool)
+        else
+          Arel::Visitors::ToSql.new(pool)
+        end
+      end
+
+      # Returns the human-readable name of the adapter. Use mixed case - one
       # can always use downcase if needed.
       def adapter_name
         'Abstract'
       end
 
-      # Does this adapter support migrations?  Backend specific, as the
+      # Does this adapter support migrations? Backend specific, as the
       # abstract adapter always returns +false+.
       def supports_migrations?
         false
       end
 
       # Can this adapter determine the primary key for tables not attached
-      # to an Active Record class, such as join tables?  Backend specific, as
+      # to an Active Record class, such as join tables? Backend specific, as
       # the abstract adapter always returns +false+.
       def supports_primary_key?
         false
       end
 
-      # Does this adapter support using DISTINCT within COUNT?  This is +true+
+      # Does this adapter support using DISTINCT within COUNT? This is +true+
       # for all adapters except sqlite.
       def supports_count_distinct?
         true
       end
 
-      # Does this adapter support DDL rollbacks in transactions?  That is, would
-      # CREATE TABLE or ALTER TABLE get rolled back by a transaction?  PostgreSQL,
-      # SQL Server, and others support this.  MySQL and others do not.
+      # Does this adapter support DDL rollbacks in transactions? That is, would
+      # CREATE TABLE or ALTER TABLE get rolled back by a transaction? PostgreSQL,
+      # SQL Server, and others support this. MySQL and others do not.
       def supports_ddl_transactions?
         false
       end
@@ -89,7 +123,7 @@ module ActiveRecord
       end
 
       # Should primary key values be selected from their corresponding
-      # sequence before the insert statement?  If true, next_sequence_value
+      # sequence before the insert statement? If true, next_sequence_value
       # is called before each insert to set the record's primary key.
       # This is false for all adapters but Firebird.
       def prefetch_primary_key?(table_name = nil)
@@ -105,7 +139,7 @@ module ActiveRecord
 
       # Returns a bind substitution value given a +column+ and list of current
       # +binds+
-      def substitute_for(column, binds)
+      def substitute_at(column, index)
         Arel.sql '?'
       end
 
@@ -149,7 +183,7 @@ module ActiveRecord
 
       ###
       # Clear any caching the database adapter may be doing, for example
-      # clearing the prepared statement cache.  This is database specific.
+      # clearing the prepared statement cache. This is database specific.
       def clear_cache!
         # this should be overridden by concrete adapters
       end
@@ -177,12 +211,9 @@ module ActiveRecord
         @connection
       end
 
-      def open_transactions
-        @open_transactions ||= 0
-      end
+      attr_reader :open_transactions
 
       def increment_open_transactions
-        @open_transactions ||= 0
         @open_transactions += 1
       end
 
@@ -203,6 +234,10 @@ module ActiveRecord
       def release_savepoint
       end
 
+      def case_sensitive_modifier(node)
+        node
+      end
+
       def current_savepoint_name
         "active_record_#{open_transactions}"
       end
@@ -219,7 +254,9 @@ module ActiveRecord
         rescue Exception => e
           message = "#{e.class.name}: #{e.message}: #{sql}"
           @logger.debug message if @logger
-          raise translate_exception(e, message)
+          exception = translate_exception(e, message)
+          exception.set_backtrace e.backtrace
+          raise exception
         end
 
         def translate_exception(e, message)

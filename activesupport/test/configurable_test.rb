@@ -5,6 +5,7 @@ class ConfigurableActiveSupport < ActiveSupport::TestCase
   class Parent
     include ActiveSupport::Configurable
     config_accessor :foo
+    config_accessor :bar, :instance_reader => false, :instance_writer => false
   end
 
   class Child < Parent
@@ -36,6 +37,12 @@ class ConfigurableActiveSupport < ActiveSupport::TestCase
     assert_equal :bar, Parent.config.foo
   end
 
+  test "configuration accessors is not available on instance" do
+    instance = Parent.new
+    assert !instance.respond_to?(:bar)
+    assert !instance.respond_to?(:bar=)
+  end
+
   test "configuration hash is available on instance" do
     instance = Parent.new
     assert_equal :bar, instance.config.foo
@@ -51,16 +58,26 @@ class ConfigurableActiveSupport < ActiveSupport::TestCase
     child  = Class.new(parent)
 
     parent.config.bar = :foo
-    assert !parent.config.respond_to?(:bar)
-    assert !child.config.respond_to?(:bar)
-    assert !child.new.config.respond_to?(:bar)
+    assert_method_not_defined parent.config, :bar
+    assert_method_not_defined child.config, :bar
+    assert_method_not_defined child.new.config, :bar
 
     parent.config.compile_methods!
     assert_equal :foo, parent.config.bar
     assert_equal :foo, child.new.config.bar
 
-    assert_respond_to parent.config, :bar
-    assert_respond_to child.config, :bar
-    assert_respond_to child.new.config, :bar
+    assert_method_defined parent.config, :bar
+    assert_method_defined child.config, :bar
+    assert_method_defined child.new.config, :bar
+  end
+
+  def assert_method_defined(object, method)
+    methods = object.public_methods.map(&:to_s)
+    assert methods.include?(method.to_s), "Expected #{methods.inspect} to include #{method.to_s.inspect}"
+  end
+
+  def assert_method_not_defined(object, method)
+    methods = object.public_methods.map(&:to_s)
+    assert !methods.include?(method.to_s), "Expected #{methods.inspect} to not include #{method.to_s.inspect}"
   end
 end

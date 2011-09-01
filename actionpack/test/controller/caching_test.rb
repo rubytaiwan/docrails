@@ -127,7 +127,7 @@ class PageCachingTest < ActionController::TestCase
     assert_equal 'I am xml', @response.body
   end
 
-  def test_should_cache_with_trailing_slash_on_url
+  def test_cached_page_should_not_have_trailing_slash_even_if_url_has_trailing_slash
     @controller.class.cache_page 'cached content', '/page_caching_test/trailing_slash/'
     assert File.exist?("#{FILE_STORE_PATH}/page_caching_test/trailing_slash.html")
   end
@@ -141,7 +141,7 @@ class PageCachingTest < ActionController::TestCase
 
   [:ok, :no_content, :found, :not_found].each do |status|
     [:get, :post, :put, :delete].each do |method|
-      unless method == :get and status == :ok
+      unless method == :get && status == :ok
         define_method "test_shouldnt_cache_#{method}_with_#{status}_status" do
           send(method, status)
           assert_response status
@@ -186,6 +186,9 @@ class ActionCachingTestController < CachingController
   if defined? ActiveRecord
     rescue_from(ActiveRecord::RecordNotFound) { head :not_found }
   end
+
+  # Eliminate uninitialized ivar warning
+  before_filter { @title = nil }
 
   caches_action :index, :redirected, :forbidden, :if => Proc.new { |c| !c.request.format.json? }, :expires_in => 1.hour
   caches_action :show, :cache_path => 'http://test.host/custom/show'
@@ -713,17 +716,10 @@ class FunctionalCachingController < CachingController
     end
   end
 
-  def js_fragment_cached_with_partial
-    respond_to do |format|
-      format.js
-    end
-  end
-
   def formatted_fragment_cached
     respond_to do |format|
       format.html
       format.xml
-      format.js
     end
   end
 
@@ -768,13 +764,6 @@ CACHED
     assert_match(/Some inline content/, @response.body)
     assert_match(/Some cached content/, @response.body)
     assert_match("Some cached content", @store.read('views/test.host/functional_caching/inline_fragment_cached'))
-  end
-
-  def test_fragment_caching_in_rjs_partials
-    xhr :get, :js_fragment_cached_with_partial
-    assert_response :success
-    assert_match(/Old fragment caching in a partial/, @response.body)
-    assert_match("Old fragment caching in a partial", @store.read('views/test.host/functional_caching/js_fragment_cached_with_partial'))
   end
 
   def test_html_formatted_fragment_caching

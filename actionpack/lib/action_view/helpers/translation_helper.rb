@@ -5,7 +5,7 @@ module I18n
   class ExceptionHandler
     include Module.new {
       def call(exception, locale, key, options)
-        exception.is_a?(MissingTranslationData) ? super.html_safe : super
+        exception.is_a?(MissingTranslation) && options[:rescue_format] == :html ? super.html_safe : super
       end
     }
   end
@@ -15,17 +15,17 @@ module ActionView
   # = Action View Translation Helpers
   module Helpers
     module TranslationHelper
-      # Delegates to I18n#translate but also performs three additional functions.
+      # Delegates to <tt>I18n#translate</tt> but also performs three additional functions.
       #
-      # First, it'll pass the :rescue_format => :html option to I18n so that any caught
-      # MissingTranslationData exceptions will be turned into inline spans that
+      # First, it'll pass the <tt>:rescue_format => :html</tt> option to I18n so that any
+      # thrown +MissingTranslation+ messages will be turned into inline spans that
       #
       #   * have a "translation-missing" class set,
       #   * contain the missing key as a title attribute and
       #   * a titleized version of the last key segment as a text.
       #
       # E.g. the value returned for a missing translation key :"blog.post.title" will be
-      # <span class="translation_missing" title="translation missing: blog.post.title">Title</span>.
+      # <span class="translation_missing" title="translation missing: en.blog.post.title">Title</span>.
       # This way your views will display rather reasonable strings but it will still
       # be easy to spot missing translations.
       #
@@ -54,7 +54,7 @@ module ActionView
       end
       alias :t :translate
 
-      # Delegates to I18n.localize with no additional functionality.
+      # Delegates to <tt>I18n.localize</tt> with no additional functionality.
       def localize(*args)
         I18n.localize(*args)
       end
@@ -63,8 +63,8 @@ module ActionView
       private
         def scope_key_by_partial(key)
           if key.to_s.first == "."
-            if (path = @_template && @_template.virtual_path)
-              path.gsub(%r{/_?}, ".") + key.to_s
+            if @virtual_path
+              @virtual_path.gsub(%r{/_?}, ".") + key.to_s
             else
               raise "Cannot use t(#{key.inspect}) shortcut because path is not available"
             end

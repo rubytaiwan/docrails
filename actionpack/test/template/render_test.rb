@@ -68,10 +68,6 @@ module RenderTestCases
     assert_equal "The secret is in the sauce\n", @view.render(:file => "test/dot.directory/render_file_with_ivar")
   end
 
-  def test_render_update
-    assert_equal 'alert("Hello, World!");', @view.render(:update) { |page| page.alert('Hello, World!') }
-  end
-
   def test_render_partial_from_default
     assert_equal "only partial", @view.render("test/partial_only")
   end
@@ -100,6 +96,15 @@ module RenderTestCases
 
   def test_render_partial_with_locals_from_default
     assert_equal "only partial", @view.render("test/partial_only", :counter_counter => 5)
+  end
+
+  def test_render_partial_with_invalid_name
+    @view.render(:partial => "test/200")
+    flunk "Render did not raise ArgumentError"
+  rescue ArgumentError => e
+    assert_equal "The partial name (test/200) is not a valid Ruby identifier; " +
+                                "make sure your partial name starts with a letter or underscore, " +
+                                "and is followed by any combinations of letters, numbers, or underscores.", e.message
   end
 
   def test_render_partial_with_errors
@@ -196,6 +201,36 @@ module RenderTestCases
       @controller_view.render(customers, :greeting => "Hello")
   end
 
+  class CustomerWithDeprecatedPartialPath
+    attr_reader :name
+
+    def self.model_name
+      Struct.new(:partial_path).new("customers/customer")
+    end
+
+    def initialize(name)
+      @name = name
+    end
+  end
+
+  def test_render_partial_using_object_with_deprecated_partial_path
+    assert_deprecated(/#model_name.*#partial_path.*#to_partial_path/) do
+      assert_equal "Hello: nertzy",
+        @controller_view.render(CustomerWithDeprecatedPartialPath.new("nertzy"), :greeting => "Hello")
+    end
+  end
+
+  def test_render_partial_using_collection_with_deprecated_partial_path
+    assert_deprecated(/#model_name.*#partial_path.*#to_partial_path/) do
+      customers = [
+        CustomerWithDeprecatedPartialPath.new("nertzy"),
+        CustomerWithDeprecatedPartialPath.new("peeja")
+      ]
+      assert_equal "Hello: nertzyHello: peeja",
+        @controller_view.render(customers, :greeting => "Hello")
+    end
+  end
+
   # TODO: The reason for this test is unclear, improve documentation
   def test_render_partial_and_fallback_to_layout
     assert_equal "Before (Josh)\n\nAfter", @view.render(:partial => "test/layout_for_partial", :locals => { :name => "Josh" })
@@ -231,18 +266,9 @@ module RenderTestCases
       "@output_buffer << 'source: #{template.source.inspect}'\n"
   end
 
-  WithViewHandler = lambda do |template, view|
-    %'"#{template.class} #{view.class}"'
-  end
-
   def test_render_inline_with_render_from_to_proc
     ActionView::Template.register_template_handler :ruby_handler, :source.to_proc
     assert_equal '3', @view.render(:inline => "(1 + 2).to_s", :type => :ruby_handler)
-  end
-
-  def test_render_inline_with_template_handler_with_view
-    ActionView::Template.register_template_handler :with_view, WithViewHandler
-    assert_equal 'ActionView::Template ActionView::Base', @view.render(:inline => "Hello, World!", :type => :with_view)
   end
 
   def test_render_inline_with_compilable_custom_type
@@ -338,7 +364,7 @@ class CachedViewRenderTest < ActiveSupport::TestCase
   # Ensure view path cache is primed
   def setup
     view_paths = ActionController::Base.view_paths
-    assert_equal ActionView::FileSystemResolver, view_paths.first.class
+    assert_equal ActionView::OptimizedFileSystemResolver, view_paths.first.class
     setup_view(view_paths)
   end
 
@@ -354,7 +380,7 @@ class LazyViewRenderTest < ActiveSupport::TestCase
   # is not eager loaded
   def setup
     path = ActionView::FileSystemResolver.new(FIXTURE_LOAD_PATH)
-    view_paths = ActionView::Base.process_view_paths(path)
+    view_paths = ActionView::PathSet.new([path])
     assert_equal ActionView::FileSystemResolver.new(FIXTURE_LOAD_PATH), view_paths.first
     setup_view(view_paths)
   end
@@ -383,7 +409,7 @@ class LazyViewRenderTest < ActiveSupport::TestCase
     def test_render_utf8_template_with_incompatible_external_encoding
       with_external_encoding Encoding::SHIFT_JIS do
         begin
-          result = @view.render(:file => "test/utf8.html.erb", :layouts => "layouts/yield")
+          @view.render(:file => "test/utf8.html.erb", :layouts => "layouts/yield")
           flunk 'Should have raised incompatible encoding error'
         rescue ActionView::Template::Error => error
           assert_match 'Your template was not saved as valid Shift_JIS', error.original_exception.message
@@ -394,7 +420,7 @@ class LazyViewRenderTest < ActiveSupport::TestCase
     def test_render_utf8_template_with_partial_with_incompatible_encoding
       with_external_encoding Encoding::SHIFT_JIS do
         begin
-          result = @view.render(:file => "test/utf8_magic_with_bare_partial.html.erb", :layouts => "layouts/yield")
+          @view.render(:file => "test/utf8_magic_with_bare_partial.html.erb", :layouts => "layouts/yield")
           flunk 'Should have raised incompatible encoding error'
         rescue ActionView::Template::Error => error
           assert_match 'Your template was not saved as valid Shift_JIS', error.original_exception.message

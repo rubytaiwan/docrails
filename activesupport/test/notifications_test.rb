@@ -1,4 +1,5 @@
 require 'abstract_unit'
+require 'active_support/core_ext/module/delegation'
 
 module Notifications
   class TestCase < ActiveSupport::TestCase
@@ -215,7 +216,7 @@ module Notifications
 
     protected
       def random_id
-        @random_id ||= ActiveSupport::SecureRandom.hex(10)
+        @random_id ||= SecureRandom.hex(10)
       end
   end
 end

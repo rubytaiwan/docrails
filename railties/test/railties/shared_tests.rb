@@ -10,42 +10,15 @@ module RailtiesTest
       @app ||= Rails.application
     end
 
-    def test_install_migrations_and_assets
-      @plugin.write "public/javascripts/foo.js", "doSomething()"
+    def test_serving_sprockets_assets
+      @plugin.write "app/assets/javascripts/engine.js.erb", "<%= :alert %>();"
 
-      @plugin.write "db/migrate/1_create_users.rb", <<-RUBY
-        class CreateUsers < ActiveRecord::Migration
-        end
-      RUBY
+      boot_rails
+      require 'rack/test'
+      extend Rack::Test::Methods
 
-      app_file "db/migrate/1_create_sessions.rb", <<-RUBY
-        class CreateSessions < ActiveRecord::Migration
-        end
-      RUBY
-
-      add_to_config "ActiveRecord::Base.timestamped_migrations = false"
-
-      Dir.chdir(app_path) do
-        `rake bukkits:install`
-        assert File.exists?("#{app_path}/db/migrate/2_create_users.rb")
-        assert File.exists?(app_path("public/bukkits/javascripts/foo.js"))
-      end
-    end
-
-    def test_copying_assets
-      @plugin.write "public/javascripts/foo.js", "doSomething()"
-      @plugin.write "public/stylesheets/foo.css", "h1 { font-size: 10000px }"
-      @plugin.write "public/images/img.png", ""
-
-      Dir.chdir(app_path) do
-        `rake bukkits:install:assets --trace`
-
-        assert File.exists?(app_path("public/bukkits/javascripts/foo.js"))
-        assert_equal "doSomething()\n", File.read(app_path("public/bukkits/javascripts/foo.js"))
-        assert File.exists?(app_path("public/bukkits/stylesheets/foo.css"))
-        assert_equal "h1 { font-size: 10000px }\n", File.read(app_path("public/bukkits/stylesheets/foo.css"))
-        assert File.exists?(app_path("public/bukkits/images/img.png"))
-      end
+      get "/assets/engine.js"
+      assert_match "alert()", last_response.body
     end
 
     def test_copying_migrations
@@ -80,8 +53,11 @@ module RailtiesTest
 
       add_to_config "ActiveRecord::Base.timestamped_migrations = false"
 
+      boot_rails
+      railties = Rails.application.railties.all.map(&:railtie_name)
+
       Dir.chdir(app_path) do
-        output = `rake bukkits:install:migrations`
+        output = `bundle exec rake bukkits:install:migrations`
 
         assert File.exists?("#{app_path}/db/migrate/2_create_users.rb")
         assert File.exists?("#{app_path}/db/migrate/3_add_last_name_to_users.rb")
@@ -90,18 +66,31 @@ module RailtiesTest
         assert_match /NOTE: Migration 3_create_sessions.rb from bukkits has been skipped/, output
         assert_equal 3, Dir["#{app_path}/db/migrate/*.rb"].length
 
-        output = `rake railties:install:migrations`
+        output = `bundle exec rake railties:install:migrations`.split("\n")
 
         assert File.exists?("#{app_path}/db/migrate/4_create_yaffles.rb")
-        assert_match /NOTE: Migration 3_create_sessions.rb from bukkits has been skipped/, output
-        assert_match /Copied migration 4_create_yaffles.rb from acts_as_yaffle/, output
-        assert_no_match /2_create_users/, output
+        assert_no_match /2_create_users/, output.join("\n")
+
+        yaffle_migration_order = output.index(output.detect{|o| /Copied migration 4_create_yaffles.rb from acts_as_yaffle/ =~ o })
+        bukkits_migration_order = output.index(output.detect{|o| /NOTE: Migration 3_create_sessions.rb from bukkits has been skipped/ =~ o })
+        assert_not_nil yaffle_migration_order, "Expected migration to be copied"
+        assert_not_nil bukkits_migration_order, "Expected migration to be skipped"
+        assert_equal (railties.index('acts_as_yaffle') > railties.index('bukkits')) , (yaffle_migration_order > bukkits_migration_order)
 
         migrations_count = Dir["#{app_path}/db/migrate/*.rb"].length
-        output = `rake railties:install:migrations`
+        output = `bundle exec rake railties:install:migrations`
 
         assert_equal migrations_count, Dir["#{app_path}/db/migrate/*.rb"].length
       end
+    end
+
+    def test_no_rake_task_without_migrations
+      boot_rails
+      require 'rake'
+      require 'rdoc/task'
+      require 'rake/testtask'
+      Rails.application.load_tasks
+      assert !Rake::Task.task_defined?('bukkits:install:migrations')
     end
 
     def test_puts_its_lib_directory_on_load_path
@@ -264,7 +253,7 @@ module RailtiesTest
 
       boot_rails
       require 'rake'
-      require 'rake/rdoctask'
+      require 'rdoc/task'
       require 'rake/testtask'
       Rails.application.load_tasks
       Rake::Task[:foo].invoke

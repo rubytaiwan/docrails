@@ -131,6 +131,14 @@ class TestNestedAttributesInGeneral < ActiveRecord::TestCase
     assert_equal 'photography', interest.reload.topic
   end
 
+  def test_destroy_works_independent_of_reject_if
+    Man.accepts_nested_attributes_for :interests, :reject_if => proc {|attributes| true }, :allow_destroy => true
+    man = Man.create(:name => "Jon")
+    interest = man.interests.create(:topic => 'the ladies')
+    man.update_attributes({:interests_attributes => { :_destroy => "1", :id => interest.id } })
+    assert man.reload.interests.empty?
+  end
+
   def test_has_many_association_updating_a_single_record
     Man.accepts_nested_attributes_for(:interests)
     man = Man.create(:name => 'John')
@@ -745,6 +753,11 @@ module NestedAttributesOnACollectionAssociationTests
     # restore :inverse_of
     Man.reflect_on_association(:interests).options[:inverse_of] = :man
     Interest.reflect_on_association(:man).options[:inverse_of] = :interests
+  end
+
+  def test_can_use_symbols_as_object_identifier
+    @pirate.attributes = { :parrots_attributes => { :foo => { :name => 'Lovely Day' }, :bar => { :name => 'Blown Away' } } }
+    assert_nothing_raised(NoMethodError) { @pirate.save! }
   end
 
   private

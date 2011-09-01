@@ -26,7 +26,9 @@ class NamingTest < ActiveModel::TestCase
   end
 
   def test_partial_path
-    assert_equal 'post/track_backs/track_back', @model_name.partial_path
+    assert_deprecated(/#partial_path.*#to_partial_path/) do
+      assert_equal 'post/track_backs/track_back', @model_name.partial_path
+    end
   end
 
   def test_human
@@ -56,7 +58,9 @@ class NamingWithNamespacedModelInIsolatedNamespaceTest < ActiveModel::TestCase
   end
 
   def test_partial_path
-    assert_equal 'blog/posts/post', @model_name.partial_path
+    assert_deprecated(/#partial_path.*#to_partial_path/) do
+      assert_equal 'blog/posts/post', @model_name.partial_path
+    end
   end
 
   def test_human
@@ -98,7 +102,9 @@ class NamingWithNamespacedModelInSharedNamespaceTest < ActiveModel::TestCase
   end
 
   def test_partial_path
-    assert_equal 'blog/posts/post', @model_name.partial_path
+    assert_deprecated(/#partial_path.*#to_partial_path/) do
+      assert_equal 'blog/posts/post', @model_name.partial_path
+    end
   end
 
   def test_human
@@ -111,6 +117,46 @@ class NamingWithNamespacedModelInSharedNamespaceTest < ActiveModel::TestCase
 
   def test_param_key
     assert_equal 'blog_post', @model_name.param_key
+  end
+end
+
+class NamingWithSuppliedModelNameTest < ActiveModel::TestCase
+  def setup
+    @model_name = ActiveModel::Name.new(Blog::Post, nil, 'Article')
+  end
+
+  def test_singular
+    assert_equal 'article', @model_name.singular
+  end
+
+  def test_plural
+    assert_equal 'articles', @model_name.plural
+  end
+
+  def test_element
+    assert_equal 'article', @model_name.element
+  end
+
+  def test_collection
+    assert_equal 'articles', @model_name.collection
+  end
+
+  def test_partial_path
+    assert_deprecated(/#partial_path.*#to_partial_path/) do
+      assert_equal 'articles/article', @model_name.partial_path
+    end
+  end
+
+  def test_human
+    'Article'
+  end
+
+  def test_route_key
+    assert_equal 'articles', @model_name.route_key
+  end
+
+  def test_param_key
+    assert_equal 'article', @model_name.param_key
   end
 end
 
@@ -171,4 +217,3 @@ class NamingHelpersTest < Test::Unit::TestCase
       ActiveModel::Naming.send(method, *args)
     end
 end
-

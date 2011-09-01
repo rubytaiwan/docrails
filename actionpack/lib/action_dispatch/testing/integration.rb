@@ -1,6 +1,7 @@
 require 'stringio'
 require 'uri'
 require 'active_support/core_ext/kernel/singleton_class'
+require 'active_support/core_ext/object/inclusion'
 require 'active_support/core_ext/object/try'
 require 'rack/test'
 require 'test/unit/assertions'
@@ -61,7 +62,7 @@ module ActionDispatch
       #
       # The request_method is +:get+, +:post+, +:put+, +:delete+ or +:head+; the
       # parameters are +nil+, a hash, or a url-encoded or multipart string;
-      # the headers are a hash.  Keys are automatically upcased and prefixed
+      # the headers are a hash. Keys are automatically upcased and prefixed
       # with 'HTTP_' if not already.
       def xml_http_request(request_method, path, parameters = nil, headers = nil)
         headers ||= {}
@@ -206,9 +207,6 @@ module ActionDispatch
                            "*/*;q=0.5"
 
         unless defined? @named_routes_configured
-          # install the named routes in this session instance.
-          klass = singleton_class
-
           # the helpers are made protected by default--we make them public for
           # easier access during testing and troubleshooting.
           @named_routes_configured = true
@@ -243,7 +241,8 @@ module ActionDispatch
         end
 
         # Performs the actual request.
-        def process(method, path, parameters = nil, rack_environment = nil)
+        def process(method, path, parameters = nil, env = nil)
+          env ||= {}
           if path =~ %r{://}
             location = URI.parse(path)
             https! URI::HTTPS === location if location.scheme
@@ -259,7 +258,7 @@ module ActionDispatch
 
           hostname, port = host.split(':')
 
-          env = {
+          default_env = {
             :method => method,
             :params => parameters,
 
@@ -277,9 +276,7 @@ module ActionDispatch
 
           session = Rack::Test::Session.new(_mock_session)
 
-          (rack_environment || {}).each do |key, value|
-            env[key] = value
-          end
+          env.reverse_merge!(default_env)
 
           # NOTE: rack-test v0.5 doesn't build a default uri correctly
           # Make sure requested path is always a full uri
@@ -321,7 +318,7 @@ module ActionDispatch
         define_method(method) do |*args|
           reset! unless integration_session
           # reset the html_document variable, but only for new get/post calls
-          @html_document = nil unless %w(cookies assigns).include?(method)
+          @html_document = nil unless method.in?(["cookies", "assigns"])
           integration_session.__send__(method, *args).tap do
             copy_session_variables!
           end

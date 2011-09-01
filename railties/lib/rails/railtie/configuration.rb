@@ -26,11 +26,6 @@ module Rails
         @@app_generators
       end
 
-      def generators(&block) #:nodoc
-        ActiveSupport::Deprecation.warn "config.generators in Rails::Railtie is deprecated. Please use config.app_generators instead."
-        app_generators(&block)
-      end
-
       # First configurable block to run. Called before any initializers are run.
       def before_configuration(&block)
         ActiveSupport.on_load(:before_configuration, :yield => true, &block)
@@ -65,13 +60,6 @@ module Rails
 
       def respond_to?(name)
         super || @@options.key?(name.to_sym)
-      end
-
-      # static_asset_paths is a Hash containing asset_paths
-      # with associated public folders, like:
-      # { "/" => "/app/public", "/my_engine" => "app/engines/my_engine/public" }
-      def static_asset_paths
-        @@static_asset_paths ||= ActiveSupport::OrderedHash.new
       end
 
     private

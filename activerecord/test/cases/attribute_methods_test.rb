@@ -1,4 +1,5 @@
 require "cases/helper"
+require 'active_support/core_ext/object/inclusion'
 require 'models/minimalistic'
 require 'models/developer'
 require 'models/auto_id'
@@ -9,6 +10,7 @@ require 'models/company'
 require 'models/category'
 require 'models/reply'
 require 'models/contact'
+require 'models/keyboard'
 
 class AttributeMethodsTest < ActiveRecord::TestCase
   fixtures :topics, :developers, :companies, :computers
@@ -76,6 +78,7 @@ class AttributeMethodsTest < ActiveRecord::TestCase
   def test_respond_to?
     topic = Topic.find(1)
     assert_respond_to topic, "title"
+    assert_respond_to topic, "_title"
     assert_respond_to topic, "title?"
     assert_respond_to topic, "title="
     assert_respond_to topic, :title
@@ -87,6 +90,16 @@ class AttributeMethodsTest < ActiveRecord::TestCase
     assert !topic.respond_to?(:nothingness)
   end
 
+  def test_respond_to_with_custom_primary_key
+    keyboard = Keyboard.create
+    assert_not_nil keyboard.key_number
+    assert_equal keyboard.key_number, keyboard.id
+    assert keyboard.respond_to?('key_number')
+    assert keyboard.respond_to?('_key_number')
+    assert keyboard.respond_to?('id')
+    assert keyboard.respond_to?('_id')
+  end
+
   # Syck calls respond_to? before actually calling initialize
   def test_respond_to_with_allocated_object
     topic = Topic.allocate
@@ -94,6 +107,15 @@ class AttributeMethodsTest < ActiveRecord::TestCase
     assert !topic.respond_to?(:nothingness)
     assert_respond_to topic, "title"
     assert_respond_to topic, :title
+  end
+
+  # IRB inspects the return value of "MyModel.allocate"
+  # by inspecting it.
+  def test_allocated_object_can_be_inspected
+    topic = Topic.allocate
+    topic.instance_eval { @attributes = nil }
+    assert_nothing_raised { topic.inspect }
+    assert topic.inspect, "#<Topic not initialized>"
   end
 
   def test_array_content
@@ -113,7 +135,12 @@ class AttributeMethodsTest < ActiveRecord::TestCase
   if current_adapter?(:MysqlAdapter)
     def test_read_attributes_before_type_cast_on_boolean
       bool = Boolean.create({ "value" => false })
-      assert_equal 0, bool.reload.attributes_before_type_cast["value"]
+      if RUBY_PLATFORM =~ /java/
+        # JRuby will return the value before typecast as string
+        assert_equal "0", bool.reload.attributes_before_type_cast["value"]
+      else
+        assert_equal 0, bool.reload.attributes_before_type_cast["value"]
+      end
     end
   end
 
@@ -638,7 +665,7 @@ class AttributeMethodsTest < ActiveRecord::TestCase
   end
 
   def time_related_columns_on_topic
-    Topic.columns.select { |c| [:time, :date, :datetime, :timestamp].include?(c.type) }
+    Topic.columns.select { |c| c.type.in?([:time, :date, :datetime, :timestamp]) }
   end
 
   def serialized_columns_on_topic

@@ -14,6 +14,14 @@ module Fun
   end
 end
 
+module Quiz
+  class QuestionsController < ActionController::Base
+    def new
+      render :partial => Quiz::Question.new("Namespaced Partial")
+    end
+  end
+end
+
 class TestController < ActionController::Base
   protect_from_forgery
 
@@ -397,6 +405,14 @@ class TestController < ActionController::Base
     render :template => "test/hello_world"
   end
 
+  def render_with_explicit_unescaped_template
+    render :template => "test/h*llo_world"
+  end
+
+  def render_with_explicit_escaped_template
+    render :template => "test/hello_w*rld"
+  end
+
   def render_with_explicit_string_template
     render "test/hello_world"
   end
@@ -515,15 +531,6 @@ class TestController < ActionController::Base
 
   def partial
     render :partial => 'partial'
-  end
-
-  def render_alternate_default
-    # For this test, the method "default_render" is overridden:
-    @alternate_default_render = lambda do
-      render :update do |page|
-        page.replace :foo, :partial => 'partial'
-      end
-    end
   end
 
   def render_to_string_with_partial
@@ -1032,11 +1039,6 @@ class RenderTest < ActionController::TestCase
     assert_equal " ", @response.body
   end
 
-  def test_render_to_string_not_deprecated
-    assert_not_deprecated { get :hello_in_a_string }
-    assert_equal "How's there? goodbyeHello: davidHello: marygoodbye\n", @response.body
-  end
-
   def test_render_to_string_doesnt_break_assigns
     get :render_to_string_with_assigns
     assert_equal "i'm before the render", assigns(:before)
@@ -1061,6 +1063,12 @@ class RenderTest < ActionController::TestCase
   def test_render_with_explicit_template
     get :render_with_explicit_template
     assert_response :success
+  end
+
+  def test_render_with_explicit_unescaped_template
+    assert_raise(ActionView::MissingTemplate) { get :render_with_explicit_unescaped_template }
+    get :render_with_explicit_escaped_template
+    assert_equal "Hello w*rld!", @response.body
   end
 
   def test_render_with_explicit_string_template
@@ -1115,7 +1123,7 @@ class RenderTest < ActionController::TestCase
   end
 
   def test_yield_content_for
-    assert_not_deprecated { get :yield_content_for }
+    get :yield_content_for
     assert_equal "<title>Putting stuff in the title!</title>\nGreat stuff!\n", @response.body
   end
 
@@ -1263,6 +1271,12 @@ class RenderTest < ActionController::TestCase
     get :nested_partial_with_form_builder
     assert_match(/<label/, @response.body)
     assert_template('fun/games/_form')
+  end
+
+  def test_namespaced_object_partial
+    @controller = Quiz::QuestionsController.new
+    get :new
+    assert_equal "Namespaced Partial", @response.body
   end
 
   def test_partial_collection

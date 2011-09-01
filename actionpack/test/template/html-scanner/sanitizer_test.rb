@@ -5,6 +5,13 @@ class SanitizerTest < ActionController::TestCase
     @sanitizer = nil # used by assert_sanitizer
   end
 
+  def test_strip_tags_with_quote
+    sanitizer = HTML::FullSanitizer.new
+    string    = '<" <img src="trollface.gif" onload="alert(1)"> hi'
+
+    assert_equal ' hi', sanitizer.sanitize(string)
+  end
+
   def test_strip_tags
     sanitizer = HTML::FullSanitizer.new
     assert_equal("<<<bad html", sanitizer.sanitize("<<<bad html"))
@@ -20,6 +27,7 @@ class SanitizerTest < ActionController::TestCase
     assert_equal "This has a  here.", sanitizer.sanitize("This has a <![CDATA[<section>]]> here.")
     assert_equal "This has an unclosed ", sanitizer.sanitize("This has an unclosed <![CDATA[<section>]] here...")
     [nil, '', '   '].each { |blank| assert_equal blank, sanitizer.sanitize(blank) }
+    assert_nothing_raised { sanitizer.sanitize("This is a frozen string with no tags".freeze) }
   end
 
   def test_strip_links

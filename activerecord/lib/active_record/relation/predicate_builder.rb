@@ -19,13 +19,24 @@ module ActiveRecord
 
           case value
           when ActiveRecord::Relation
-            value.select_values = [value.klass.arel_table['id']] if value.select_values.empty?
+            value = value.select(value.klass.arel_table[value.klass.primary_key]) if value.select_values.empty?
             attribute.in(value.arel.ast)
           when Array, ActiveRecord::Associations::CollectionProxy
             values = value.to_a.map { |x|
               x.is_a?(ActiveRecord::Base) ? x.id : x
             }
-            attribute.in(values)
+
+            if values.include?(nil)
+              values = values.compact
+              if values.empty?
+                attribute.eq nil
+              else
+                attribute.in(values.compact).or attribute.eq(nil)
+              end
+            else
+              attribute.in(values)
+            end
+
           when Range, Arel::Relation
             attribute.in(value)
           when ActiveRecord::Base

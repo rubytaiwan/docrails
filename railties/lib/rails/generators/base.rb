@@ -8,6 +8,7 @@ rescue LoadError
 end
 
 require 'rails/generators/actions'
+require 'active_support/core_ext/object/inclusion'
 
 module Rails
   module Generators
@@ -116,8 +117,8 @@ module Rails
       #
       # ==== Switches
       #
-      # All hooks come with switches for user interface. If the user don't want
-      # to use any test framework, he can do:
+      # All hooks come with switches for user interface. If you do not want
+      # to use any test framework, you can do:
       #
       #   rails generate controller Account --skip-test-framework
       #
@@ -164,7 +165,7 @@ module Rails
         names.each do |name|
           defaults = if options[:type] == :boolean
             { }
-          elsif [true, false].include?(default_value_for_option(name, options))
+          elsif default_value_for_option(name, options).in?([true, false])
             { :banner => "" }
           else
             { :desc => "#{name.to_s.humanize} to be invoked", :banner => "NAME" }
@@ -258,9 +259,9 @@ module Rails
             extra << false unless Object.method(:const_defined?).arity == 1
 
             # Extract the last Module in the nesting
-            last = nesting.inject(Object) do |last, nest|
-              break unless last.const_defined?(nest, *extra)
-              last.const_get(nest)
+            last = nesting.inject(Object) do |last_module, nest|
+              break unless last_module.const_defined?(nest, *extra)
+              last_module.const_get(nest)
             end
 
             if last && last.const_defined?(last_name.camelize, *extra)

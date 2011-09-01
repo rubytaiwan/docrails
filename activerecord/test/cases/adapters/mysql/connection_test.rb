@@ -13,6 +13,16 @@ class MysqlConnectionTest < ActiveRecord::TestCase
     end
   end
 
+  def test_connect_with_url
+    run_without_connection do |orig|
+      ar_config = ARTest.connection_config['arunit']
+      url = "mysql://#{ar_config["username"]}@localhost/#{ar_config["database"]}"
+      klass = Class.new(ActiveRecord::Base)
+      klass.establish_connection(url)
+      assert_equal ar_config['database'], klass.connection.current_database
+    end
+  end
+
   def test_mysql_reconnect_attribute_after_connection_with_reconnect_false
     run_without_connection do |orig_connection|
       ActiveRecord::Base.establish_connection(orig_connection.merge({:reconnect => false}))
@@ -44,7 +54,7 @@ class MysqlConnectionTest < ActiveRecord::TestCase
   end
 
   def test_bind_value_substitute
-    bind_param = @connection.substitute_for('foo', [])
+    bind_param = @connection.substitute_at('foo', 0)
     assert_equal Arel.sql('?'), bind_param
   end
 

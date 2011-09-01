@@ -17,11 +17,11 @@ endprologue.
 
 h3. Anatomy of a Migration
 
-Before I dive into the details of a migration, here are a few examples of the sorts of things you can do:
+Before we dive into the details of a migration, here are a few examples of the sorts of things you can do:
 
 <ruby>
 class CreateProducts < ActiveRecord::Migration
-  def self.up
+  def up
     create_table :products do |t|
       t.string :name
       t.text :description
@@ -30,7 +30,7 @@ class CreateProducts < ActiveRecord::Migration
     end
   end
 
-  def self.down
+  def down
     drop_table :products
   end
 end
@@ -42,27 +42,42 @@ Migrations are not limited to changing the schema. You can also use them to fix 
 
 <ruby>
 class AddReceiveNewsletterToUsers < ActiveRecord::Migration
-  def self.up
+  def up
     change_table :users do |t|
       t.boolean :receive_newsletter, :default => false
     end
     User.update_all ["receive_newsletter = ?", true]
   end
 
-  def self.down
+  def down
     remove_column :users, :receive_newsletter
   end
 end
 </ruby>
 
+NOTE: Some "caveats":#using-models-in-your-migrations apply to using models in your migrations.
+
 This migration adds a +receive_newsletter+ column to the +users+ table. We want it to default to +false+ for new users, but existing users are considered
 to have already opted in, so we use the User model to set the flag to +true+ for existing users.
 
-NOTE: Some "caveats":#using-models-in-your-migrations apply to using models in your migrations.
+Rails 3.1 makes migrations smarter by providing a new <tt>change</tt> method. This method is preferred for writing constructive migrations (adding columns or tables). The migration knows how to migrate your database and reverse it when the migration is rolled back without the need to write a separate +down+ method.
+
+<ruby>
+class CreateProducts < ActiveRecord::Migration
+  def change
+    create_table :products do |t|
+      t.string :name
+      t.text :description
+
+      t.timestamps
+    end
+  end
+end
+</ruby>
 
 h4. Migrations are Classes
 
-A migration is a subclass of <tt>ActiveRecord::Migration</tt> that implements two class methods: +up+ (perform the required transformations) and +down+ (revert them).
+A migration is a subclass of <tt>ActiveRecord::Migration</tt> that implements two methods: +up+ (perform the required transformations) and +down+ (revert them).
 
 Active Record provides methods that perform common data definition tasks in a database independent way (you'll read about them in detail later):
 
@@ -100,7 +115,34 @@ h4. Changing Migrations
 
 Occasionally you will make a mistake when writing a migration. If you have already run the migration then you cannot just edit the migration and run the migration again: Rails thinks it has already run the migration and so will do nothing when you run +rake db:migrate+. You must rollback the migration (for example with +rake db:rollback+), edit your migration and then run +rake db:migrate+ to run the corrected version.
 
-In general editing existing migrations is not a good idea: you will be creating extra work for yourself and your co-workers and cause major headaches if the existing version of the migration has already been run on production machines. Instead you should write a new migration that performs the changes you require. Editing a freshly generated migration that has not yet been committed to source control (or more generally which has not been propagated beyond your development machine) is relatively harmless. Just use some common sense.
+In general editing existing migrations is not a good idea: you will be creating extra work for yourself and your co-workers and cause major headaches if the existing version of the migration has already been run on production machines. Instead you should write a new migration that performs the changes you require. Editing a freshly generated migration that has not yet been committed to source control (or more generally which has not been propagated beyond your development machine) is relatively harmless.
+
+h4. Supported Types
+
+Active Record supports the following types:
+
+* +:primary_key+
+* +:string+
+* +:text+
+* +:integer+
+* +:float+
+* +:decimal+
+* +:datetime+
+* +:timestamp+
+* +:time+
+* +:date+
+* +:binary+
+* +:boolean+
+
+These will be mapped onto an appropriate underlying database type, for example with MySQL +:string+ is mapped to +VARCHAR(255)+. You can create columns of types not supported by Active Record when using the non-sexy syntax, for example
+
+<ruby>
+create_table :products do |t|
+  t.column :name, 'polygon', :null => false
+end
+</ruby>
+
+This may however hinder portability to other databases.
 
 h3. Creating a Migration
 
@@ -116,17 +158,13 @@ will create a migration that looks like this
 
 <ruby>
 class CreateProducts < ActiveRecord::Migration
-  def self.up
+  def change
     create_table :products do |t|
       t.string :name
       t.text :description
 
       t.timestamps
     end
-  end
-
-  def self.down
-    drop_table :products
   end
 end
 </ruby>
@@ -146,10 +184,7 @@ This will create an empty but appropriately named migration:
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
-  def self.up
-  end
-
-  def self.down
+  def change
   end
 end
 </ruby>
@@ -164,12 +199,8 @@ will generate
 
 <ruby>
 class AddPartNumberToProducts < ActiveRecord::Migration
-  def self.up
+  def change
     add_column :products, :part_number, :string
-  end
-
-  def self.down
-    remove_column :products, :part_number
   end
 end
 </ruby>
@@ -184,11 +215,11 @@ generates
 
 <ruby>
 class RemovePartNumberFromProducts < ActiveRecord::Migration
-  def self.up
+  def up
     remove_column :products, :part_number
   end
 
-  def self.down
+  def down
     add_column :products, :part_number, :string
   end
 end
@@ -204,19 +235,16 @@ generates
 
 <ruby>
 class AddDetailsToProducts < ActiveRecord::Migration
-  def self.up
+  def change
     add_column :products, :part_number, :string
     add_column :products, :price, :decimal
-  end
-
-  def self.down
-    remove_column :products, :price
-    remove_column :products, :part_number
   end
 end
 </ruby>
 
 As always, what has been generated for you is just a starting point. You can add or remove from it as you see fit.
+
+NOTE: The generated migration file for destructive migrations will still be old-style using the +up+ and +down+ methods. This is because Rails doesn't know the original data types defined when you made the original changes.
 
 h3. Writing a Migration
 
@@ -260,18 +288,6 @@ end
 
 will append +ENGINE=BLACKHOLE+ to the SQL statement used to create the table (when using MySQL the default is +ENGINE=InnoDB+).
 
-The types supported by Active Record are +:primary_key+, +:string+, +:text+, +:integer+, +:float+, +:decimal+, +:datetime+, +:timestamp+, +:time+, +:date+, +:binary+, +:boolean+.
-
-These will be mapped onto an appropriate underlying database type, for example with MySQL +:string+ is mapped to +VARCHAR(255)+. You can create columns of types not supported by Active Record when using the non-sexy syntax, for example
-
-<ruby>
-create_table :products do |t|
-  t.column :name, 'polygon', :null => false
-end
-</ruby>
-
-This may however hinder portability to other databases.
-
 h4. Changing Tables
 
 A close cousin of +create_table+ is +change_table+, used for changing existing tables. It is used in a similar fashion to +create_table+ but the object yielded to the block knows more tricks. For example
@@ -284,7 +300,8 @@ change_table :products do |t|
   t.rename :upccode, :upc_code
 end
 </ruby>
-removes the +description+ and +name+ columns, creates a +part_number+ column and adds an index on it. Finally it renames the +upccode+ column.   This is the same as doing
+
+removes the +description+ and +name+ columns, creates a +part_number+ column and adds an index on it. Finally it renames the +upccode+ column. This is the same as doing
 
 <ruby>
 remove_column :products, :description
@@ -335,7 +352,22 @@ NOTE: The +references+ helper does not actually create foreign key constraints f
 
 If the helpers provided by Active Record aren't enough you can use the +execute+ function to execute arbitrary SQL.
 
-For more details and examples of individual methods check the API documentation, in particular the documentation for "<tt>ActiveRecord::ConnectionAdapters::SchemaStatements</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html (which provides the methods available in the +up+ and +down+ methods),  "<tt>ActiveRecord::ConnectionAdapters::TableDefinition</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html (which provides the methods available on the object yielded by +create_table+) and "<tt>ActiveRecord::ConnectionAdapters::Table</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html (which provides the methods available on the object yielded by +change_table+).
+For more details and examples of individual methods check the API documentation, in particular the documentation for "<tt>ActiveRecord::ConnectionAdapters::SchemaStatements</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/SchemaStatements.html (which provides the methods available in the +up+ and +down+ methods), "<tt>ActiveRecord::ConnectionAdapters::TableDefinition</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/TableDefinition.html (which provides the methods available on the object yielded by +create_table+) and "<tt>ActiveRecord::ConnectionAdapters::Table</tt>":http://api.rubyonrails.org/classes/ActiveRecord/ConnectionAdapters/Table.html (which provides the methods available on the object yielded by +change_table+).
+
+h4. Writing Your +change+ Method
+
+The +change+ method removes the need to write both +up+ and +down+ methods in those cases that Rails know how to revert the changes automatically. Currently, the +change+ method supports only these migration definitions:
+
+* +add_column+
+* +add_index+
+* +add_timestamps+
+* +create_table+
+* +remove_timestamps+
+* +rename_column+
+* +rename_index+
+* +rename_table+
+
+If you're going to use other methods, you'll have to write the +up+ and +down+ methods normally.
 
 h4. Writing Your +down+ Method
 
@@ -344,7 +376,7 @@ The +down+ method of your migration should revert the transformations done by th
 <ruby>
 class ExampleMigration < ActiveRecord::Migration
 
-  def self.up
+  def up
     create_table :products do |t|
       t.references :category
     end
@@ -361,7 +393,7 @@ class ExampleMigration < ActiveRecord::Migration
     rename_column :users, :email, :email_address
   end
 
-  def self.down
+  def down
     rename_column :users, :email_address, :email
     remove_column :users, :home_page_url
     execute "ALTER TABLE products DROP FOREIGN KEY fk_products_categories"
@@ -369,9 +401,8 @@ class ExampleMigration < ActiveRecord::Migration
   end
 end
 </ruby>
-Sometimes your migration will do something which is just plain irreversible, for example it might destroy some data. In cases like those when you can't reverse the migration you can raise +IrreversibleMigration+ from your +down+ method. If someone tries to revert your migration an error message will be
-displayed saying that it can't be done.
 
+Sometimes your migration will do something which is just plain irreversible, for example it might destroy some data. In cases like those when you can't reverse the migration you can raise +ActiveRecord::IrreversibleMigration+ from your +down+ method. If someone tries to revert your migration an error message will be displayed saying that it can't be done.
 
 h3. Running Migrations
 
@@ -441,15 +472,15 @@ By default migrations tell you exactly what they're doing and how long it took. 
 
 Several methods are provided that allow you to control all this:
 
-* +suppress_messages+ suppresses any output generated by its block
-* +say+ outputs text (the second argument controls whether it is indented or not)
+* +suppress_messages+ takes a block as an argument and suppresses any output generated by the block.
+* +say+ takes a message argument and outputs it as is. A second boolean argument can be passed to specify whether to indent or not.
 * +say_with_time+ outputs text along with how long it took to run its block. If the block returns an integer it assumes it is the number of rows affected.
 
 For example, this migration
 
 <ruby>
 class CreateProducts < ActiveRecord::Migration
-  def self.up
+  def change
     suppress_messages do
       create_table :products do |t|
         t.string :name
@@ -464,10 +495,6 @@ class CreateProducts < ActiveRecord::Migration
       sleep 10
       250
     end
-  end
-
-  def self.down
-    drop_table :products
   end
 end
 </ruby>
@@ -484,49 +511,108 @@ generates the following output
 20080906170109 CreateProducts: migrated (10.0097s)
 </shell>
 
-If you just want Active Record to shut up then running +rake db:migrate VERBOSE=false+ will suppress any output.
+If you just want Active Record to shut up then running +rake db:migrate VERBOSE=false+ will suppress all output.
 
 h3. Using Models in Your Migrations
 
-When creating or updating data in a migration it is often tempting to use one of your models. After all they exist to provide easy access to the underlying data. This can be done but some caution should be observed.
+When creating or updating data in a migration it is often tempting to use one of your models. After all they exist to provide easy access to the underlying data. This can be done, but some caution should be observed.
 
-Consider for example a migration that uses the +Product+ model to update a row in the corresponding table. Alice later updates the +Product+ model, adding a new column and a validation on it. Bob comes back from holiday, updates the source and runs outstanding migrations with +rake db:migrate+, including the one that used the +Product+ model. When the migration runs the source is up to date and so the +Product+ model has the validation added by Alice. The database however is still old and so does not have that column and an error ensues because that validation is on a column that does not yet exist.
+For example, problems occur when the model uses database columns which are (1) not currently in the database and (2) will be created by this or a subsequent migration.
 
-Frequently I just want to update rows in the database without writing out the SQL by hand: I'm not using anything specific to the model. One pattern for this is to define a copy of the model inside the migration itself, for example:
+Consider this example, where Alice and Bob are working on the same code base which contains a +Product+ model:
+
+Bob goes on vacation.
+
+Alice creates a migration for the +products+ table which adds a new column and initializes it.
+She also adds a validation to the Product model for the new column.
 
 <ruby>
-class AddPartNumberToProducts < ActiveRecord::Migration
-  class Product < ActiveRecord::Base
-  end
+# db/migrate/20100513121110_add_flag_to_product.rb
 
-  def self.up
-    ...
-  end
-
-  def self.down
-    ...
+class AddFlagToProduct < ActiveRecord::Migration
+  def change
+    add_column :products, :flag, :int
+    Product.all.each { |f| f.update_attributes!(:flag => 'false') }
   end
 end
 </ruby>
-The migration has its own minimal copy of the +Product+ model and no longer cares about the +Product+ model defined in the application.
-
-h4. Dealing with Changing Models
-
-For performance reasons information about the columns a model has is cached. For example if you add a column to a table and then try and use the corresponding model to insert a new row it may try to use the old column information. You can force Active Record to re-read the column information with the +reset_column_information+ method, for example
 
 <ruby>
-class AddPartNumberToProducts < ActiveRecord::Migration
+# app/model/product.rb
+
+class Product < ActiveRecord::Base
+  validates :flag, :presence => true
+end
+</ruby>
+
+Alice adds a second migration which adds and initializes another column to the +products+ table and also adds a validation to the Product model for the new column.
+
+<ruby>
+# db/migrate/20100515121110_add_fuzz_to_product.rb
+
+class AddFuzzToProduct < ActiveRecord::Migration
+  def change
+    add_column :products, :fuzz, :string
+    Product.all.each { |f| f.update_attributes! :fuzz => 'fuzzy' }
+  end
+end
+</ruby>
+
+<ruby>
+# app/model/product.rb
+
+class Product < ActiveRecord::Base
+  validates :flag, :fuzz, :presence => true
+end
+</ruby>
+
+Both migrations work for Alice.
+
+Bob comes back from vacation and:
+
+# updates the source - which contains both migrations and the latests version of the Product model.
+# runs outstanding migrations with +rake db:migrate+, which includes the one that updates the +Product+ model.
+
+The migration crashes because when the model attempts to save, it tries to validate the second added column, which is not in the database when the _first_ migration runs.
+
+<plain>
+rake aborted!
+An error has occurred, this and all later migrations canceled:
+
+undefined method `fuzz' for #<Product:0x000001049b14a0>
+</plain>
+
+A fix for this is to create a local model within the migration. This keeps rails from running the validations, so that the migrations run to completion.
+
+When using a faux model, it's a good idea to call +Product.reset_column_information+ to refresh the ActiveRecord cache for the Product model prior to updating data in the database.
+
+If Alice had done this instead, there would have been no problem:
+
+<ruby>
+# db/migrate/20100513121110_add_flag_to_product.rb
+
+class AddFlagToProduct < ActiveRecord::Migration
   class Product < ActiveRecord::Base
   end
 
-  def self.up
-    add_column :product, :part_number, :string
+  def change
+    add_column :products, :flag, :int
     Product.reset_column_information
-    ...
+    Product.all.each { |f| f.update_attributes!(:flag => false) }
   end
+end
+</ruby>
 
-  def self.down
-    ...
+<ruby>
+# db/migrate/20100515121110_add_fuzz_to_product.rb
+
+class AddFuzzToProduct < ActiveRecord::Migration
+  class Product < ActiveRecord::Base
+  end
+  def change
+    add_column :products, :fuzz, :string
+    Product.reset_column_information
+    Product.all.each { |f| f.update_attributes! :fuzz => 'fuzzy' }
   end
 end
 </ruby>
@@ -590,5 +676,6 @@ Although Active Record does not provide any tools for working directly with such
 
 h3. Changelog
 
+* April 26, 2011: change generated +up+ and +down+ methods to +change+ method, and describe detail about +change+ method by "Prem Sichanugrist":http://sikachu.com
 * July 15, 2010: minor typos corrected by "Jaime Iniesta":http://jaimeiniesta.com
 * September 14, 2008: initial version by "Frederick Cheung":credits.html#fcheung

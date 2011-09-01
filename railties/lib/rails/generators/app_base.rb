@@ -1,5 +1,6 @@
 require 'digest/md5'
-require 'active_support/secure_random'
+require 'securerandom'
+require 'active_support/core_ext/string/strip'
 require 'rails/version' unless defined?(Rails::VERSION)
 require 'rbconfig'
 require 'open-uri'
@@ -9,7 +10,8 @@ module Rails
   module Generators
     class AppBase < Base
       DATABASES = %w( mysql oracle postgresql sqlite3 frontbase ibm_db )
-      JAVASCRIPTS = %w( prototype jquery )
+      JDBC_DATABASES = %w( jdbcmysql jdbcsqlite3 jdbcpostgresql jdbc )
+      DATABASES.concat(JDBC_DATABASES)
 
       attr_accessor :rails_template
       add_shebang_option!
@@ -26,20 +28,26 @@ module Rails
         class_option :skip_gemfile,       :type => :boolean, :default => false,
                                           :desc => "Don't create a Gemfile"
 
+        class_option :skip_bundle,        :type => :boolean, :default => false,
+                                          :desc => "Don't run bundle install"
+
         class_option :skip_git,           :type => :boolean, :aliases => "-G", :default => false,
                                           :desc => "Skip Git ignores and keeps"
 
         class_option :skip_active_record, :type => :boolean, :aliases => "-O", :default => false,
                                           :desc => "Skip Active Record files"
 
+        class_option :skip_sprockets,     :type => :boolean, :aliases => "-S", :default => false,
+                                          :desc => "Skip Sprockets files"
+
         class_option :database,           :type => :string, :aliases => "-d", :default => "sqlite3",
                                           :desc => "Preconfigure for selected database (options: #{DATABASES.join('/')})"
 
-        class_option :javascript,         :type => :string, :aliases => "-j", :default => "prototype",
-                                          :desc => "Preconfigure for selected javascript library (options: #{JAVASCRIPTS.join('/')})"
+        class_option :javascript,         :type => :string, :aliases => '-j', :default => 'jquery',
+                                          :desc => 'Preconfigure for selected JavaScript library'
 
         class_option :skip_javascript,    :type => :boolean, :aliases => "-J", :default => false,
-                                          :desc => "Skip javascript files"
+                                          :desc => "Skip JavaScript files"
 
         class_option :dev,                :type => :boolean, :default => false,
                                           :desc => "Setup the #{name} with Gemfile pointing to your Rails checkout"
@@ -52,12 +60,15 @@ module Rails
 
         class_option :help,               :type => :boolean, :aliases => "-h", :group => :rails,
                                           :desc => "Show this help message and quit"
+
+        class_option :old_style_hash,     :type => :boolean, :default => false,
+                                          :desc => "Force using old style hash (:foo => 'bar') on Ruby >= 1.9"
       end
 
       def initialize(*args)
         @original_wd = Dir.pwd
-
         super
+        convert_database_option_for_jruby
       end
 
     protected
@@ -112,59 +123,135 @@ module Rails
       end
 
       def database_gemfile_entry
-        options[:skip_active_record] ? "" : "gem '#{gem_for_database}'"
+        options[:skip_active_record] ? "" : "gem '#{gem_for_database}'\n"
+      end
+
+      def include_all_railties?
+        !options[:skip_active_record] && !options[:skip_test_unit] && !options[:skip_sprockets]
+      end
+
+      def comment_if(value)
+        options[value] ? '# ' : ''
       end
 
       def rails_gemfile_entry
         if options.dev?
-          <<-GEMFILE
-gem 'rails', :path => '#{Rails::Generators::RAILS_DEV_PATH}'
-gem 'arel',  :git => 'git://github.com/rails/arel.git'
-gem "rack", :git => "git://github.com/rack/rack.git"
+          <<-GEMFILE.strip_heredoc
+            gem 'rails',     :path => '#{Rails::Generators::RAILS_DEV_PATH}'
           GEMFILE
         elsif options.edge?
-          <<-GEMFILE
-gem 'rails', :git => 'git://github.com/rails/rails.git'
-gem 'arel',  :git => 'git://github.com/rails/arel.git'
-gem "rack", :git => "git://github.com/rack/rack.git"
+          <<-GEMFILE.strip_heredoc
+            gem 'rails',     :git => 'git://github.com/rails/rails.git'
           GEMFILE
         else
-          <<-GEMFILE
-gem 'rails', '#{Rails::VERSION::STRING}'
+          <<-GEMFILE.strip_heredoc
+            gem 'rails', '#{Rails::VERSION::STRING}'
 
-# Bundle edge Rails instead:
-# gem 'rails', :git => 'git://github.com/rails/rails.git'
-# gem 'arel',  :git => 'git://github.com/rails/arel.git'
-# gem "rack", :git => "git://github.com/rack/rack.git"
+            # Bundle edge Rails instead:
+            # gem 'rails',     :git => 'git://github.com/rails/rails.git'
           GEMFILE
         end
       end
 
       def gem_for_database
-        # %w( mysql oracle postgresql sqlite3 frontbase ibm_db )
+        # %w( mysql oracle postgresql sqlite3 frontbase ibm_db jdbcmysql jdbcsqlite3 jdbcpostgresql )
         case options[:database]
         when "oracle"     then "ruby-oci8"
         when "postgresql" then "pg"
         when "frontbase"  then "ruby-frontbase"
         when "mysql"      then "mysql2"
+        when "jdbcmysql"      then "activerecord-jdbcmysql-adapter"
+        when "jdbcsqlite3"    then "activerecord-jdbcsqlite3-adapter"
+        when "jdbcpostgresql" then "activerecord-jdbcpostgresql-adapter"
+        when "jdbc"           then "activerecord-jdbc-adapter"
         else options[:database]
         end
       end
 
-      def bundle_if_dev_or_edge
-        bundle_command = File.basename(Thor::Util.ruby_command).sub(/ruby/, 'bundle')
-        run "#{bundle_command} install" if dev_or_edge?
+      def convert_database_option_for_jruby
+        if defined?(JRUBY_VERSION)
+          case options[:database]
+          when "oracle"     then options[:database].replace "jdbc"
+          when "postgresql" then options[:database].replace "jdbcpostgresql"
+          when "mysql"      then options[:database].replace "jdbcmysql"
+          when "sqlite3"    then options[:database].replace "jdbcsqlite3"
+          end
+        end
       end
 
-      def dev_or_edge?
-        options.dev? || options.edge?
+      def ruby_debugger_gemfile_entry
+        if RUBY_VERSION < "1.9"
+          "gem 'ruby-debug'"
+        else
+          "gem 'ruby-debug19', :require => 'ruby-debug'"
+        end
+      end
+
+      def turn_gemfile_entry
+        unless RUBY_VERSION < "1.9.2" || options[:skip_test_unit]
+          <<-GEMFILE.strip_heredoc
+            group :test do
+              # Pretty printed test output
+              gem 'turn', :require => false
+            end
+          GEMFILE
+        end
+      end
+
+      def assets_gemfile_entry
+        <<-GEMFILE.strip_heredoc
+          # Gems used only for assets and not required
+          # in production environments by default.
+          group :assets do
+            gem 'sass-rails',   :git => 'git://github.com/rails/sass-rails.git'
+            gem 'coffee-rails', :git => 'git://github.com/rails/coffee-rails.git'
+            gem 'uglifier'
+          end
+        GEMFILE
+      end
+
+      def javascript_gemfile_entry
+        "gem '#{options[:javascript]}-rails'" unless options[:skip_javascript]
+      end
+
+      def bundle_command(command)
+        say_status :run, "bundle #{command}"
+
+        # We are going to shell out rather than invoking Bundler::CLI.new(command)
+        # because `rails new` loads the Thor gem and on the other hand bundler uses
+        # its own vendored Thor, which could be a different version. Running both
+        # things in the same process is a recipe for a night with paracetamol.
+        #
+        # We use backticks and #print here instead of vanilla #system because it
+        # is easier to silence stdout in the existing test suite this way. The
+        # end-user gets the bundler commands called anyway, so no big deal.
+        #
+        # Thanks to James Tucker for the Gem tricks involved in this call.
+        print `"#{Gem.ruby}" -rubygems "#{Gem.bin_path('bundler', 'bundle')}" #{command}`
+      end
+
+      def run_bundle
+        bundle_command('install') unless options[:skip_gemfile] || options[:skip_bundle]
       end
 
       def empty_directory_with_gitkeep(destination, config = {})
         empty_directory(destination, config)
+        git_keep(destination)
+      end
+
+      def git_keep(destination)
         create_file("#{destination}/.gitkeep") unless options[:skip_git]
       end
 
+      # Returns Ruby 1.9 style key-value pair if current code is running on
+      # Ruby 1.9.x. Returns the old-style (with hash rocket) otherwise.
+      def key_value(key, value)
+        if options[:old_style_hash] || RUBY_VERSION < '1.9'
+          ":#{key} => #{value}"
+        else
+          "#{key}: #{value}"
+        end
+      end
     end
   end
 end

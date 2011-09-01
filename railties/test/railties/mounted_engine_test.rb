@@ -15,10 +15,12 @@ module ApplicationTests
 
       app_file 'config/routes.rb', <<-RUBY
         AppTemplate::Application.routes.draw do
+          resources :posts
           match "/engine_route" => "application_generating#engine_route"
           match "/engine_route_in_view" => "application_generating#engine_route_in_view"
           match "/url_for_engine_route" => "application_generating#url_for_engine_route"
           match "/polymorphic_route" => "application_generating#polymorphic_route"
+          match "/application_polymorphic_path" => "application_generating#application_polymorphic_path"
           scope "/:user", :user => "anonymous" do
             mount Blog::Engine => "/blog"
           end
@@ -59,6 +61,7 @@ module ApplicationTests
           resources :posts
           match '/generate_application_route', :to => 'posts#generate_application_route'
           match '/application_route_in_view', :to => 'posts#application_route_in_view'
+          match '/engine_polymorphic_path', :to => 'posts#engine_polymorphic_path'
         end
       RUBY
 
@@ -78,6 +81,10 @@ module ApplicationTests
 
             def application_route_in_view
               render :inline => "<%= main_app.root_path %>"
+            end
+
+            def engine_polymorphic_path
+              render :text => polymorphic_path(Post.new)
             end
           end
         end
@@ -100,10 +107,18 @@ module ApplicationTests
           def polymorphic_route
             render :text => polymorphic_url([blog, Blog::Post.new])
           end
+
+          def application_polymorphic_path
+            render :text => polymorphic_path(Blog::Post.new)
+          end
         end
       RUBY
 
       boot_rails
+    end
+
+    def teardown
+      teardown_app
     end
 
     def app
@@ -116,7 +131,7 @@ module ApplicationTests
     def reset_script_name!
       Rails.application.routes.default_url_options = {}
     end
-    
+
     def script_name(script_name)
       Rails.application.routes.default_url_options = {:script_name => script_name}
     end
@@ -168,7 +183,14 @@ module ApplicationTests
       # test polymorphic routes
       get "/polymorphic_route"
       assert_equal "http://example.org/anonymous/blog/posts/44", last_response.body
+
+      # test that correct path is generated for the same polymorphic_path call in an engine
+      get "/somone/blog/engine_polymorphic_path"
+      assert_equal "/somone/blog/posts/44", last_response.body
+
+      # and in an application
+      get "/application_polymorphic_path"
+      assert_equal "/posts/44", last_response.body
     end
   end
 end
-

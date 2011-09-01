@@ -40,6 +40,10 @@ ActiveRecord::Schema.define do
     t.references :account
   end
 
+  create_table :aircraft, :force => true do |t|
+    t.string :name
+  end
+
   create_table :audit_logs, :force => true do |t|
     t.column :message, :string, :null=>false
     t.column :developer_id, :integer, :null=>false
@@ -67,6 +71,7 @@ ActiveRecord::Schema.define do
   end
 
   create_table :binaries, :force => true do |t|
+    t.string :name
     t.binary :data
   end
 
@@ -88,6 +93,8 @@ ActiveRecord::Schema.define do
   create_table :bulbs, :force => true do |t|
     t.integer :car_id
     t.string  :name
+    t.boolean :frickinawesome
+    t.string :color
   end
 
   create_table "CamelCase", :force => true do |t|
@@ -148,6 +155,7 @@ ActiveRecord::Schema.define do
     end
     t.string  :type
     t.integer :taggings_count, :default => 0
+    t.integer :children_count, :default => 0
   end
 
   create_table :companies, :force => true do |t|
@@ -298,6 +306,8 @@ ActiveRecord::Schema.define do
     t.references :student
   end
 
+  create_table :lint_models, :force => true
+
   create_table :line_items, :force => true do |t|
     t.integer :invoice_id
     t.integer :amount
@@ -437,6 +447,8 @@ ActiveRecord::Schema.define do
     t.references :number1_fan
     t.integer    :lock_version, :null => false, :default => 0
     t.string     :comments
+    t.references :best_friend
+    t.references :best_friend_of
     t.timestamps
   end
 
@@ -538,6 +550,12 @@ ActiveRecord::Schema.define do
     t.integer :club_id
     t.integer :sponsorable_id
     t.string :sponsorable_type
+  end
+
+  create_table :string_key_objects, :id => false, :primary_key => :id, :force => true do |t|
+    t.string     :id
+    t.string     :name
+    t.integer    :lock_version, :null => false, :default => 0
   end
 
   create_table :students, :force => true do |t|
@@ -704,6 +722,8 @@ ActiveRecord::Schema.define do
     end
 
     execute "ALTER TABLE fk_test_has_fk ADD CONSTRAINT fk_name FOREIGN KEY (#{quote_column_name 'fk_id'}) REFERENCES #{quote_table_name 'fk_test_has_pk'} (#{quote_column_name 'id'})"
+
+    execute "ALTER TABLE lessons_students ADD CONSTRAINT student_id_fk FOREIGN KEY (#{quote_column_name 'student_id'}) REFERENCES #{quote_table_name 'students'} (#{quote_column_name 'id'})"
   end
 end
 

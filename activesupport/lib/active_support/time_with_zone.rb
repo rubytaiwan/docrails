@@ -1,5 +1,6 @@
 require "active_support/values/time_zone"
 require 'active_support/core_ext/object/acts_like'
+require 'active_support/core_ext/object/inclusion'
 
 module ActiveSupport
   # A Time-like class that can represent a time in any time zone. Necessary because standard Ruby Time instances are
@@ -108,7 +109,7 @@ module ActiveSupport
 
     def xmlschema(fraction_digits = 0)
       fraction = if fraction_digits > 0
-        ".%i" % time.usec.to_s[0, fraction_digits]
+        (".%06i" % time.usec)[0, fraction_digits + 1]
       end
 
       "#{time.strftime("%Y-%m-%dT%H:%M:%S")}#{fraction}#{formatted_offset(true, 'Z')}"
@@ -309,7 +310,7 @@ module ActiveSupport
     end
 
     def marshal_load(variables)
-      initialize(variables[0].utc, ::Time.__send__(:get_zone, variables[1]), variables[2].utc)
+      initialize(variables[0].utc, ::Time.find_zone(variables[1]), variables[2].utc)
     end
 
     # Ensure proxy class responds to all methods that underlying time instance responds to.
@@ -344,7 +345,7 @@ module ActiveSupport
       end
 
       def duration_of_variable_length?(obj)
-        ActiveSupport::Duration === obj && obj.parts.any? {|p| [:years, :months, :days].include? p[0] }
+        ActiveSupport::Duration === obj && obj.parts.any? {|p| p[0].in?([:years, :months, :days]) }
       end
   end
 end

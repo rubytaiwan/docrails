@@ -50,6 +50,10 @@ class TestTest < ActionController::TestCase
       render :text => request.query_string
     end
 
+    def test_protocol
+      render :text => request.protocol
+    end
+
     def test_html_output
       render :text => <<HTML
 <html>
@@ -493,6 +497,34 @@ XML
     )
   end
 
+  def test_params_passing_with_fixnums
+    get :test_params, :page => {:name => "Page name", :month => 4, :year => 2004, :day => 6}
+    parsed_params = eval(@response.body)
+    assert_equal(
+      {'controller' => 'test_test/test', 'action' => 'test_params',
+       'page' => {'name' => "Page name", 'month' => '4', 'year' => '2004', 'day' => '6'}},
+      parsed_params
+    )
+  end
+
+  def test_params_passing_with_frozen_values
+    assert_nothing_raised do
+      get :test_params, :frozen => 'icy'.freeze, :frozens => ['icy'.freeze].freeze
+    end
+    parsed_params = eval(@response.body)
+    assert_equal(
+      {'controller' => 'test_test/test', 'action' => 'test_params',
+       'frozen' => 'icy', 'frozens' => ['icy']},
+      parsed_params
+    )
+  end
+
+  def test_params_passing_doesnt_modify_in_place
+    page = {:name => "Page name", :month => 4, :year => 2004, :day => 6}
+    get :test_params, :page => page
+    assert_equal 2004, page[:year]
+  end
+
   def test_id_converted_to_string
     get :test_params, :id => 20, :foo => Object.new
     assert_kind_of String, @request.path_parameters['id']
@@ -570,14 +602,27 @@ XML
     assert_nil @request.symbolized_path_parameters[:id]
   end
 
+  def test_request_protocol_is_reset_after_request
+    get :test_protocol
+    assert_equal "http://", @response.body
+
+    @request.env["HTTPS"] = "on"
+    get :test_protocol
+    assert_equal "https://", @response.body
+
+    @request.env.delete("HTTPS")
+    get :test_protocol
+    assert_equal "http://", @response.body
+  end
+
   def test_should_have_knowledge_of_client_side_cookie_state_even_if_they_are_not_set
-    @request.cookies['foo'] = 'bar'
+    cookies['foo'] = 'bar'
     get :no_op
     assert_equal 'bar', cookies['foo']
   end
 
   def test_should_detect_if_cookie_is_deleted
-    @request.cookies['foo'] = 'bar'
+    cookies['foo'] = 'bar'
     get :delete_cookie
     assert_nil cookies['foo']
   end
@@ -590,7 +635,6 @@ XML
           send(method, :test_remote_addr)
           assert false, "expected RuntimeError, got nothing"
         rescue RuntimeError => error
-          assert true
           assert_match(%r{@#{variable} is nil}, error.message)
         rescue => error
           assert false, "expected RuntimeError, got #{error.class}"
@@ -626,6 +670,13 @@ XML
     file.content_type = new_content_type
     assert_equal new_content_type, file.content_type
 
+  end
+
+  def test_fixture_path_is_accessed_from_self_instead_of_active_support_test_case
+    TestTest.stubs(:fixture_path).returns(FILES_DIR)
+
+    uploaded_file = fixture_file_upload('/mona_lisa.jpg', 'image/png')
+    assert_equal File.open("#{FILES_DIR}/mona_lisa.jpg", READ_PLAIN).read, uploaded_file.read
   end
 
   def test_test_uploaded_file_with_binary

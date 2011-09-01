@@ -2,7 +2,7 @@ module ActiveRecord
   # = Active Record Counter Cache
   module CounterCache
     # Resets one or more counter caches to their correct value using an SQL
-    # count query.  This is useful when adding new counter caches, or if the
+    # count query. This is useful when adding new counter caches, or if the
     # counter has been corrupted or modified directly by SQL.
     #
     # ==== Parameters
@@ -33,7 +33,7 @@ module ActiveRecord
         stmt = unscoped.where(arel_table[primary_key].eq(object.id)).arel.compile_update({
           arel_table[counter_name] => object.send(association).count
         })
-        connection.update stmt.to_sql
+        connection.update stmt
       end
       return true
     end

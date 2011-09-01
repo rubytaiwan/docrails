@@ -1,5 +1,4 @@
 require 'abstract_unit'
-require 'active_support/core_ext/kernel/reporting'
 
 class AssertDifferenceTest < ActiveSupport::TestCase
   def setup
@@ -50,7 +49,7 @@ class AssertDifferenceTest < ActiveSupport::TestCase
 
     def test_expression_is_evaluated_in_the_appropriate_scope
       silence_warnings do
-        local_scope = 'foo'
+        local_scope = local_scope = 'foo'
         assert_difference('local_scope; @object.num') { @object.increment }
       end
     end

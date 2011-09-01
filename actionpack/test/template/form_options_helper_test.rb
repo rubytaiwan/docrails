@@ -1,5 +1,6 @@
 require 'abstract_unit'
 require 'tzinfo'
+require 'active_support/core_ext/object/inclusion'
 
 class Map < Hash
   def category
@@ -82,7 +83,7 @@ class FormOptionsHelperTest < ActionView::TestCase
   def test_collection_options_with_proc_for_disabled
     assert_dom_equal(
       "<option value=\"&lt;Abe&gt;\">&lt;Abe&gt; went home</option>\n<option value=\"Babe\" disabled=\"disabled\">Babe went home</option>\n<option value=\"Cabe\" disabled=\"disabled\">Cabe went home</option>",
-      options_from_collection_for_select(dummy_posts, "author_name", "title", :disabled => lambda{|p| %w(Babe Cabe).include? p.author_name })
+      options_from_collection_for_select(dummy_posts, "author_name", "title", :disabled => lambda{|p| p.author_name.in?(["Babe", "Cabe"]) })
     )
   end
 
@@ -377,6 +378,49 @@ class FormOptionsHelperTest < ActionView::TestCase
     )
   end
 
+  def test_select_without_multiple
+    assert_dom_equal(
+      "<select id=\"post_category\" name=\"post[category]\"></select>",
+      select(:post, :category, "", {}, :multiple => false)
+    )
+  end
+
+  def test_select_with_grouped_collection_as_nested_array
+    @post = Post.new
+
+    countries_by_continent = [
+      ["<Africa>", [["<South Africa>", "<sa>"], ["Somalia", "so"]]],
+      ["Europe",   [["Denmark", "dk"], ["Ireland", "ie"]]],
+    ]
+
+    assert_dom_equal(
+      [
+        %Q{<select id="post_origin" name="post[origin]"><optgroup label="&lt;Africa&gt;"><option value="&lt;sa&gt;">&lt;South Africa&gt;</option>},
+        %Q{<option value="so">Somalia</option></optgroup><optgroup label="Europe"><option value="dk">Denmark</option>},
+        %Q{<option value="ie">Ireland</option></optgroup></select>},
+      ].join("\n"),
+      select("post", "origin", countries_by_continent)
+    )
+  end
+
+  def test_select_with_grouped_collection_as_hash
+    @post = Post.new
+
+    countries_by_continent = {
+      "<Africa>" => [["<South Africa>", "<sa>"], ["Somalia", "so"]],
+      "Europe"   => [["Denmark", "dk"], ["Ireland", "ie"]],
+    }
+
+    assert_dom_equal(
+      [
+        %Q{<select id="post_origin" name="post[origin]"><optgroup label="&lt;Africa&gt;"><option value="&lt;sa&gt;">&lt;South Africa&gt;</option>},
+        %Q{<option value="so">Somalia</option></optgroup><optgroup label="Europe"><option value="dk">Denmark</option>},
+        %Q{<option value="ie">Ireland</option></optgroup></select>},
+      ].join("\n"),
+      select("post", "origin", countries_by_continent)
+    )
+  end
+
   def test_select_with_boolean_method
     @post = Post.new
     @post.allow_comments = false
@@ -452,6 +496,22 @@ class FormOptionsHelperTest < ActionView::TestCase
 
     assert_dom_equal(
       "<select id=\"post_category\" name=\"post[category]\"><option value=\"\">The prompt</option>\n#{options}</select>",
+      output_buffer
+    )
+  end
+
+  def test_select_with_multiple_to_add_hidden_input
+    output_buffer =  select(:post, :category, "", {}, :multiple => true)
+    assert_dom_equal(
+      "<input type=\"hidden\" name=\"post[category][]\" value=\"\"/><select multiple=\"multiple\" id=\"post_category\" name=\"post[category][]\"></select>",
+      output_buffer
+    )
+  end
+
+  def test_select_with_multiple_and_disabled_to_add_disabled_hidden_input
+    output_buffer =  select(:post, :category, "", {}, :multiple => true, :disabled => true)
+    assert_dom_equal(
+      "<input disabled=\"disabled\"type=\"hidden\" name=\"post[category][]\" value=\"\"/><select multiple=\"multiple\" disabled=\"disabled\" id=\"post_category\" name=\"post[category][]\"></select>",
       output_buffer
     )
   end
@@ -648,11 +708,11 @@ class FormOptionsHelperTest < ActionView::TestCase
     )
   end
 
-  def test_collection_select_with_multiple_option_appends_array_brackets
+  def test_collection_select_with_multiple_option_appends_array_brackets_and_hidden_input
     @post = Post.new
     @post.author_name = "Babe"
 
-    expected = "<select id=\"post_author_name\" name=\"post[author_name][]\" multiple=\"multiple\"><option value=\"\"></option>\n<option value=\"&lt;Abe&gt;\">&lt;Abe&gt;</option>\n<option value=\"Babe\" selected=\"selected\">Babe</option>\n<option value=\"Cabe\">Cabe</option></select>"
+    expected = "<input type=\"hidden\" name=\"post[author_name][]\" value=\"\"/><select id=\"post_author_name\" name=\"post[author_name][]\" multiple=\"multiple\"><option value=\"\"></option>\n<option value=\"&lt;Abe&gt;\">&lt;Abe&gt;</option>\n<option value=\"Babe\" selected=\"selected\">Babe</option>\n<option value=\"Cabe\">Cabe</option></select>"
 
     # Should suffix default name with [].
     assert_dom_equal expected, collection_select("post", "author_name", dummy_posts, "author_name", "author_name", { :include_blank => true }, :multiple => true)

@@ -6,7 +6,7 @@ end
 require 'yaml'
 
 YAML.add_builtin_type("omap") do |type, val|
-  ActiveSupport::OrderedHash[val.map(&:to_a).map(&:first)]
+  ActiveSupport::OrderedHash[val.map{ |v| v.to_a.first }]
 end
 
 module ActiveSupport
@@ -41,6 +41,10 @@ module ActiveSupport
           end
         end
       end
+    end
+
+    def nested_under_indifferent_access
+      self
     end
 
     # Hash is ordered in Ruby 1.9!
@@ -154,7 +158,11 @@ module ActiveSupport
         self
       end
 
-      alias_method :each_pair, :each
+      def each_pair
+        return to_enum(:each_pair) unless block_given?
+        @keys.each {|key| yield key, self[key]}
+        self
+      end
 
       alias_method :select, :find_all
 

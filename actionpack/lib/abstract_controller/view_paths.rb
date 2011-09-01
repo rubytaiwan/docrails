@@ -1,3 +1,5 @@
+require 'action_view/base'
+
 module AbstractController
   module ViewPaths
     extend ActiveSupport::Concern
@@ -11,11 +13,36 @@ module AbstractController
     delegate :find_template, :template_exists?, :view_paths, :formats, :formats=,
              :locale, :locale=, :to => :lookup_context
 
+    module ClassMethods
+      def parent_prefixes
+        @parent_prefixes ||= begin
+          parent_controller = superclass
+          prefixes = []
+
+          until parent_controller.abstract?
+            prefixes << parent_controller.controller_path
+            parent_controller = parent_controller.superclass
+          end
+
+          prefixes
+        end
+      end
+    end
+
+    # The prefixes used in render "foo" shortcuts.
+    def _prefixes
+      @_prefixes ||= begin
+        parent_prefixes = self.class.parent_prefixes
+        parent_prefixes.dup.unshift(controller_path)
+      end
+    end
+
     # LookupContext is the object responsible to hold all information required to lookup
     # templates, i.e. view paths and details. Check ActionView::LookupContext for more
     # information.
     def lookup_context
-      @lookup_context ||= ActionView::LookupContext.new(self.class._view_paths, details_for_lookup)
+      @_lookup_context ||=
+        ActionView::LookupContext.new(self.class._view_paths, details_for_lookup, _prefixes)
     end
 
     def details_for_lookup
@@ -38,7 +65,7 @@ module AbstractController
       #   the default view path. You may also provide a custom view path
       #   (see ActionView::PathSet for more information)
       def append_view_path(path)
-        self.view_paths = view_paths.dup + Array(path)
+        self._view_paths = view_paths + Array(path)
       end
 
       # Prepend a path to the list of view paths for this controller.
@@ -48,7 +75,7 @@ module AbstractController
       #   the default view path. You may also provide a custom view path
       #   (see ActionView::PathSet for more information)
       def prepend_view_path(path)
-        self.view_paths = Array(path) + view_paths.dup
+        self._view_paths = ActionView::PathSet.new(Array(path) + view_paths)
       end
 
       # A list of all of the default view paths for this controller.
@@ -62,8 +89,7 @@ module AbstractController
       # * <tt>paths</tt> - If a PathSet is provided, use that;
       #   otherwise, process the parameter into a PathSet.
       def view_paths=(paths)
-        self._view_paths = ActionView::Base.process_view_paths(paths)
-        self._view_paths.freeze
+        self._view_paths = ActionView::PathSet.new(Array.wrap(paths))
       end
     end
   end

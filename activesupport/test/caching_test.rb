@@ -188,18 +188,31 @@ module CacheStoreBehavior
     assert_equal nil, @cache.read('foo')
   end
 
+  def test_should_read_and_write_false
+    assert_equal true, @cache.write('foo', false)
+    assert_equal false, @cache.read('foo')
+  end
+
   def test_read_multi
     @cache.write('foo', 'bar')
     @cache.write('fu', 'baz')
     @cache.write('fud', 'biz')
     assert_equal({"foo" => "bar", "fu" => "baz"}, @cache.read_multi('foo', 'fu'))
   end
+  
+  def test_read_multi_with_expires
+    @cache.write('foo', 'bar', :expires_in => 0.001)
+    @cache.write('fu', 'baz')
+    @cache.write('fud', 'biz')
+    sleep(0.002)
+    assert_equal({"fu" => "baz"}, @cache.read_multi('foo', 'fu'))
+  end
 
   def test_read_and_write_compressed_small_data
     @cache.write('foo', 'bar', :compress => true)
     raw_value = @cache.send(:read_entry, 'foo', {}).raw_value
     assert_equal 'bar', @cache.read('foo')
-    assert_equal 'bar', raw_value
+    assert_equal 'bar', Marshal.load(raw_value)
   end
 
   def test_read_and_write_compressed_large_data
@@ -265,10 +278,12 @@ module CacheStoreBehavior
     assert !@cache.exist?('foo')
   end
 
-  def test_store_objects_should_be_immutable
+  def test_read_should_return_a_different_object_id_each_time_it_is_called
     @cache.write('foo', 'bar')
-    assert_raise(ActiveSupport::FrozenObjectError) { @cache.read('foo').gsub!(/.*/, 'baz') }
-    assert_equal 'bar', @cache.read('foo')
+    assert_not_equal @cache.read('foo').object_id, @cache.read('foo').object_id
+    value = @cache.read('foo')
+    value << 'bingo'
+    assert_not_equal value, @cache.read('foo')
   end
 
   def test_original_store_objects_should_not_be_immutable
@@ -349,6 +364,43 @@ module CacheStoreBehavior
     assert_nil @cache.read("#{key}x")
     assert_equal({key => "bar"}, @cache.read_multi(key))
     assert_equal true, @cache.delete(key)
+  end
+end
+
+# https://rails.lighthouseapp.com/projects/8994/tickets/6225-memcachestore-cant-deal-with-umlauts-and-special-characters
+# The error is caused by charcter encodings that can't be compared with ASCII-8BIT regular expressions and by special
+# characters like the umlaut in UTF-8.
+module EncodedKeyCacheBehavior
+  if defined?(Encoding)
+    Encoding.list.each do |encoding|
+      define_method "test_#{encoding.name.underscore}_encoded_values" do
+        key = "foo".force_encoding(encoding)
+        assert_equal true, @cache.write(key, "1", :raw => true)
+        assert_equal "1", @cache.read(key)
+        assert_equal "1", @cache.fetch(key)
+        assert_equal true, @cache.delete(key)
+        assert_equal "2", @cache.fetch(key, :raw => true) { "2" }
+        assert_equal 3, @cache.increment(key)
+        assert_equal 2, @cache.decrement(key)
+      end
+    end
+
+    def test_common_utf8_values
+      key = "\xC3\xBCmlaut".force_encoding(Encoding::UTF_8)
+      assert_equal true, @cache.write(key, "1", :raw => true)
+      assert_equal "1", @cache.read(key)
+      assert_equal "1", @cache.fetch(key)
+      assert_equal true, @cache.delete(key)
+      assert_equal "2", @cache.fetch(key, :raw => true) { "2" }
+      assert_equal 3, @cache.increment(key)
+      assert_equal 2, @cache.decrement(key)
+    end
+
+    def test_retains_encoding
+      key = "\xC3\xBCmlaut".force_encoding(Encoding::UTF_8)
+      assert_equal true, @cache.write(key, "1", :raw => true)
+      assert_equal Encoding::UTF_8, key.encoding
+    end
   end
 end
 
@@ -479,6 +531,7 @@ class FileStoreTest < ActiveSupport::TestCase
     Dir.mkdir(cache_dir) unless File.exist?(cache_dir)
     @cache = ActiveSupport::Cache.lookup_store(:file_store, cache_dir, :expires_in => 60)
     @peek = ActiveSupport::Cache.lookup_store(:file_store, cache_dir, :expires_in => 60)
+    @cache_with_pathname = ActiveSupport::Cache.lookup_store(:file_store, Pathname.new(cache_dir), :expires_in => 60)
   end
 
   def teardown
@@ -494,35 +547,22 @@ class FileStoreTest < ActiveSupport::TestCase
   include CacheDeleteMatchedBehavior
   include CacheIncrementDecrementBehavior
 
-  def test_deprecated_expires_in_on_read
-    ActiveSupport::Deprecation.silence do
-      old_cache = ActiveSupport::Cache.lookup_store(:file_store, cache_dir)
-
-      time = Time.local(2008, 4, 24)
-      Time.stubs(:now).returns(time)
-
-      old_cache.write("foo", "bar")
-      assert_equal 'bar', old_cache.read('foo', :expires_in => 60)
-
-      Time.stubs(:now).returns(time + 30)
-      assert_equal 'bar', old_cache.read('foo', :expires_in => 60)
-
-      Time.stubs(:now).returns(time + 61)
-      assert_equal 'bar', old_cache.read('foo')
-      assert_nil old_cache.read('foo', :expires_in => 60)
-      assert_nil old_cache.read('foo')
-    end
-  end
-
   def test_key_transformation
     key = @cache.send(:key_file_path, "views/index?id=1")
     assert_equal "views/index?id=1", @cache.send(:file_path_key, key)
+  end
+
+  def test_key_transformation_with_pathname
+    FileUtils.touch(File.join(cache_dir, "foo"))
+    key = @cache_with_pathname.send(:key_file_path, "views/index?id=1")
+    assert_equal "views/index?id=1", @cache_with_pathname.send(:file_path_key, key)
   end
 end
 
 class MemoryStoreTest < ActiveSupport::TestCase
   def setup
-    @cache = ActiveSupport::Cache.lookup_store(:memory_store, :expires_in => 60, :size => 100)
+    @record_size = Marshal.dump("aaaaaaaaaa").bytesize
+    @cache = ActiveSupport::Cache.lookup_store(:memory_store, :expires_in => 60, :size => @record_size * 10)
   end
 
   include CacheStoreBehavior
@@ -537,7 +577,7 @@ class MemoryStoreTest < ActiveSupport::TestCase
     @cache.write(5, "eeeeeeeeee") && sleep(0.001)
     @cache.read(2) && sleep(0.001)
     @cache.read(4)
-    @cache.prune(30)
+    @cache.prune(@record_size * 3)
     assert_equal true, @cache.exist?(5)
     assert_equal true, @cache.exist?(4)
     assert_equal false, @cache.exist?(3)
@@ -591,18 +631,6 @@ class MemoryStoreTest < ActiveSupport::TestCase
   end
 end
 
-class SynchronizedStoreTest < ActiveSupport::TestCase
-  def setup
-    ActiveSupport::Deprecation.silence do
-      @cache = ActiveSupport::Cache.lookup_store(:memory_store, :expires_in => 60)
-    end
-  end
-
-  include CacheStoreBehavior
-  include CacheDeleteMatchedBehavior
-  include CacheIncrementDecrementBehavior
-end
-
 uses_memcached 'memcached backed store' do
   class MemCacheStoreTest < ActiveSupport::TestCase
     def setup
@@ -617,6 +645,7 @@ uses_memcached 'memcached backed store' do
     include CacheStoreBehavior
     include LocalCacheBehavior
     include CacheIncrementDecrementBehavior
+    include EncodedKeyCacheBehavior
 
     def test_raw_values
       cache = ActiveSupport::Cache.lookup_store(:mem_cache_store, :raw => true)
@@ -624,7 +653,14 @@ uses_memcached 'memcached backed store' do
       cache.write("foo", 2)
       assert_equal "2", cache.read("foo")
     end
-
+    
+    def test_raw_values_with_marshal
+      cache = ActiveSupport::Cache.lookup_store(:mem_cache_store, :raw => true)
+      cache.clear
+      cache.write("foo", Marshal.dump([]))
+      assert_equal [], cache.read("foo")      
+    end
+    
     def test_local_cache_raw_values
       cache = ActiveSupport::Cache.lookup_store(:mem_cache_store, :raw => true)
       cache.clear
@@ -633,18 +669,15 @@ uses_memcached 'memcached backed store' do
         assert_equal "2", cache.read("foo")
       end
     end
-  end
 
-  class CompressedMemCacheStore < ActiveSupport::TestCase
-    def setup
-      ActiveSupport::Deprecation.silence do
-        @cache = ActiveSupport::Cache.lookup_store(:compressed_mem_cache_store, :expires_in => 60)
-        @cache.clear
+    def test_local_cache_raw_values_with_marshal
+      cache = ActiveSupport::Cache.lookup_store(:mem_cache_store, :raw => true)
+      cache.clear
+      cache.with_local_cache do
+        cache.write("foo", Marshal.dump([]))
+        assert_equal [], cache.read("foo")
       end
     end
-
-    include CacheStoreBehavior
-    include CacheIncrementDecrementBehavior
   end
 end
 
@@ -697,7 +730,7 @@ class CacheEntryTest < ActiveSupport::TestCase
   def test_non_compress_values
     entry = ActiveSupport::Cache::Entry.new("value")
     assert_equal "value", entry.value
-    assert_equal "value", entry.raw_value
+    assert_equal "value", Marshal.load(entry.raw_value)
     assert_equal false, entry.compressed?
   end
 end

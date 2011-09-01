@@ -1,4 +1,5 @@
 require "active_support/notifications"
+require "active_support/dependencies"
 require "active_support/descendants_tracker"
 
 module Rails
@@ -9,7 +10,6 @@ module Rails
       initializer :load_environment_hook do end
 
       initializer :load_active_support do
-        require 'active_support/dependencies'
         require "active_support/all" unless config.active_support.bare
       end
 
@@ -28,7 +28,7 @@ module Rails
           logger.level = ActiveSupport::BufferedLogger.const_get(config.log_level.to_s.upcase)
           logger.auto_flushing = false if Rails.env.production?
           logger
-        rescue StandardError => e
+        rescue StandardError
           logger = ActiveSupport::BufferedLogger.new(STDERR)
           logger.level = ActiveSupport::BufferedLogger::WARN
           logger.warn(
@@ -37,6 +37,7 @@ module Rails
           )
           logger
         end
+        at_exit { Rails.logger.flush if Rails.logger.respond_to?(:flush) }
       end
 
       # Initialize cache early in the stack so railties can make use of it.

@@ -1,3 +1,4 @@
+require 'zlib'
 require 'abstract_unit'
 require 'active_support/ordered_options'
 
@@ -66,6 +67,7 @@ class AssetTagHelperTest < ActionView::TestCase
     %(auto_discovery_link_tag(:xml)) => %(<link href="http://www.example.com" rel="alternate" title="XML" type="application/xml" />),
     %(auto_discovery_link_tag(:rss, :action => "feed")) => %(<link href="http://www.example.com" rel="alternate" title="RSS" type="application/rss+xml" />),
     %(auto_discovery_link_tag(:rss, "http://localhost/feed")) => %(<link href="http://localhost/feed" rel="alternate" title="RSS" type="application/rss+xml" />),
+    %(auto_discovery_link_tag(:rss, "//localhost/feed")) => %(<link href="//localhost/feed" rel="alternate" title="RSS" type="application/rss+xml" />),
     %(auto_discovery_link_tag(:rss, {:action => "feed"}, {:title => "My RSS"})) => %(<link href="http://www.example.com" rel="alternate" title="My RSS" type="application/rss+xml" />),
     %(auto_discovery_link_tag(:rss, {}, {:title => "My RSS"})) => %(<link href="http://www.example.com" rel="alternate" title="My RSS" type="application/rss+xml" />),
     %(auto_discovery_link_tag(nil, {}, {:type => "text/html"})) => %(<link href="http://www.example.com" rel="alternate" title="" type="text/html" />),
@@ -100,6 +102,7 @@ class AssetTagHelperTest < ActionView::TestCase
 
     %(javascript_include_tag("http://example.com/all")) => %(<script src="http://example.com/all" type="text/javascript"></script>),
     %(javascript_include_tag("http://example.com/all.js")) => %(<script src="http://example.com/all.js" type="text/javascript"></script>),
+    %(javascript_include_tag("//example.com/all.js")) => %(<script src="//example.com/all.js" type="text/javascript"></script>),
   }
 
   StylePathToTag = {
@@ -129,6 +132,7 @@ class AssetTagHelperTest < ActionView::TestCase
 
     %(stylesheet_link_tag("http://www.example.com/styles/style")) => %(<link href="http://www.example.com/styles/style" media="screen" rel="stylesheet" type="text/css" />),
     %(stylesheet_link_tag("http://www.example.com/styles/style.css")) => %(<link href="http://www.example.com/styles/style.css" media="screen" rel="stylesheet" type="text/css" />),
+    %(stylesheet_link_tag("//www.example.com/styles/style.css")) => %(<link href="//www.example.com/styles/style.css" media="screen" rel="stylesheet" type="text/css" />),
   }
 
   ImagePathToTag = {
@@ -157,6 +161,7 @@ class AssetTagHelperTest < ActionView::TestCase
     %(image_tag("slash..png")) => %(<img alt="Slash." src="/images/slash..png" />),
     %(image_tag(".pdf.png")) => %(<img alt=".pdf" src="/images/.pdf.png" />),
     %(image_tag("http://www.rubyonrails.com/images/rails.png")) => %(<img alt="Rails" src="http://www.rubyonrails.com/images/rails.png" />),
+    %(image_tag("//www.rubyonrails.com/images/rails.png")) => %(<img alt="Rails" src="//www.rubyonrails.com/images/rails.png" />),
     %(image_tag("mouse.png", :mouseover => "/images/mouse_over.png")) => %(<img alt="Mouse" onmouseover="this.src='/images/mouse_over.png'" onmouseout="this.src='/images/mouse.png'" src="/images/mouse.png" />),
     %(image_tag("mouse.png", :mouseover => image_path("mouse_over.png"))) => %(<img alt="Mouse" onmouseover="this.src='/images/mouse_over.png'" onmouseout="this.src='/images/mouse.png'" src="/images/mouse.png" />),
     %(image_tag("mouse.png", :alt => nil)) => %(<img src="/images/mouse.png" />)
@@ -195,6 +200,7 @@ class AssetTagHelperTest < ActionView::TestCase
     %(video_tag("error.avi", "size" => "100 x 100")) => %(<video src="/videos/error.avi" />),
     %(video_tag("error.avi", "size" => "x")) => %(<video src="/videos/error.avi" />),
     %(video_tag("http://media.rubyonrails.org/video/rails_blog_2.mov")) => %(<video src="http://media.rubyonrails.org/video/rails_blog_2.mov" />),
+    %(video_tag("//media.rubyonrails.org/video/rails_blog_2.mov")) => %(<video src="//media.rubyonrails.org/video/rails_blog_2.mov" />),
     %(video_tag(["multiple.ogg", "multiple.avi"])) => %(<video><source src="multiple.ogg" /><source src="multiple.avi" /></video>),
     %(video_tag(["multiple.ogg", "multiple.avi"], :size => "160x120", :controls => true)) => %(<video controls="controls" height="120" width="160"><source src="multiple.ogg" /><source src="multiple.avi" /></video>)
   }
@@ -217,6 +223,7 @@ class AssetTagHelperTest < ActionView::TestCase
     %(audio_tag("xml.wav")) => %(<audio src="/audios/xml.wav" />),
     %(audio_tag("rss.wav", :autoplay => true, :controls => true)) => %(<audio autoplay="autoplay" controls="controls" src="/audios/rss.wav" />),
     %(audio_tag("http://media.rubyonrails.org/audio/rails_blog_2.mov")) => %(<audio src="http://media.rubyonrails.org/audio/rails_blog_2.mov" />),
+    %(audio_tag("//media.rubyonrails.org/audio/rails_blog_2.mov")) => %(<audio src="//media.rubyonrails.org/audio/rails_blog_2.mov" />),
   }
 
   def test_auto_discovery_link_tag
@@ -418,6 +425,14 @@ class AssetTagHelperTest < ActionView::TestCase
     PathToImageToTag.each { |method, tag| assert_dom_equal(tag, eval(method)) }
   end
 
+  def test_image_alt
+    [nil, '/', '/foo/bar/', 'foo/bar/'].each do |prefix|
+      assert_equal 'Rails', image_alt("#{prefix}rails.png")
+      assert_equal 'Rails', image_alt("#{prefix}rails-9c0a079bdd7701d7e729bd956823d153.png")
+      assert_equal 'Avatar-0000', image_alt("#{prefix}avatar-0000.png")
+    end
+  end
+
   def test_image_tag
     ImageLinkToTag.each { |method, tag| assert_dom_equal(tag, eval(method)) }
   end
@@ -428,7 +443,7 @@ class AssetTagHelperTest < ActionView::TestCase
 
   def test_image_tag_windows_behaviour
     old_asset_id, ENV["RAILS_ASSET_ID"] = ENV["RAILS_ASSET_ID"], "1"
-    # This simulates the behaviour of File#exist? on windows when testing a file ending in "."
+    # This simulates the behavior of File#exist? on windows when testing a file ending in "."
     # If the file "rails.png" exists, windows will return true when asked if "rails.png." exists (notice trailing ".")
     # OS X, linux etc will return false in this case.
     File.stubs(:exist?).with('template/../fixtures/public/images/rails.png.').returns(true)
@@ -466,7 +481,7 @@ class AssetTagHelperTest < ActionView::TestCase
   end
 
   def test_timebased_asset_id
-    expected_time = File.stat(File.expand_path(File.dirname(__FILE__) + "/../fixtures/public/images/rails.png")).mtime.to_i.to_s
+    expected_time = File.mtime(File.expand_path(File.dirname(__FILE__) + "/../fixtures/public/images/rails.png")).to_i.to_s
     assert_equal %(<img alt="Rails" src="/images/rails.png?#{expected_time}" />), image_tag("rails.png")
   end
 
@@ -477,35 +492,12 @@ class AssetTagHelperTest < ActionView::TestCase
     assert_equal %(<img alt="Rails" src="#{expected_path}" />), image_tag("rails.png")
   end
 
-  def test_env_asset_path
-    @controller.config.asset_path = "/assets%s"
-    def @controller.env; @_env ||= {} end
-    @controller.env["action_dispatch.asset_path"] = "/omg%s"
-
-    expected_path = "/assets/omg/images/rails.png"
-    assert_equal %(<img alt="Rails" src="#{expected_path}" />), image_tag("rails.png")
-  end
-
   def test_proc_asset_id
     @controller.config.asset_path = Proc.new do |asset_path|
       "/assets.v12345#{asset_path}"
     end
 
     expected_path = "/assets.v12345/images/rails.png"
-    assert_equal %(<img alt="Rails" src="#{expected_path}" />), image_tag("rails.png")
-  end
-
-  def test_env_proc_asset_path
-    @controller.config.asset_path = Proc.new do |asset_path|
-      "/assets.v12345#{asset_path}"
-    end
-
-    def @controller.env; @_env ||= {} end
-    @controller.env["action_dispatch.asset_path"] = Proc.new do |asset_path|
-      "/omg#{asset_path}"
-    end
-
-    expected_path = "/assets.v12345/omg/images/rails.png"
     assert_equal %(<img alt="Rails" src="#{expected_path}" />), image_tag("rails.png")
   end
 
@@ -520,12 +512,16 @@ class AssetTagHelperTest < ActionView::TestCase
 
   def test_timebased_asset_id_with_relative_url_root
     @controller.config.relative_url_root = "/collaboration/hieraki"
-    expected_time = File.stat(File.expand_path(File.dirname(__FILE__) + "/../fixtures/public/images/rails.png")).mtime.to_i.to_s
+    expected_time = File.mtime(File.expand_path(File.dirname(__FILE__) + "/../fixtures/public/images/rails.png")).to_i.to_s
     assert_equal %(<img alt="Rails" src="#{@controller.config.relative_url_root}/images/rails.png?#{expected_time}" />), image_tag("rails.png")
   end
 
   def test_should_skip_asset_id_on_complete_url
     assert_equal %(<img alt="Rails" src="http://www.example.com/rails.png" />), image_tag("http://www.example.com/rails.png")
+  end
+
+  def test_should_skip_asset_id_on_scheme_relative_url
+    assert_equal %(<img alt="Rails" src="//www.example.com/rails.png" />), image_tag("//www.example.com/rails.png")
   end
 
   def test_should_use_preset_asset_id
@@ -694,9 +690,9 @@ class AssetTagHelperTest < ActionView::TestCase
     @controller.config.asset_host = 'http://a%d.example.com'
     config.perform_caching = true
 
-    hash = '/javascripts/cache/money.js'.hash % 4
+    number = Zlib.crc32('/javascripts/cache/money.js') % 4
     assert_dom_equal(
-      %(<script src="http://a#{hash}.example.com/javascripts/cache/money.js" type="text/javascript"></script>),
+      %(<script src="http://a#{number}.example.com/javascripts/cache/money.js" type="text/javascript"></script>),
       javascript_include_tag(:all, :cache => "cache/money")
     )
 
@@ -867,7 +863,7 @@ class AssetTagHelperTest < ActionView::TestCase
 
   def test_caching_stylesheet_link_tag_when_caching_on
     ENV["RAILS_ASSET_ID"] = ""
-    @controller.config.asset_host = 'http://a0.example.com'
+    @controller.config.asset_host = 'a0.example.com'
     config.perform_caching = true
 
     assert_dom_equal(
@@ -977,7 +973,7 @@ class AssetTagHelperTest < ActionView::TestCase
 
   def test_caching_stylesheet_link_tag_when_caching_on_with_proc_asset_host
     ENV["RAILS_ASSET_ID"] = ""
-    @controller.config.asset_host = Proc.new { |source| "http://a#{source.length}.example.com" }
+    @controller.config.asset_host = Proc.new { |source| "a#{source.length}.example.com" }
     config.perform_caching = true
 
     assert_equal '/stylesheets/styles.css'.length, 23
@@ -1104,13 +1100,23 @@ class AssetTagHelperNonVhostTest < ActionView::TestCase
   end
 
   def test_should_compute_proper_path_with_asset_host
-    @controller.config.asset_host = "http://assets.example.com"
+    @controller.config.asset_host = "assets.example.com"
     assert_dom_equal(%(<link href="http://www.example.com/collaboration/hieraki" rel="alternate" title="RSS" type="application/rss+xml" />), auto_discovery_link_tag)
-    assert_dom_equal(%(http://assets.example.com/collaboration/hieraki/javascripts/xmlhr.js), javascript_path("xmlhr"))
-    assert_dom_equal(%(http://assets.example.com/collaboration/hieraki/stylesheets/style.css), stylesheet_path("style"))
-    assert_dom_equal(%(http://assets.example.com/collaboration/hieraki/images/xml.png), image_path("xml.png"))
-    assert_dom_equal(%(<img alt="Mouse" onmouseover="this.src='http://assets.example.com/collaboration/hieraki/images/mouse_over.png'" onmouseout="this.src='http://assets.example.com/collaboration/hieraki/images/mouse.png'" src="http://assets.example.com/collaboration/hieraki/images/mouse.png" />), image_tag("mouse.png", :mouseover => "/images/mouse_over.png"))
-    assert_dom_equal(%(<img alt="Mouse2" onmouseover="this.src='http://assets.example.com/collaboration/hieraki/images/mouse_over2.png'" onmouseout="this.src='http://assets.example.com/collaboration/hieraki/images/mouse2.png'" src="http://assets.example.com/collaboration/hieraki/images/mouse2.png" />), image_tag("mouse2.png", :mouseover => image_path("mouse_over2.png")))
+    assert_dom_equal(%(gopher://assets.example.com/collaboration/hieraki/javascripts/xmlhr.js), javascript_path("xmlhr"))
+    assert_dom_equal(%(gopher://assets.example.com/collaboration/hieraki/stylesheets/style.css), stylesheet_path("style"))
+    assert_dom_equal(%(gopher://assets.example.com/collaboration/hieraki/images/xml.png), image_path("xml.png"))
+    assert_dom_equal(%(<img alt="Mouse" onmouseover="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse_over.png'" onmouseout="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse.png'" src="gopher://assets.example.com/collaboration/hieraki/images/mouse.png" />), image_tag("mouse.png", :mouseover => "/images/mouse_over.png"))
+    assert_dom_equal(%(<img alt="Mouse2" onmouseover="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse_over2.png'" onmouseout="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse2.png'" src="gopher://assets.example.com/collaboration/hieraki/images/mouse2.png" />), image_tag("mouse2.png", :mouseover => image_path("mouse_over2.png")))
+  end
+
+  def test_should_compute_proper_path_with_asset_host_and_default_protocol
+    @controller.config.asset_host = "assets.example.com"
+    @controller.config.default_asset_host_protocol = :request
+    assert_dom_equal(%(gopher://assets.example.com/collaboration/hieraki/javascripts/xmlhr.js), javascript_path("xmlhr"))
+    assert_dom_equal(%(gopher://assets.example.com/collaboration/hieraki/stylesheets/style.css), stylesheet_path("style"))
+    assert_dom_equal(%(gopher://assets.example.com/collaboration/hieraki/images/xml.png), image_path("xml.png"))
+    assert_dom_equal(%(<img alt="Mouse" onmouseover="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse_over.png'" onmouseout="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse.png'" src="gopher://assets.example.com/collaboration/hieraki/images/mouse.png" />), image_tag("mouse.png", :mouseover => "/images/mouse_over.png"))
+    assert_dom_equal(%(<img alt="Mouse2" onmouseover="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse_over2.png'" onmouseout="this.src='gopher://assets.example.com/collaboration/hieraki/images/mouse2.png'" src="gopher://assets.example.com/collaboration/hieraki/images/mouse2.png" />), image_tag("mouse2.png", :mouseover => image_path("mouse_over2.png")))
   end
 
   def test_should_ignore_asset_host_on_complete_url
@@ -1118,17 +1124,22 @@ class AssetTagHelperNonVhostTest < ActionView::TestCase
     assert_dom_equal(%(<link href="http://bar.example.com/stylesheets/style.css" media="screen" rel="stylesheet" type="text/css" />), stylesheet_link_tag("http://bar.example.com/stylesheets/style.css"))
   end
 
+  def test_should_ignore_asset_host_on_scheme_relative_url
+    @controller.config.asset_host = "http://assets.example.com"
+    assert_dom_equal(%(<link href="//bar.example.com/stylesheets/style.css" media="screen" rel="stylesheet" type="text/css" />), stylesheet_link_tag("//bar.example.com/stylesheets/style.css"))
+  end
+
   def test_should_wildcard_asset_host_between_zero_and_four
     @controller.config.asset_host = 'http://a%d.example.com'
     assert_match(%r(http://a[0123].example.com/collaboration/hieraki/images/xml.png), image_path('xml.png'))
   end
 
-  def test_asset_host_without_protocol_should_use_request_protocol
+  def test_asset_host_without_protocol_should_be_protocol_relative
     @controller.config.asset_host = 'a.example.com'
     assert_equal 'gopher://a.example.com/collaboration/hieraki/images/xml.png', image_path('xml.png')
   end
 
-  def test_asset_host_without_protocol_should_use_request_protocol_even_if_path_present
+  def test_asset_host_without_protocol_should_be_protocol_relative_even_if_path_present
     @controller.config.asset_host = 'a.example.com/files/go/here'
     assert_equal 'gopher://a.example.com/files/go/here/collaboration/hieraki/images/xml.png', image_path('xml.png')
   end

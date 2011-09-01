@@ -1,14 +1,18 @@
 require 'active_support/inflector'
 require 'active_support/core_ext/hash/except'
 require 'active_support/core_ext/module/introspection'
+require 'active_support/core_ext/module/deprecation'
 
 module ActiveModel
   class Name < String
-    attr_reader :singular, :plural, :element, :collection, :partial_path, :route_key, :param_key
+    attr_reader :singular, :plural, :element, :collection, :partial_path, :route_key, :param_key, :i18n_key
     alias_method :cache_key, :collection
 
-    def initialize(klass, namespace = nil)
-      super(klass.name)
+    deprecate :partial_path => "ActiveModel::Name#partial_path is deprecated. Call #to_partial_path on model instances directly instead."
+
+    def initialize(klass, namespace = nil, name = nil)
+      name ||= klass.name
+      super(name)
       @unnamespaced = self.sub(/^#{namespace.name}::/, '') if namespace
 
       @klass = klass
@@ -20,6 +24,7 @@ module ActiveModel
       @partial_path = "#{@collection}/#{@element}".freeze
       @param_key = (namespace ? _singularize(@unnamespaced) : @singular).freeze
       @route_key = (namespace ? ActiveSupport::Inflector.pluralize(@param_key) : @plural).freeze
+      @i18n_key = self.underscore.to_sym
     end
 
     # Transform the model name into a more humane format, using I18n. By default,
@@ -33,7 +38,7 @@ module ActiveModel
                            @klass.respond_to?(:i18n_scope)
 
       defaults = @klass.lookup_ancestors.map do |klass|
-        klass.model_name.underscore.to_sym
+        klass.model_name.i18n_key
       end
 
       defaults << options[:default] if options[:default]
@@ -44,9 +49,10 @@ module ActiveModel
     end
 
     private
-      def _singularize(str)
-        ActiveSupport::Inflector.underscore(str).tr('/', '_')
-      end
+
+    def _singularize(string, replacement='_')
+      ActiveSupport::Inflector.underscore(string).tr('/', replacement)
+    end
   end
 
   # == Active Model Naming
@@ -62,8 +68,11 @@ module ActiveModel
   #   BookCover.model_name        # => "BookCover"
   #   BookCover.model_name.human  # => "Book cover"
   #
+  #   BookCover.model_name.i18n_key              # => "book_cover"
+  #   BookModule::BookCover.model_name.i18n_key  # => "book_module.book_cover"
+  #
   # Providing the functionality that ActiveModel::Naming provides in your object
-  # is required to pass the Active Model Lint test.  So either extending the provided
+  # is required to pass the Active Model Lint test. So either extending the provided
   # method below, or rolling your own is required.
   module Naming
     # Returns an ActiveModel::Name object for module. It can be

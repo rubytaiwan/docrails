@@ -16,6 +16,12 @@ class HashExtTest < Test::Unit::TestCase
   class SubclassingHash < Hash
   end
 
+  class NonIndifferentHash < Hash
+    def nested_under_indifferent_access
+      self
+    end
+  end
+
   def setup
     @strings = { 'a' => 1, 'b' => 2 }
     @symbols = { :a  => 1, :b  => 2 }
@@ -109,9 +115,12 @@ class HashExtTest < Test::Unit::TestCase
     assert_equal @strings, @mixed.with_indifferent_access.dup.stringify_keys!
   end
 
-  def test_hash_subclass
-    flash = { "foo" => SubclassingHash.new.tap { |h| h["bar"] = "baz" } }.with_indifferent_access
-    assert_kind_of SubclassingHash, flash["foo"]
+  def test_nested_under_indifferent_access
+    foo = { "foo" => SubclassingHash.new.tap { |h| h["bar"] = "baz" } }.with_indifferent_access
+    assert_kind_of ActiveSupport::HashWithIndifferentAccess, foo["foo"]
+
+    foo = { "foo" => NonIndifferentHash.new.tap { |h| h["bar"] = "baz" } }.with_indifferent_access
+    assert_kind_of NonIndifferentHash, foo["foo"]
   end
 
   def test_indifferent_assorted
@@ -661,6 +670,55 @@ class HashToXmlTest < Test::Unit::TestCase
     assert_match %r{<local-created-at type=\"datetime\">1999-02-01T19:00:00-05:00</local-created-at>}, xml
   end
 
+  def test_multiple_records_from_xml_with_attributes_other_than_type_ignores_them_without_exploding
+    topics_xml = <<-EOT
+      <topics type="array" page="1" page-count="1000" per-page="2">
+        <topic>
+          <title>The First Topic</title>
+          <author-name>David</author-name>
+          <id type="integer">1</id>
+          <approved type="boolean">false</approved>
+          <replies-count type="integer">0</replies-count>
+          <replies-close-in type="integer">2592000000</replies-close-in>
+          <written-on type="date">2003-07-16</written-on>
+          <viewed-at type="datetime">2003-07-16T09:28:00+0000</viewed-at>
+          <content>Have a nice day</content>
+          <author-email-address>david@loudthinking.com</author-email-address>
+          <parent-id nil="true"></parent-id>
+        </topic>
+        <topic>
+          <title>The Second Topic</title>
+          <author-name>Jason</author-name>
+          <id type="integer">1</id>
+          <approved type="boolean">false</approved>
+          <replies-count type="integer">0</replies-count>
+          <replies-close-in type="integer">2592000000</replies-close-in>
+          <written-on type="date">2003-07-16</written-on>
+          <viewed-at type="datetime">2003-07-16T09:28:00+0000</viewed-at>
+          <content>Have a nice day</content>
+          <author-email-address>david@loudthinking.com</author-email-address>
+          <parent-id></parent-id>
+        </topic>
+      </topics>
+    EOT
+
+    expected_topic_hash = {
+      :title => "The First Topic",
+      :author_name => "David",
+      :id => 1,
+      :approved => false,
+      :replies_count => 0,
+      :replies_close_in => 2592000000,
+      :written_on => Date.new(2003, 7, 16),
+      :viewed_at => Time.utc(2003, 7, 16, 9, 28),
+      :content => "Have a nice day",
+      :author_email_address => "david@loudthinking.com",
+      :parent_id => nil
+    }.stringify_keys
+
+    assert_equal expected_topic_hash, Hash.from_xml(topics_xml)["topics"].first
+  end
+
   def test_single_record_from_xml
     topic_xml = <<-EOT
       <topic>
@@ -889,6 +947,21 @@ class HashToXmlTest < Test::Unit::TestCase
     assert_equal 'application/octet-stream', file.content_type
   end
 
+  def test_tag_with_attrs_and_whitespace
+    xml = <<-XML
+      <blog name="bacon is the best">
+      </blog>
+    XML
+    hash = Hash.from_xml(xml)
+    assert_equal "bacon is the best", hash['blog']['name']
+  end
+  
+  def test_empty_cdata_from_xml
+    xml = "<data><![CDATA[]]></data>"
+    
+    assert_equal "", Hash.from_xml(xml)["data"]
+  end
+  
   def test_xsd_like_types_from_xml
     bacon_xml = <<-EOT
     <bacon>
@@ -931,7 +1004,7 @@ class HashToXmlTest < Test::Unit::TestCase
 
     assert_equal expected_product_hash, Hash.from_xml(product_xml)["product"]
   end
-
+  
   def test_should_use_default_value_for_unknown_key
     hash_wia = HashWithIndifferentAccess.new(3)
     assert_equal 3, hash_wia[:new_key]
@@ -945,6 +1018,12 @@ class HashToXmlTest < Test::Unit::TestCase
   def test_should_nil_if_no_default_value_is_supplied
     hash_wia = HashWithIndifferentAccess.new
     assert_nil hash_wia.default
+  end
+
+  def test_should_return_dup_for_with_indifferent_access
+    hash_wia = HashWithIndifferentAccess.new
+    assert_equal hash_wia, hash_wia.with_indifferent_access
+    assert_not_same hash_wia, hash_wia.with_indifferent_access
   end
 
   def test_should_copy_the_default_value_when_converting_to_hash_with_indifferent_access

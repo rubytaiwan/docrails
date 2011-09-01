@@ -10,7 +10,7 @@ class ArrayExtAccessTests < Test::Unit::TestCase
   def test_from
     assert_equal %w( a b c d ), %w( a b c d ).from(0)
     assert_equal %w( c d ), %w( a b c d ).from(2)
-    assert_nil %w( a b c d ).from(10)
+    assert_equal %w(), %w( a b c d ).from(10)
   end
 
   def test_to
@@ -456,11 +456,22 @@ class ArrayWrapperTests < Test::Unit::TestCase
     assert_equal [o], Array.wrap(o)
   end
 
-  def test_wrap_returns_nil_if_to_ary_returns_nil
-    assert_nil Array.wrap(NilToAry.new)
+  def test_wrap_returns_wrapped_if_to_ary_returns_nil
+    o = NilToAry.new
+    assert_equal [o], Array.wrap(o)
   end
 
   def test_wrap_does_not_complain_if_to_ary_does_not_return_an_array
     assert_equal DoubtfulToAry.new.to_ary, Array.wrap(DoubtfulToAry.new)
+  end
+end
+
+class ArrayPrependAppendTest < Test::Unit::TestCase
+  def test_append
+    assert_equal [1, 2], [1].append(2)
+  end
+
+  def test_prepend
+    assert_equal [2, 1], [1].prepend(2)
   end
 end

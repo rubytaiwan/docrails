@@ -1,6 +1,7 @@
 require 'abstract_unit'
 require 'active_support/core_ext/object/try'
 require 'active_support/core_ext/object/with_options'
+require 'active_support/core_ext/object/inclusion'
 
 class ResourcesController < ActionController::Base
   def index() render :nothing => true end
@@ -87,6 +88,15 @@ class ResourcesTest < ActionController::TestCase
     with_restful_routing :messages, :comments do
       assert_simply_restful_for :messages
       assert_simply_restful_for :comments
+    end
+  end
+
+  def test_multiple_resources_with_options
+    expected_options = {:controller => 'threads', :action => 'index'}
+
+    with_restful_routing :messages, :comments, expected_options.slice(:controller) do
+      assert_recognizes(expected_options, :path => 'comments')
+      assert_recognizes(expected_options, :path => 'messages')
     end
   end
 
@@ -1292,7 +1302,7 @@ class ResourcesTest < ActionController::TestCase
     def assert_resource_methods(expected, resource, action_method, method)
       assert_equal expected.length, resource.send("#{action_method}_methods")[method].size, "#{resource.send("#{action_method}_methods")[method].inspect}"
       expected.each do |action|
-        assert resource.send("#{action_method}_methods")[method].include?(action),
+        assert action.in?(resource.send("#{action_method}_methods")[method])
           "#{method} not in #{action_method} methods: #{resource.send("#{action_method}_methods")[method].inspect}"
       end
     end
@@ -1329,9 +1339,9 @@ class ResourcesTest < ActionController::TestCase
       options = options.merge(:action => action.to_s)
       path_options = { :path => path, :method => method }
 
-      if Array(allowed).include?(action)
+      if action.in?(Array(allowed))
         assert_recognizes options, path_options
-      elsif Array(not_allowed).include?(action)
+      elsif action.in?(Array(not_allowed))
         assert_not_recognizes options, path_options
       end
     end

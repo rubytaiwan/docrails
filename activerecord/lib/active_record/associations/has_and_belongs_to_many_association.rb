@@ -9,8 +9,14 @@ module ActiveRecord
         super
       end
 
-      def insert_record(record, validate = true)
-        return if record.new_record? && !record.save(:validate => validate)
+      def insert_record(record, validate = true, raise = false)
+        if record.new_record?
+          if raise
+            record.save!(:validate => validate)
+          else
+            return unless record.save(:validate => validate)
+          end
+        end
 
         if options[:insert_sql]
           owner.connection.insert(interpolate(options[:insert_sql], record))
@@ -20,7 +26,7 @@ module ActiveRecord
             join_table[reflection.association_foreign_key] => record.id
           )
 
-          owner.connection.insert stmt.to_sql
+          owner.connection.insert stmt
         end
 
         record
@@ -40,7 +46,7 @@ module ActiveRecord
             stmt = relation.where(relation[reflection.foreign_key].eq(owner.id).
               and(relation[reflection.association_foreign_key].in(records.map { |x| x.id }.compact))
             ).compile_delete
-            owner.connection.delete stmt.to_sql
+            owner.connection.delete stmt
           end
         end
 

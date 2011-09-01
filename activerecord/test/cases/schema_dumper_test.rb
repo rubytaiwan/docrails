@@ -1,13 +1,22 @@
 require "cases/helper"
-require 'stringio'
 
 
 class SchemaDumperTest < ActiveRecord::TestCase
+  def setup
+    @stream = StringIO.new
+  end
+
   def standard_dump
-    stream = StringIO.new
+    @stream = StringIO.new
     ActiveRecord::SchemaDumper.ignore_tables = []
-    ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection, stream)
-    stream.string
+    ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection, @stream)
+    @stream.string
+  end
+
+  if "string".encoding_aware?
+    def test_magic_comment
+      assert_match "# encoding: #{@stream.external_encoding.name}", standard_dump
+    end
   end
 
   def test_schema_dump
@@ -203,6 +212,13 @@ class SchemaDumperTest < ActiveRecord::TestCase
         assert_match %r{t.xml "data"}, output
       end
     end
+
+    def test_schema_dump_includes_tsvector_shorthand_definition
+      output = standard_dump
+      if %r{create_table "postgresql_tsvectors"} =~ output
+        assert_match %r{t.tsvector "text_vector"}, output
+      end
+    end
   end
 
   def test_schema_dump_keeps_large_precision_integer_columns_as_decimal
@@ -223,4 +239,3 @@ class SchemaDumperTest < ActiveRecord::TestCase
     assert_match %r{t.string[[:space:]]+"id",[[:space:]]+:null => false$}, match[2], "non-primary key id column not preserved"
   end
 end
-

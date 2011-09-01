@@ -95,7 +95,7 @@ class Hash
         case value.class.to_s
           when 'Hash'
             if value['type'] == 'array'
-              _, entries = Array.wrap(value.detect { |k,v| k != 'type' })
+              _, entries = Array.wrap(value.detect { |k,v| not v.is_a?(String) })
               if entries.nil? || (c = value['__content__'] && c.blank?)
                 []
               else
@@ -108,7 +108,8 @@ class Hash
                   raise "can't typecast #{entries.inspect}"
                 end
               end
-            elsif value.has_key?("__content__")
+            elsif value['type'] == 'file' || 
+               (value["__content__"] && (value.keys.size == 1 || value["__content__"].present?))
               content = value["__content__"]
               if parser = ActiveSupport::XmlMini::PARSING[value["type"]]
                 parser.arity == 1 ? parser.call(content) : parser.call(content, value)

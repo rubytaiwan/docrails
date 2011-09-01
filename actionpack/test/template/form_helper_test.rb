@@ -1,5 +1,6 @@
 require 'abstract_unit'
 require 'controller/fake_models'
+require 'active_support/core_ext/object/inclusion'
 
 class FormHelperTest < ActionView::TestCase
   tests ActionView::Helpers::FormHelper
@@ -23,7 +24,10 @@ class FormHelperTest < ActionView::TestCase
       :helpers => {
         :label => {
           :post => {
-            :body => "Write entire text here"
+            :body => "Write entire text here",
+            :color => {
+              :red => "Rojo"
+            }
           }
         }
       }
@@ -136,6 +140,13 @@ class FormHelperTest < ActionView::TestCase
   def test_label_with_locales_and_options
     old_locale, I18n.locale = I18n.locale, :label
     assert_dom_equal('<label for="post_body" class="post_body">Write entire text here</label>', label(:post, :body, :class => 'post_body'))
+  ensure
+    I18n.locale = old_locale
+  end
+
+  def test_label_with_locales_and_value
+    old_locale, I18n.locale = I18n.locale, :label
+    assert_dom_equal('<label for="post_color_red">Rojo</label>', label(:post, :color, :value => "red"))
   ensure
     I18n.locale = old_locale
   end
@@ -685,13 +696,13 @@ class FormHelperTest < ActionView::TestCase
       concat f.submit('Edit post')
     end
 
-    expected =
-      "<form accept-charset='UTF-8' action='/posts/44' method='post'>" +
-      snowman +
-      "<label for='post_title'>The Title</label>" +
+    expected = whole_form("/posts/44", "edit_post_44" , "edit_post", :method => "put") do
       "<input name='post[title]' size='30' type='text' id='post_title' value='And his name will be forty and four.' />" +
-      "<input name='commit' id='post_submit' type='submit' value='Edit post' />" +
+      "<input name='commit' type='submit' value='Edit post' />" +
       "</form>"
+    end
+
+    assert_dom_equal expected, output_buffer
   end
 
   def test_form_for_with_symbol_object_name
@@ -765,6 +776,23 @@ class FormHelperTest < ActionView::TestCase
 
   def test_form_for_with_remote
     form_for(@post, :url => '/', :remote => true, :html => { :id => 'create-post', :method => :put }) do |f|
+      concat f.text_field(:title)
+      concat f.text_area(:body)
+      concat f.check_box(:secret)
+    end
+
+    expected =  whole_form("/", "create-post", "edit_post", :method => "put", :remote => true) do
+      "<input name='post[title]' size='30' type='text' id='post_title' value='Hello World' />" +
+      "<textarea name='post[body]' id='post_body' rows='20' cols='40'>Back to the hill and over it again!</textarea>" +
+      "<input name='post[secret]' type='hidden' value='0' />" +
+      "<input name='post[secret]' checked='checked' type='checkbox' id='post_secret' value='1' />"
+    end
+
+    assert_dom_equal expected, output_buffer
+  end
+
+  def test_form_for_with_remote_in_html
+    form_for(@post, :url => '/', :html => { :remote => true, :id => 'create-post', :method => :put }) do |f|
       concat f.text_field(:title)
       concat f.text_area(:body)
       concat f.check_box(:secret)
@@ -1553,6 +1581,22 @@ class FormHelperTest < ActionView::TestCase
     assert_dom_equal expected, output_buffer
   end
 
+  def test_nested_fields_for_with_hash_like_model
+    @author = HashBackedAuthor.new
+
+    form_for(@post) do |f|
+      concat f.fields_for(:author, @author) { |af|
+        concat af.text_field(:name)
+      }
+    end
+
+    expected = whole_form('/posts/123', 'edit_post_123', 'edit_post', :method => 'put') do
+      '<input id="post_author_attributes_name" name="post[author_attributes][name]" size="30" type="text" value="hash backed author" />'
+    end
+
+    assert_dom_equal expected, output_buffer
+  end
+
   def test_fields_for
     output_buffer = fields_for(:post, @post) do |f|
       concat f.text_field(:title)
@@ -1714,6 +1758,20 @@ class FormHelperTest < ActionView::TestCase
     assert_dom_equal expected, output_buffer
   end
 
+  def test_form_for_and_fields_for_with_non_nested_association_and_without_object
+    form_for(@post) do |f|
+      concat f.fields_for(:category) { |c|
+        concat c.text_field(:name)
+      }
+    end
+
+    expected = whole_form('/posts/123', 'edit_post_123', 'edit_post', 'put') do
+      "<input name='post[category][name]' type='text' size='30' id='post_category_name' />"
+    end
+
+    assert_dom_equal expected, output_buffer
+  end
+
   class LabelledFormBuilder < ActionView::Helpers::FormBuilder
     (field_helpers - %w(hidden_field)).each do |selector|
       class_eval <<-RUBY_EVAL, __FILE__, __LINE__ + 1
@@ -1740,10 +1798,10 @@ class FormHelperTest < ActionView::TestCase
     assert_dom_equal expected, output_buffer
   end
 
-  def snowman(method = nil)
+  def hidden_fields(method = nil)
     txt =  %{<div style="margin:0;padding:0;display:inline">}
     txt << %{<input name="utf8" type="hidden" value="&#x2713;" />}
-    if (method && !['get','post'].include?(method.to_s))
+    if method && !method.to_s.in?(['get', 'post'])
       txt << %{<input name="_method" type="hidden" value="#{method}" />}
     end
     txt << %{</div>}
@@ -1768,7 +1826,7 @@ class FormHelperTest < ActionView::TestCase
       method = options
     end
 
-    form_text(action, id, html_class, remote, multipart, method) + snowman(method) + contents + "</form>"
+    form_text(action, id, html_class, remote, multipart, method) + hidden_fields(method) + contents + "</form>"
   end
 
   def test_default_form_builder
@@ -1831,6 +1889,17 @@ class FormHelperTest < ActionView::TestCase
     end
 
     assert_equal LabelledFormBuilder, klass
+  end
+
+  def test_form_for_with_labelled_builder_path
+    path = nil
+
+    form_for(@post, :builder => LabelledFormBuilder) do |f|
+      path = f.to_partial_path
+      ''
+    end
+
+    assert_equal 'labelled_form', path
   end
 
   class LabelledFormBuilderSubclass < LabelledFormBuilder; end

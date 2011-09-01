@@ -11,11 +11,17 @@ module ApplicationTests
       FileUtils.rm_rf "#{app_path}/config/environments"
     end
 
+    def teardown
+      teardown_app
+    end
+
     def app
       @app ||= Rails.application
     end
 
     test "default middleware stack" do
+      add_to_config "config.action_dispatch.x_sendfile_header = 'X-Sendfile'"
+
       boot!
 
       assert_equal [
@@ -23,25 +29,30 @@ module ApplicationTests
         "Rack::Lock",
         "ActiveSupport::Cache::Strategy::LocalCache",
         "Rack::Runtime",
-        "Rails::Rack::Logger",
+        "Rack::MethodOverride",
+        "Rails::Rack::Logger", # must come after Rack::MethodOverride to properly log overridden methods
         "ActionDispatch::ShowExceptions",
         "ActionDispatch::RemoteIp",
         "Rack::Sendfile",
         "ActionDispatch::Reloader",
         "ActionDispatch::Callbacks",
-        "ActiveRecord::IdentityMap::Middleware",
         "ActiveRecord::ConnectionAdapters::ConnectionManagement",
         "ActiveRecord::QueryCache",
         "ActionDispatch::Cookies",
         "ActionDispatch::Session::CookieStore",
         "ActionDispatch::Flash",
         "ActionDispatch::ParamsParser",
-        "Rack::MethodOverride",
         "ActionDispatch::Head",
         "Rack::ConditionalGet",
         "Rack::ETag",
         "ActionDispatch::BestStandardsSupport"
       ], middleware
+    end
+
+    test "Rack::Sendfile is not included by default" do
+      boot!
+
+      assert !middleware.include?("Rack::Sendfile"), "Rack::Sendfile is not included in the default stack unless you set config.action_dispatch.x_sendfile_header"
     end
 
     test "Rack::Cache is present when action_controller.perform_caching is set" do
@@ -121,6 +132,7 @@ module ApplicationTests
     end
 
     test "identity map is inserted" do
+      add_to_config "config.active_record.identity_map = true"
       boot!
       assert middleware.include?("ActiveRecord::IdentityMap::Middleware")
     end

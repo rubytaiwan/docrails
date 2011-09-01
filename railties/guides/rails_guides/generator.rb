@@ -38,9 +38,10 @@
 #     Note that if you are working on a guide generation will by default process
 #     only that one, so ONLY is rarely used nowadays.
 #
-#   LANGUAGE
-#     Use LANGUAGE when you want to generate translated guides in <tt>source/<LANGUAGE></tt>
-#     folder (such as <tt>source/es</tt>). Ignore it when generating English guides.
+#   GUIDES_LANGUAGE
+#     Use GUIDES_LANGUAGE when you want to generate translated guides in
+#     <tt>source/<GUIDES_LANGUAGE></tt> folder (such as <tt>source/es</tt>).
+#     Ignore it when generating English guides.
 #
 #   EDGE
 #     Set to "1" to indicate generated guides should be marked as edge. This
@@ -74,7 +75,7 @@ module RailsGuides
     end
     
     def initialize(output=nil)
-      @lang = ENV['LANGUAGE']
+      @lang = ENV['GUIDES_LANGUAGE']
       initialize_dirs(output)
       create_output_dir_if_needed
       set_flags_from_environment
@@ -206,50 +207,10 @@ module RailsGuides
     end
 
     def textile(body, lite_mode=false)
-      # If the issue with notextile is fixed just remove the wrapper.
-      with_workaround_for_notextile(body) do |body|
-        t = RedCloth.new(body)
-        t.hard_breaks = false
-        t.lite_mode = lite_mode
-        t.to_html(:notestuff, :plusplus, :code, :tip)
-      end
-    end
-
-    # For some reason the notextile tag does not always turn off textile. See
-    # LH ticket of the security guide (#7). As a temporary workaround we deal
-    # with code blocks by hand.
-    def with_workaround_for_notextile(body)
-      code_blocks = []
-
-      body.gsub!(%r{<(yaml|shell|ruby|erb|html|sql|plain)>(.*?)</\1>}m) do |m|
-        brush = case $1
-          when 'ruby', 'sql', 'plain'
-            $1
-          when 'erb'
-            'ruby; html-script: true'
-          when 'html'
-            'xml' # html is understood, but there are .xml rules in the CSS
-          else
-            'plain'
-        end
-
-        code_blocks.push(<<HTML)
-<notextile>
-<div class="code_container">
-<pre class="brush: #{brush}; gutter: false; toolbar: false">
-#{ERB::Util.h($2).strip}
-</pre>
-</div>
-</notextile>
-HTML
-        "\ndirty_workaround_for_notextile_#{code_blocks.size - 1}\n"
-      end
-
-      body = yield body
-
-      body.gsub(%r{<p>dirty_workaround_for_notextile_(\d+)</p>}) do |_|
-        code_blocks[$1.to_i]
-      end
+      t = RedCloth.new(body)
+      t.hard_breaks = false
+      t.lite_mode = lite_mode
+      t.to_html(:notestuff, :plusplus, :code)
     end
 
     def warn_about_broken_links(html)

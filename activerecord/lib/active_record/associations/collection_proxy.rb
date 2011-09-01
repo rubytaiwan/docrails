@@ -12,7 +12,7 @@ module ActiveRecord
     #     has_many :posts
     #   end
     #
-    #   blog = Blog.find(:first)
+    #   blog = Blog.first
     #
     # the association proxy in <tt>blog.posts</tt> has the object in +blog+ as
     # <tt>@owner</tt>, the collection of its posts as <tt>@target</tt>, and
@@ -56,20 +56,29 @@ module ActiveRecord
         Array.wrap(association.options[:extend]).each { |ext| proxy_extend(ext) }
       end
 
-      def respond_to?(*args)
+      alias_method :new, :build
+
+      def proxy_association
+        @association
+      end
+
+      def respond_to?(name, include_private = false)
         super ||
-        (load_target && target.respond_to?(*args)) ||
-        @association.klass.respond_to?(*args)
+        (load_target && target.respond_to?(name, include_private)) ||
+        proxy_association.klass.respond_to?(name, include_private)
       end
 
       def method_missing(method, *args, &block)
         match = DynamicFinderMatch.match(method)
-        if match && match.creator?
-          attributes = match.attribute_names
-          return send(:"find_by_#{attributes.join('_and_')}", *args) || create(Hash[attributes.zip(args)])
+        if match && match.instantiator?
+          send(:find_or_instantiator_by_attributes, match, match.attribute_names, *args) do |r|
+            proxy_association.send :set_owner_attributes, r
+            proxy_association.send :add_to_target, r
+            yield(r) if block_given?
+          end
         end
 
-        if target.respond_to?(method) || (!@association.klass.respond_to?(method) && Class.respond_to?(method))
+        if target.respond_to?(method) || (!proxy_association.klass.respond_to?(method) && Class.respond_to?(method))
           if load_target
             if target.respond_to?(method)
               target.send(method, *args, &block)
@@ -82,8 +91,6 @@ module ActiveRecord
             end
           end
 
-        elsif @association.klass.scopes[method]
-          @association.cached_scope(method, args)
         else
           scoped.readonly(nil).send(method, *args, &block)
         end
@@ -101,7 +108,7 @@ module ActiveRecord
       alias_method :to_a, :to_ary
 
       def <<(*records)
-        @association.concat(records) && self
+        proxy_association.concat(records) && self
       end
       alias_method :push, :<<
 
@@ -111,16 +118,8 @@ module ActiveRecord
       end
 
       def reload
-        @association.reload
+        proxy_association.reload
         self
-      end
-
-      def new(*args, &block)
-        if @association.is_a?(HasManyThroughAssociation)
-          @association.build(*args, &block)
-        else
-          method_missing(:new, *args, &block)
-        end
       end
     end
   end
