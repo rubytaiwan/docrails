@@ -1,30 +1,30 @@
 h2. Ruby on Rails 3.1 發佈重點說明
 
-Highlights in Rails 3.1:
+Rails 3.1 的重大新功能有：
 
 * Streaming
-* Reversible Migrations
+* 可逆的資料庫遷移
 * Assets Pipeline
-* jQuery as the default JavaScript library
+* jQuery 成為預設的 JavaScript 函式庫
 
-This release notes cover the major changes, but don't include every little bug fix and change. If you want to see everything, check out the "list of commits":https://github.com/rails/rails/commits/master in the main Rails repository on GitHub.
+本篇發佈重點說明中，包含主要的升級變動，但是並沒有詳述所有的小錯誤修正與小變動。如果你想要看所有發佈細節，請到 GitHub 上 Rails 專案目錄的 "提交列表":https://github.com/rails/rails/commits/master 閱讀。
 
 endprologue.
 
-h3. Upgrading to Rails 3.1
+h3. 升級到 Rails 3.1
 
-If you're upgrading an existing application, it's a great idea to have good test coverage before going in. You should also first upgrade to Rails 3 in case you haven't and make sure your application still runs as expected before attempting to update to Rails 3.1. Then take heed of the following changes:
+如果你是升級一個已經存在的應用程式，先擁有良好覆蓋率的測試再進行升級，是個比較妥當的規劃。在升級 Rails 3.1 之前，你應該先升級到 Rails 3.0 ，並且確保你的應用程式依然可以正確無誤地運行。然後依序小心地確認以下幾點變動：
 
-h4. Rails 3.1 requires at least Ruby 1.8.7
+h4. Rails 3.1 運行的最低需求是 Ruby 1.8.7
 
-Rails 3.1 requires Ruby 1.8.7 or higher. Support for all of the previous Ruby versions has been dropped officially and you should upgrade as early as possible. Rails 3.1 is also compatible with Ruby 1.9.2.
+Rails 3.1 要求在 Ruby 1.8.7 或是更高的版號上才能運行，正式宣告放棄支援 Ruby 1.8.6 或是更早的版本，使用者請盡早做 Ruby 升級的動作。 Rails 3.1 也兼容於 Ruby 1.9.2 上運行。
 
-TIP: Note that Ruby 1.8.7 p248 and p249 have marshaling bugs that crash Rails. Ruby Enterprise Edition have these fixed since release 1.8.7-2010.02 though. On the 1.9 front, Ruby 1.9.1 is not usable because it outright segfaults, so if you want to use 1.9.x jump on 1.9.2 for smooth sailing.
+TIP: 注意到 Ruby 1.8.7 p248 和 p249 有編組錯誤(marshaling bugs)，會造成 Rails 意外結束。 Ruby Enterprise Edition 已經在版號 1.8.7-2010.02 修正了這個錯誤。在 Ruby 1.9 的部份，由於 Ruby 1.9.1 會出現徹底地 segmentation fault ，因而無法使用。想要用 Ruby 1.9 的使用者，請直接安裝 1.9.2 就可以順利的運行。
 
-h3. Creating a Rails 3.1 application
+h3. 創建 Rails 3.1 應用程式
 
 <shell>
-# You should have the 'rails' rubygem installed
+# 你必須先安裝好 'rails' rubygem
 $ rails new myapp
 $ cd myapp
 </shell>
