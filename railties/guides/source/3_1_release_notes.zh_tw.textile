@@ -19,7 +19,7 @@ h4. Rails 3.1 運行的最低需求是 Ruby 1.8.7
 
 Rails 3.1 要求在 Ruby 1.8.7 或是更高的版號上才能運行，正式宣告放棄支援 Ruby 1.8.6 或是更早的版本，使用者請盡早做 Ruby 升級的動作。 Rails 3.1 也兼容於 Ruby 1.9.2 上運行。
 
-TIP: 注意到 Ruby 1.8.7 p248 和 p249 有編組錯誤(marshaling bugs)，會造成 Rails 意外結束。 Ruby Enterprise Edition 已經在版號 1.8.7-2010.02 修正了這個錯誤。在 Ruby 1.9 的部份，由於 Ruby 1.9.1 會出現徹底地 segmentation fault ，因而無法使用。想要用 Ruby 1.9 的使用者，請直接安裝 1.9.2 就可以順利的運行。
+TIP: 注意在 Ruby 1.8.7 p248 和 p249 的 Marshal 函式庫有臭蟲，會造成 Rails 意外結束。 Ruby Enterprise Edition 已經在版號 1.8.7-2010.02 修正了這個錯誤。而在 Ruby 1.9 的部份，由於 Ruby 1.9.1 本身就會出現徹底地 segmentation fault ，因而無法使用。想要用 Ruby 1.9 的使用者，請直接安裝 1.9.2 就可以順利的運行。
 
 h3. 創建 Rails 3.1 應用程式
 
